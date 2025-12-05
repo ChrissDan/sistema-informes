@@ -25,34 +25,16 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; color: var(--text-main); }
         
-        /* --- SIDEBAR (RESPONSIVE) --- */
-        .sidebar { 
-            width: var(--sidebar-width); 
-            background: var(--sidebar-bg); 
-            color: var(--sidebar-text); 
-            display: flex; 
-            flex-direction: column; 
-            flex-shrink: 0; 
-            height: 100%;
-            transition: transform 0.3s ease;
-            z-index: 1000;
-        }
-
-        /* Overlay para móvil */
-        .sidebar-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 900;
-            display: none; opacity: 0; transition: opacity 0.3s;
-        }
+        /* --- SIDEBAR --- */
+        .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; height: 100%; transition: transform 0.3s ease; z-index: 1000; }
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; display: none; opacity: 0; transition: opacity 0.3s; }
         .sidebar-overlay.active { display: block; opacity: 1; }
-
         .sidebar-header { padding: 20px; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #1e293b; text-align: center; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .nav-links { list-style: none; padding: 0 15px; margin: 20px 0; flex: 1; overflow-y: auto; }
         .nav-links li { margin-bottom: 5px; }
         .nav-links a { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 8px; transition: all 0.2s; cursor: pointer; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { background: var(--primary); color: white; }
         .nav-links a i { width: 24px; text-align: center; font-size: 1.1rem; }
-        
         .user-panel { padding: 15px 20px; border-top: 1px solid #1e293b; background: #0b1120; }
         .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .user-avatar { width: 35px; height: 35px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; }
@@ -60,52 +42,23 @@
         
         /* --- MAIN CONTENT --- */
         .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; }
-        
-        /* HEADER SUPERIOR */
-        header { 
-            background: white; 
-            padding: 15px 20px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-            z-index: 100;
-            flex-shrink: 0;
-        }
-        
+        header { background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05); z-index: 100; flex-shrink: 0; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         h1 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; }
-        
-        /* Botón Hamburguesa (Móvil) */
-        .menu-toggle {
-            display: none; /* Oculto en escritorio */
-            background: none; border: none; font-size: 1.5rem; color: #334155; cursor: pointer; padding: 0;
-        }
-
-        /* Área de contenido con scroll */
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; color: #334155; cursor: pointer; padding: 0; }
         .content-scroll { padding: 20px; overflow-y: auto; flex: 1; }
 
         /* --- CARDS & UI --- */
         .section-view { display: none; animation: fadeIn 0.3s; }
         .section-view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
-        
-        /* Cabeceras de Card Flexibles */
         .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
-        
         h3 { margin: 0; font-size: 1.1rem; color: #475569; display: flex; align-items: center; gap: 10px; }
 
-        /* TABLAS RESPONSIVE */
-        .table-container { 
-            width: 100%; 
-            overflow-x: auto; /* Scroll horizontal en móvil */
-            border-radius: 8px; 
-            border: 1px solid #e2e8f0; 
-            -webkit-overflow-scrolling: touch; 
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 600px; /* Fuerza el ancho para activar scroll */ }
+        /* TABLAS */
+        .table-container { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 600px; }
         th { background: #f8fafc; padding: 12px 15px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; white-space: nowrap; }
         td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
         tr:hover { background-color: #f8fafc; }
@@ -114,16 +67,14 @@
         .btn-action { width: 32px; height: 32px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; }
         .btn-del { background: #fee2e2; color: #dc2626; }
         .btn-edit { background: #dbeafe; color: #2563eb; }
-        
         .btn-primary { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 0.95rem; }
         .btn-cancel { background: #e2e8f0; color: #475569; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; display: none; font-weight: 500; margin-left: 10px; }
 
-        /* FORMULARIOS RESPONSIVE */
+        /* FORMULARIOS */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100%, 1fr)); gap: 15px; margin-bottom: 20px; }
         @media (min-width: 640px) { .form-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
-        
         label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 6px; font-weight: 600; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #fff; } /* 16px font evita zoom en iOS */
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #fff; }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         input:disabled { background-color: #f1f5f9; color: #94a3b8; }
 
@@ -133,22 +84,36 @@
         .btn-nav { background: transparent; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; }
         .btn-nav:hover { background: #f1f5f9; color: var(--primary); }
 
-        /* DASHBOARD CARDS */
+        /* DASHBOARD CARDS (MEJORADO CON TEXTO) */
         .stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
-        @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+        @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } }
 
         .stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .stat-icon { position: absolute; top: -5px; right: -5px; font-size: 4rem; color: #f1f5f9; z-index: 0; opacity: 0.6; }
         .stat-content { position: relative; z-index: 1; }
-        .stat-value { font-size: 2rem; font-weight: 800; color: #0f172a; }
+        .stat-card h4 { margin: 0 0 5px 0; color: #64748b; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
         
+        .stat-detail { 
+            margin-top: 10px; 
+            padding-top: 10px; 
+            border-top: 1px solid #f1f5f9; 
+            font-size: 0.85rem; 
+            color: #475569; 
+            display: flex; 
+            justify-content: space-between; 
+            font-weight: 500;
+        }
+        .stat-detail span i { color: var(--primary); margin-right: 4px; }
+
         /* BARRAS PROGRESO */
         .groups-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
         @media (min-width: 768px) { .groups-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } }
-        
         .group-item { background: white; border: 1px solid #e2e8f0; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .group-name { font-weight: 600; color: #334155; font-size: 0.95rem; }
         .progress-bar-bg { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 6px; }
         .progress-bar-fill { height: 100%; background: var(--primary); width: 0%; border-radius: 3px; transition: width 0.8s; }
+        .group-perc { font-weight: 700; color: var(--primary); margin-left: 15px; min-width: 45px; text-align: right; }
 
         .admin-only { display: none; }
         .badge { padding: 4px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -156,27 +121,15 @@
         .badge-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         .badge-grp { background: #e0e7ff; color: #4338ca; }
 
-        /* --- MEDIA QUERIES (MÓVIL) --- */
+        /* MÓVIL */
         @media (max-width: 768px) {
-            .sidebar { 
-                position: fixed; 
-                left: -260px; /* Oculto por defecto */
-                top: 0; height: 100%; 
-            }
+            .sidebar { position: fixed; left: -260px; top: 0; height: 100%; }
             .sidebar.active { left: 0; }
-            
-            .menu-toggle { display: block; } /* Mostrar hamburguesa */
-            
+            .menu-toggle { display: block; }
             .main-content { width: 100%; }
             .content-scroll { padding: 15px; }
-            
-            h1 { font-size: 1.1rem; }
-            .card { padding: 15px; }
-            
-            /* Ajustes de botones para toque */
             .btn-primary, .btn-cancel { width: 100%; justify-content: center; padding: 12px; }
-            
-            .nav-links a { padding: 14px 15px; } /* Áreas de toque más grandes */
+            .nav-links a { padding: 14px 15px; }
         }
     </style>
 </head>
@@ -212,9 +165,7 @@
     <main class="main-content">
         <header>
             <div class="header-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
                 <h1 id="pageTitle"><i class="fa-solid fa-gauge-high" style="color:var(--primary)"></i> Panel</h1>
             </div>
         </header>
@@ -234,28 +185,32 @@
                             <div class="stat-content">
                                 <h4>PUB + PNB</h4>
                                 <div class="stat-value" id="stat-pub-count">0</div>
-                                <div class="stat-detail"><span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-pub-cursos">0</strong></span></div>
+                                <div class="stat-detail">
+                                    <span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-pub-cursos">0</strong></span>
+                                </div>
                             </div>
                         </div>
+                        
                         <div class="stat-card">
                             <i class="fa-solid fa-stopwatch stat-icon"></i>
                             <div class="stat-content">
                                 <h4>AUXILIARES</h4>
                                 <div class="stat-value" id="stat-aux-count">0</div>
                                 <div class="stat-detail">
-                                    <span><i class="fa-regular fa-clock"></i> <strong id="stat-aux-horas">0</strong>h</span>
-                                    <span><i class="fa-solid fa-book"></i> <strong id="stat-aux-cursos">0</strong></span>
+                                    <span><i class="fa-regular fa-clock"></i> Horas: <strong id="stat-aux-horas">0</strong></span>
+                                    <span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-aux-cursos">0</strong></span>
                                 </div>
                             </div>
                         </div>
+
                         <div class="stat-card">
                             <i class="fa-solid fa-briefcase stat-icon"></i>
                             <div class="stat-content">
                                 <h4>REGULARES</h4>
                                 <div class="stat-value" id="stat-reg-count">0</div>
                                 <div class="stat-detail">
-                                    <span><i class="fa-regular fa-clock"></i> <strong id="stat-reg-horas">0</strong>h</span>
-                                    <span><i class="fa-solid fa-book"></i> <strong id="stat-reg-cursos">0</strong></span>
+                                    <span><i class="fa-regular fa-clock"></i> Horas: <strong id="stat-reg-horas">0</strong></span>
+                                    <span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-reg-cursos">0</strong></span>
                                 </div>
                             </div>
                         </div>
@@ -362,17 +317,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // LOGICA DE TOGGLE MENU MOVIL
         function toggleSidebar(force) {
             const sb = document.getElementById('sidebar');
             const ov = document.getElementById('sidebarOverlay');
-            if (force === false) {
-                sb.classList.remove('active');
-                ov.classList.remove('active');
-            } else {
-                sb.classList.toggle('active');
-                ov.classList.toggle('active');
-            }
+            if (force === false) { sb.classList.remove('active'); ov.classList.remove('active'); } 
+            else { sb.classList.toggle('active'); ov.classList.toggle('active'); }
         }
 
         const session = JSON.parse(localStorage.getItem('user_session'));
@@ -567,7 +516,6 @@
             document.getElementById('btnCancelInfo').style.display = "inline-flex";
             document.getElementById('btnCancelInfo').style.alignItems = "center";
             document.getElementById('btnCancelInfo').style.gap = "5px";
-            // Scroll al formulario (especialmente útil en móvil)
             document.getElementById('tituloFormInforme').scrollIntoView({ behavior: 'smooth' });
         }
 

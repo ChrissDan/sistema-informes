@@ -41,9 +41,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        .logo-area {
-            margin-bottom: 25px;
-        }
+        .logo-area { margin-bottom: 25px; }
         
         .logo-circle {
             width: 60px;
@@ -62,35 +60,13 @@
         h2 { margin: 0 0 5px 0; font-weight: 700; color: #0f172a; }
         p { margin: 0 0 25px 0; color: var(--text-muted); font-size: 0.9rem; }
 
-        .input-group {
-            margin-bottom: 15px;
-            text-align: left;
-            position: relative;
-        }
+        .input-group { margin-bottom: 15px; text-align: left; position: relative; }
+        .input-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: #475569; }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #475569;
-        }
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1rem; transition: color 0.2s; }
 
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 1rem;
-            transition: color 0.2s;
-        }
-
-        input {
+        input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px 12px 12px 42px;
             border: 1px solid #cbd5e1;
@@ -102,16 +78,25 @@
             background: #f8fafc;
         }
 
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: white;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
+        input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        input:focus + i { color: var(--primary); }
 
-        input:focus + i {
-            color: var(--primary);
+        /* CHECKBOX RECORDARME */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
         }
+        .remember-row input[type="checkbox"] {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--primary); /* Pone el checkbox azul */
+        }
+        .remember-row label { cursor: pointer; }
 
         button {
             width: 100%;
@@ -124,7 +109,6 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s, transform 0.1s;
-            margin-top: 10px;
             box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
         }
 
@@ -132,11 +116,7 @@
         button:active { transform: translateY(0); }
         button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }
 
-        .footer {
-            margin-top: 25px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-        }
+        .footer { margin-top: 25px; font-size: 0.8rem; color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -154,7 +134,7 @@
             <div class="input-group">
                 <label>Correo Electrónico</label>
                 <div class="input-wrapper">
-                    <input type="email" id="email" required placeholder="nombre@correo.com">
+                    <input type="email" id="email" required placeholder="nombre@correo.com" autocomplete="username">
                     <i class="fa-solid fa-envelope"></i>
                 </div>
             </div>
@@ -162,9 +142,14 @@
             <div class="input-group">
                 <label>Contraseña</label>
                 <div class="input-wrapper">
-                    <input type="password" id="password" required placeholder="••••••••">
+                    <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
                     <i class="fa-solid fa-lock"></i>
                 </div>
+            </div>
+
+            <div class="remember-row">
+                <input type="checkbox" id="rememberMe">
+                <label for="rememberMe">Recordar mi correo</label>
             </div>
 
             <button type="submit" id="btnSubmit">
@@ -172,35 +157,48 @@
             </button>
         </form>
 
-        <div class="footer">
-            Sistema de Gestión &copy; 2024
-        </div>
+        <div class="footer">Sistema de Gestión &copy; 2024</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const form = document.getElementById('loginForm');
         const btn = document.getElementById('btnSubmit');
+        const emailInput = document.getElementById('email');
+        const rememberCheck = document.getElementById('rememberMe');
+
+        // 1. AL CARGAR LA PÁGINA: VERIFICAR SI HAY CORREO GUARDADO
+        window.addEventListener('DOMContentLoaded', () => {
+            // Verificar si ya hay sesión activa
+            const session = JSON.parse(localStorage.getItem('user_session'));
+            if (session) {
+                // Opcional: Redirigir directamente si ya está logueado
+                // window.location.href = '/dashboard.html'; 
+            }
+
+            const savedEmail = localStorage.getItem('saved_email');
+            if (savedEmail) {
+                emailInput.value = savedEmail;
+                rememberCheck.checked = true;
+            }
+        });
 
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
             timer: 2000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer)
-                toast.addEventListener('mouseleave', Swal.resumeTimer)
-            }
+            timerProgressBar: true
         });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const originalText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
 
-            const email = document.getElementById('email').value;
+            const email = emailInput.value;
             const password = document.getElementById('password').value;
 
             try {
@@ -213,9 +211,19 @@
                 const data = await response.json();
 
                 if (data.ok) {
+                    // --- LÓGICA DE RECORDARME ---
+                    if (rememberCheck.checked) {
+                        localStorage.setItem('saved_email', email);
+                    } else {
+                        localStorage.removeItem('saved_email');
+                    }
+
+                    // Guardar sesión
                     localStorage.setItem('user_session', JSON.stringify(data.user));
+                    
                     Toast.fire({ icon: 'success', title: `¡Hola, ${data.user.nombre}!` });
                     setTimeout(() => { window.location.href = '/dashboard.html'; }, 1000);
+
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -226,6 +234,7 @@
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                 }
+
             } catch (err) {
                 console.error(err);
                 Swal.fire({
