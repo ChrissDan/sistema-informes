@@ -211,85 +211,7 @@
             flex: 1;
         }
 
-        /* --- MODAL ESTILOS (NUEVO) --- */
-        .modal-wrapper {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            backdrop-filter: blur(2px);
-        }
-
-        .modal-wrapper.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-box {
-            background: white;
-            width: 95%;
-            max-width: 600px;
-            max-height: 90vh;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-            position: relative;
-            transform: translateY(20px);
-            transition: transform 0.3s;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-wrapper.active .modal-box {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 10;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: #1e293b;
-        }
-
-        .close-modal-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #64748b;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .close-modal-btn:hover {
-            color: #ef4444;
-            transform: rotate(90deg);
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        /* UI GENERICOS */
+        /* UI ELEMENTS */
         .section-view {
             display: none;
             animation: fadeIn 0.3s;
@@ -342,6 +264,7 @@
             gap: 10px;
         }
 
+        /* TABLES */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -380,7 +303,7 @@
             background-color: #f8fafc;
         }
 
-        /* BOTONES */
+        /* BUTTONS */
         .btn-action {
             width: 32px;
             height: 32px;
@@ -419,26 +342,6 @@
             font-size: 0.95rem;
         }
 
-        .btn-add-new {
-            background: var(--primary);
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-            transition: 0.2s;
-        }
-
-        .btn-add-new:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
-        }
-
         .btn-cancel {
             background: #e2e8f0;
             color: #475569;
@@ -474,7 +377,51 @@
             transition: 0.2s;
         }
 
-        /* FORMULARIOS */
+        .btn-add-new {
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            transition: 0.2s;
+        }
+
+        .btn-add-new:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* FORMULARIOS LAYOUT AVANZADO */
+        .form-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 600px) {
+            .form-layout {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .col-span-3 {
+                grid-column: span 3;
+            }
+
+            .col-span-2 {
+                grid-column: span 2;
+            }
+
+            .col-span-1 {
+                grid-column: span 1;
+            }
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
@@ -500,15 +447,17 @@
         select,
         textarea {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
             font-size: 1rem;
             background: #fff;
+            font-family: inherit;
         }
 
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
@@ -519,7 +468,84 @@
             color: #94a3b8;
         }
 
-        /* STATS & DASHBOARD */
+        /* MODAL */
+        .modal-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-wrapper.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: white;
+            width: 95%;
+            max-width: 650px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: 90vh;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-wrapper.active .modal-box {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #1e293b;
+        }
+
+        .close-modal-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .close-modal-btn:hover {
+            color: #ef4444;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        /* --- NAV MESES (REDISEÑADO) --- */
         .month-nav {
             display: flex;
             align-items: center;
@@ -528,20 +554,21 @@
             padding: 5px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .month-title {
             font-weight: 700;
             font-size: 0.9rem;
-            margin: 0 10px;
-            min-width: 100px;
+            margin: 0 15px;
+            min-width: 120px;
             text-align: center;
             color: #1e293b;
         }
 
         .btn-nav {
-            background: transparent;
-            border: none;
+            background: white;
+            border: 1px solid #e2e8f0;
             width: 32px;
             height: 32px;
             border-radius: 6px;
@@ -550,13 +577,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
         .btn-nav:hover {
-            background: #f1f5f9;
-            color: var(--primary);
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-1px);
         }
 
+        /* STATS */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -924,6 +956,10 @@
             .nav-links a {
                 padding: 14px 15px;
             }
+
+            .pub-total-card .value {
+                font-size: 3.5rem;
+            }
         }
     </style>
 </head>
@@ -936,16 +972,14 @@
                 <h3 id="modalTitle">Título</h3>
                 <button class="close-modal-btn" onclick="cerrarModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="modal-body" id="modalBody">
-            </div>
+            <div class="modal-body" id="modalBody"></div>
         </div>
     </div>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <i class="fa-solid fa-layer-group"></i> <span id="sidebarTitle">Gestión Cong.</span>
+        <div class="sidebar-header"><i class="fa-solid fa-layer-group"></i> <span id="sidebarTitle">Gestión Cong.</span>
         </div>
         <ul class="nav-links">
             <li><a onclick="showView('dashboard'); toggleSidebar(false)" class="active" id="nav-dashboard"><i
@@ -1035,7 +1069,6 @@
                     <button class="btn-add-new" onclick="abrirModal('informe')"><i class="fa-solid fa-circle-plus"></i>
                         Nuevo Informe</button>
                 </div>
-
                 <div class="card">
                     <div class="card-header-flex">
                         <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial</h3>
@@ -1069,12 +1102,56 @@
                 </div>
             </div>
 
+            <div id="view-reuniones" class="section-view">
+                <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <button class="btn-add-new" onclick="abrirModal('reunion')"><i
+                            class="fa-solid fa-calendar-plus"></i> Registrar Asistencia</button>
+                </div>
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h3><i class="fa-solid fa-users-rectangle"></i> Historial de Asistencia</h3>
+                        <select id="reuFilterMes" onchange="cargarTablaReuniones()"
+                            style="width:auto; padding:6px; font-weight:600; color:var(--text-main);">
+                            <option value="">(Todos los Meses)</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table id="tablaReuniones">
+                            <thead>
+                                <tr>
+                                    <th>Mes</th>
+                                    <th>Tipo</th>
+                                    <th>Mod</th>
+                                    <th>S1</th>
+                                    <th>S2</th>
+                                    <th>S3</th>
+                                    <th>S4</th>
+                                    <th>S5</th>
+                                    <th>Promedio</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyReuniones"></tbody>
+                        </table>
+                    </div>
+                    <div class="report-summary"
+                        style="margin-top:20px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+                        <div class="summary-box">
+                            <div class="summary-title">Promedio Anual Acumulado</div>
+                            <div class="summary-val" id="reuTotalAnual" style="color:var(--primary); font-size:1.5rem;">
+                                0</div>
+                            <div style="font-size:0.8rem; color:#64748b;">(Total Anual / 12)</div>
+                        </div>
+                    </div>
+                    <div id="resumenReunionesContainer" class="reu-stats-grid"></div>
+                </div>
+            </div>
+
             <div id="view-publicadores" class="section-view">
                 <div class="admin-only" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
                     <button class="btn-add-new" onclick="abrirModal('publicador')"><i class="fa-solid fa-user-plus"></i>
                         Agregar Publicador</button>
                 </div>
-
                 <div class="card">
                     <h3><i class="fa-solid fa-chart-simple"></i> Resumen de Publicadores</h3>
                     <div class="pub-overview">
@@ -1103,9 +1180,7 @@
                     </div>
                     <h4 style="margin: 15px 0; color:#475569;">Totales por Grupo</h4>
                     <div class="pub-groups-grid" id="pub-groups-container"></div>
-
                     <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
-
                     <h3><i class="fa-solid fa-filter"></i> Buscar Publicador</h3>
                     <div class="form-grid">
                         <div class="admin-only"><label>Grupo</label><select id="pubFiltroGrupo">
@@ -1135,7 +1210,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="card">
                     <h3><i class="fa-solid fa-list"></i> Lista Detallada</h3>
                     <div class="table-container">
@@ -1152,77 +1226,6 @@
                                 </tr>
                             </thead>
                             <tbody id="tablaPublicadores"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-reuniones" class="section-view">
-                <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('reunion')"><i
-                            class="fa-solid fa-calendar-plus"></i> Registrar Asistencia</button>
-                </div>
-
-                <div class="card">
-                    <div class="card-header-flex">
-                        <h3><i class="fa-solid fa-users-rectangle"></i> Historial de Asistencia</h3>
-                        <select id="reuFilterMes" onchange="cargarTablaReuniones()"
-                            style="width:auto; padding:6px; font-weight:600; color:var(--text-main);">
-                            <option value="">(Todos los Meses)</option>
-                        </select>
-                    </div>
-                    <div class="table-container">
-                        <table id="tablaReuniones">
-                            <thead>
-                                <tr>
-                                    <th>Mes</th>
-                                    <th>Tipo</th>
-                                    <th>Mod</th>
-                                    <th>S1</th>
-                                    <th>S2</th>
-                                    <th>S3</th>
-                                    <th>S4</th>
-                                    <th>S5</th>
-                                    <th>Promedio</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyReuniones"></tbody>
-                        </table>
-                    </div>
-
-                    <div class="report-summary"
-                        style="margin-top:20px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
-                        <div class="summary-box">
-                            <div class="summary-title">Promedio Anual Acumulado</div>
-                            <div class="summary-val" id="reuTotalAnual" style="color:var(--primary); font-size:1.5rem;">
-                                0</div>
-                            <div style="font-size:0.8rem; color:#64748b;">(Total Anual / 12)</div>
-                        </div>
-                    </div>
-                    <div id="resumenReunionesContainer" class="reu-stats-grid"></div>
-                </div>
-            </div>
-
-            <div id="view-usuarios" class="section-view">
-                <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('usuario')"><i class="fa-solid fa-user-plus"></i>
-                        Crear Usuario</button>
-                </div>
-                <div class="card">
-                    <h3><i class="fa-solid fa-users-gear"></i> Lista Usuarios</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Correo</th>
-                                    <th>Grupo</th>
-                                    <th>Clave</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaUsuarios"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1299,16 +1302,38 @@
                     </div>
                 </div>
             </div>
+
+            <div id="view-usuarios" class="section-view">
+                <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <button class="btn-add-new" onclick="abrirModal('usuario')"><i class="fa-solid fa-user-plus"></i>
+                        Crear Usuario</button>
+                </div>
+                <div class="card">
+                    <h3><i class="fa-solid fa-users-gear"></i> Lista Usuarios</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Correo</th>
+                                    <th>Grupo</th>
+                                    <th>Clave</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaUsuarios"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
     <div id="formsContainer" style="display:none;">
-
-        <form id="formInforme" class="form-grid">
+        <form id="formInforme" class="form-layout">
             <input type="hidden" name="id" id="informeId">
-            <div class="admin-only" style="grid-column: 1/-1;">
-                <label>Grupo (Admin):</label>
-                <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
+            <div class="admin-only col-span-1"><label>Grupo (Admin):</label><select id="infGrupoSelect"
+                    onchange="cargarPublicadoresSelect(this.value)">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1317,32 +1342,32 @@
                     <option value="6">6</option>
                     <option value="7">7</option>
                     <option value="8">8</option>
-                </select>
-            </div>
-            <div><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
-            <div style="grid-column: span 2"><label>Publicador</label><select id="selectPubInfo" name="publicador_id"
+                </select></div>
+            <div class="col-span-1"><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
+            <div style="grid-column: 1/-1;"><label>Publicador</label><select id="selectPubInfo" name="publicador_id"
                     required onchange="cargarDatosPub()">
                     <option value="">Cargando...</option>
                 </select></div>
-            <div><label>Privilegio</label><input id="readPriv3" readonly style="background:#f8fafc; color:#64748b;">
-            </div>
-            <div><label>¿Predicó?</label><select name="predico" required>
+            <div style="grid-column: 1/-1;"><label>Privilegio</label><input id="readPriv3" readonly
+                    style="background:#f8fafc; color:#64748b;"></div>
+            <div class="col-span-1"><label>¿Predicó?</label><select name="predico" required>
                     <option value="">-</option>
                     <option value="SI">SÍ</option>
                     <option value="NO">NO</option>
                 </select></div>
-            <div><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5" min="0"></div>
-            <div><label>Cursos</label><input type="number" name="cursos" min="0"></div>
-            <div style="grid-column: 1/-1"><label>Comentario</label><input name="comentarios" placeholder="Notas...">
-            </div>
-            <div style="grid-column: 1/-1; display:flex; gap:10px;">
-                <button type="submit" class="btn-primary" id="btnSaveInfo" style="width:100%">Guardar</button>
-            </div>
+            <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
+                    min="0"></div>
+            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0"></div>
+            <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
+                    rows="3"></textarea></div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveInfo">Guardar</button></div>
         </form>
-
-        <form id="formPublicador" class="form-grid">
+        <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
-            <div class="admin-only"><label>Grupo</label><select id="pubGrupoSelect" name="grupo_manual">
+            <input type="hidden" name="informo" value="NO">
+            <div class="admin-only" style="grid-column: 1/-1;"><label>Grupo</label><select id="pubGrupoSelect"
+                    name="grupo_manual">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1352,18 +1377,18 @@
                     <option value="7">7</option>
                     <option value="8">8</option>
                 </select></div>
-            <div style="grid-column: span 2"><label>Nombre Completo</label><input name="nombre" required></div>
-            <div><label>Priv 1</label><select name="priv1">
+            <div style="grid-column: 1/-1;"><label>Nombre Completo</label><input name="nombre" required></div>
+            <div class="col-span-1"><label>Priv 1</label><select name="priv1">
                     <option value="">-</option>
                     <option value="SG">SG</option>
                     <option value="AXG">AXG</option>
                 </select></div>
-            <div><label>Priv 2</label><select name="priv2">
+            <div class="col-span-1"><label>Priv 2</label><select name="priv2">
                     <option value="">-</option>
                     <option value="A">A</option>
                     <option value="SM">SM</option>
                 </select></div>
-            <div><label>Priv 3</label><select name="priv3">
+            <div class="col-span-1"><label>Priv 3</label><select name="priv3">
                     <option>PUB</option>
                     <option>REG</option>
                     <option>AUX</option>
@@ -1371,43 +1396,36 @@
                     <option>AUX M</option>
                     <option>PNB</option>
                 </select></div>
-            <div><label>¿Informó?</label><select name="informo">
-                    <option value="SI">SI</option>
-                    <option value="NO">NO</option>
-                </select></div>
-            <div style="grid-column: span 2"><label>Comentario</label><input name="comentario"></div>
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" id="btnSavePub" style="width:100%">Guardar</button>
+            <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentario" rows="3"></textarea>
             </div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSavePub">Guardar</button></div>
         </form>
-
-        <form id="formReunion" class="form-grid">
+        <form id="formReunion" class="form-layout">
             <input type="hidden" name="id" id="reunionId">
-            <div><label>Mes</label><select name="mes" id="reuMesSelect" required></select></div>
-            <div><label>Tipo</label><select name="tipo" required>
+            <div class="col-span-1"><label>Mes</label><select name="mes" id="reuMesSelect" required></select></div>
+            <div class="col-span-1"><label>Tipo</label><select name="tipo" required>
                     <option value="ENTRE SEMANA">ENTRE SEMANA</option>
                     <option value="FIN DE SEMANA">FIN DE SEMANA</option>
                 </select></div>
-            <div><label>Modalidad</label><select name="modalidad" required>
+            <div class="col-span-1"><label>Modalidad</label><select name="modalidad" required>
                     <option value="PRESENCIAL">PRESENCIAL</option>
                     <option value="ZOOM">ZOOM</option>
                 </select></div>
-            <div><label>Sem 1</label><input type="number" name="sem1" min="0"></div>
-            <div><label>Sem 2</label><input type="number" name="sem2" min="0"></div>
-            <div><label>Sem 3</label><input type="number" name="sem3" min="0"></div>
-            <div><label>Sem 4</label><input type="number" name="sem4" min="0"></div>
-            <div><label>Sem 5</label><input type="number" name="sem5" min="0"></div>
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" id="btnSaveReu" style="width:100%">Guardar</button>
-            </div>
+            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0"></div>
+            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0"></div>
+            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0"></div>
+            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0"></div>
+            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0"></div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveReu">Guardar</button></div>
         </form>
-
-        <form id="formUsuario" class="form-grid">
+        <form id="formUsuario" class="form-layout">
             <input type="hidden" name="id" id="userId">
-            <div><label>Nombre</label><input name="nombre" required></div>
-            <div><label>Correo</label><input name="correo" type="email" required></div>
-            <div><label>Contraseña</label><input name="password" required></div>
-            <div><label>Grupo</label><select name="grupo">
+            <div style="grid-column: 1/-1;"><label>Nombre</label><input name="nombre" required></div>
+            <div class="col-span-2"><label>Correo</label><input name="correo" type="email" required></div>
+            <div class="col-span-1"><label>Contraseña</label><input name="password" required></div>
+            <div style="grid-column: 1/-1;"><label>Grupo</label><select name="grupo">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1418,9 +1436,8 @@
                     <option value="8">8</option>
                     <option value="0">0 (Admin)</option>
                 </select></div>
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" id="btnSaveUser" style="width:100%">Crear</button>
-            </div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveUser">Crear</button></div>
         </form>
     </div>
 
@@ -1485,45 +1502,21 @@
             if (viewName === 'reuniones') cargarTablaReuniones();
         }
 
-        /* --- LOGICA MODAL UNIFICADA --- */
+        /* --- LOGICA MODAL --- */
         function abrirModal(tipo, id = null) {
             const modalWrapper = document.getElementById('mainModal');
             const modalBody = document.getElementById('modalBody');
             const modalTitle = document.getElementById('modalTitle');
-
-            // Limpiar modal previo
             modalBody.innerHTML = '';
 
             let formId = '';
+            if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); }
+            else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); }
+            else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); }
+            else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); }
 
-            if (tipo === 'informe') {
-                formId = 'formInforme';
-                modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe';
-                if (!id) resetFormInforme(true); // Si es nuevo, limpiar
-            }
-            else if (tipo === 'publicador') {
-                formId = 'formPublicador';
-                modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador';
-                if (!id) resetFormPub();
-            }
-            else if (tipo === 'reunion') {
-                formId = 'formReunion';
-                modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia';
-                if (!id) resetFormReu();
-            }
-            else if (tipo === 'usuario') {
-                formId = 'formUsuario';
-                modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario';
-                if (!id) resetFormUser();
-            }
-
-            // Mover formulario al modal
             const form = document.getElementById(formId);
-            if (form) {
-                form.style.display = 'grid'; // Asegurar que sea visible (lo teníamos oculto en el container)
-                modalBody.appendChild(form);
-            }
-
+            if (form) { form.style.display = 'grid'; modalBody.appendChild(form); }
             modalWrapper.classList.add('active');
         }
 
@@ -1531,17 +1524,167 @@
             const modalWrapper = document.getElementById('mainModal');
             const modalBody = document.getElementById('modalBody');
             const formsContainer = document.getElementById('formsContainer');
-
             modalWrapper.classList.remove('active');
+            while (modalBody.firstChild) { formsContainer.appendChild(modalBody.firstChild); }
+        }
 
-            // Devolver formularios a su contenedor oculto para no perderlos
-            while (modalBody.firstChild) {
-                formsContainer.appendChild(modalBody.firstChild);
+        /* --- FUNCIONES CRUD Y LOGICA --- */
+        let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let cacheReuniones = [];
+
+        async function cargarPublicadoresSelect(grupoId, mode = 'pending') {
+            try {
+                let url = `/api/publicadores?grupo=${grupoId}`;
+                if (mode === 'pending') url += `&pendientes=true`;
+                const res = await fetch(url); cachePublicadores = await res.json();
+                const sel = document.getElementById('selectPubInfo');
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">-- Seleccione --</option>';
+                cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
+                if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal;
+            } catch (e) { console.error(e); }
+        }
+
+        function cargarDatosPub() {
+            const id = document.getElementById('selectPubInfo').value;
+            const pub = cachePublicadores.find(p => p.id == id);
+            if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); }
+            else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; }
+        }
+
+        function actualizarEstadoHoras(privilegio) {
+            const inputHoras = document.getElementById('inputHoras');
+            const p = (privilegio || "").trim().toUpperCase();
+            const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX'];
+            if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; }
+        }
+
+        // --- INFORMES ---
+        async function cargarTablaInformes() {
+            const nombreMes = MESES[mesIndexActual];
+            document.getElementById('labelMesActual').textContent = nombreMes;
+            if (formMesSelect.value === "") formMesSelect.value = nombreMes;
+            const grp = isAdmin ? 0 : session.grupo;
+            const res = await fetch(`/api/informes?grupo=${grp}&mes=${nombreMes}`);
+            cacheInformes = await res.json();
+            const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
+            if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;">No hay informes.</td></tr>`; return; }
+            cacheInformes.forEach(d => {
+                const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
+                const grpCell = isAdmin ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : '';
+                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
+                const editBtn = `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
+                tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b></td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+            });
+        }
+
+        function editarInforme(id) {
+            const obj = cacheInformes.find(i => i.id == id); if (!obj) return;
+            const f = document.getElementById('formInforme');
+            document.getElementById('informeId').value = obj.id;
+            f.mes.value = obj.mes;
+            const processEdit = () => {
+                f.publicador_id.value = obj.publicador_id;
+                cargarDatosPub();
+                f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios;
+            };
+            const grupoTarget = isAdmin ? obj.grupo : session.grupo;
+            if (isAdmin) document.getElementById('infGrupoSelect').value = grupoTarget;
+            cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit);
+            abrirModal('informe', id);
+        }
+
+        function resetFormInforme(manualClean = false) {
+            document.getElementById('formInforme').reset();
+            document.getElementById('informeId').value = "";
+            document.getElementById('inputHoras').disabled = true;
+            if (manualClean) {
+                document.getElementById('readPriv3').value = "";
+                const grp = isAdmin ? document.getElementById('infGrupoSelect').value : session.grupo;
+                cargarPublicadoresSelect(grp, 'pending');
             }
         }
 
-        // --- LÓGICA REUNIONES ---
-        let cacheReuniones = [];
+        document.getElementById('formInforme').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const f = e.target; const rawData = Object.fromEntries(new FormData(f));
+            rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0;
+            const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
+            rawData.grupo = isAdmin ? document.getElementById('infGrupoSelect').value : session.grupo;
+            if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } }
+            if (id) rawData.mes = f.mes.value;
+            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
+            if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
+            else { Swal.fire('Error', 'No se pudo guardar', 'error'); }
+        });
+
+        // --- PUBLICADORES ---
+        async function cargarTablaPublicadores() {
+            let grp = isAdmin ? 0 : session.grupo;
+            const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null;
+            const fNombre = document.getElementById('pubFiltroNombre').value;
+            const fPriv3 = document.getElementById('pubFiltroPriv3').value;
+            if (isAdmin && fGrupo) grp = fGrupo;
+            const params = new URLSearchParams({ grupo: grp });
+            if (fNombre) params.append('nombre', fNombre);
+            if (fPriv3) params.append('priv3', fPriv3);
+            const res = await fetch(`/api/publicadores?${params.toString()}`);
+            cachePublicadores = await res.json();
+            const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
+
+            // STATS LOCALES
+            let stats = { total: 0, reg: 0, esp: 0, aux: 0, pub: 0, groups: {} };
+            for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
+
+            if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
+
+            cachePublicadores.forEach(d => {
+                stats.total++;
+                const p = (d.priv3 || '').toUpperCase();
+                if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
+                if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
+                const infoBadge = (d.informo === 'SI') ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
+                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
+                const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
+                tbody.innerHTML += `<tr><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+            });
+
+            document.getElementById('pub-stat-total').textContent = stats.total;
+            document.getElementById('pub-stat-reg').textContent = stats.reg;
+            document.getElementById('pub-stat-esp').textContent = stats.esp;
+            document.getElementById('pub-stat-aux').textContent = stats.aux;
+            document.getElementById('pub-stat-pub').textContent = stats.pub;
+            const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
+            Object.keys(stats.groups).forEach(g => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${g}</div><div class="g-value">${stats.groups[g]}</div></div>`; });
+        }
+
+        function editarPub(id) {
+            if (!isAdmin) return;
+            const obj = cachePublicadores.find(p => p.id == id); if (!obj) return;
+            const f = document.getElementById('formPublicador');
+            document.getElementById('pubId').value = obj.id;
+            document.getElementById('pubGrupoSelect').value = obj.grupo;
+            f.nombre.value = obj.nombre; f.priv1.value = obj.priv1; f.priv2.value = obj.priv2; f.priv3.value = obj.priv3; f.informo.value = obj.informo; f.comentario.value = obj.comentario;
+            abrirModal('publicador', id);
+        }
+
+        function resetFormPub() {
+            document.getElementById('formPublicador').reset();
+            document.getElementById('pubId').value = "";
+        }
+
+        document.getElementById('formPublicador').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            const id = document.getElementById('pubId').value;
+            if (!id) data.informo = 'NO';
+            const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores';
+            data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo;
+            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const json = await res.json();
+            if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); }
+        });
+
+        // --- REUNIONES ---
         async function cargarTablaReuniones() {
             const filterMes = document.getElementById('reuFilterMes').value;
             const url = filterMes ? `/api/reuniones?mes=${filterMes}` : '/api/reuniones';
@@ -1581,14 +1724,10 @@
             document.getElementById('reunionId').value = r.id;
             f.mes.value = r.mes; f.tipo.value = r.tipo; f.modalidad.value = r.modalidad;
             f.sem1.value = r.sem1 || 0; f.sem2.value = r.sem2 || 0; f.sem3.value = r.sem3 || 0; f.sem4.value = r.sem4 || 0; f.sem5.value = r.sem5 || 0;
-            abrirModal('reunion', r.id); // Abrir modal en modo edición
+            abrirModal('reunion', r.id);
         }
 
-        function resetFormReu() {
-            document.getElementById('formReunion').reset();
-            document.getElementById('reunionId').value = "";
-        }
-
+        function resetFormReu() { document.getElementById('formReunion').reset(); document.getElementById('reunionId').value = ""; }
         document.getElementById('formReunion').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target));
@@ -1596,7 +1735,7 @@
             const method = id ? 'PUT' : 'POST';
             const url = id ? `/api/reuniones/${id}` : '/api/reuniones';
             const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); cargarTablaReuniones(); }
+            if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); }
             else { Swal.fire('Error', 'No se pudo guardar', 'error'); }
         });
 
@@ -1619,9 +1758,11 @@
             }
         }
 
+        /* --- LOGICA LIMPIAR --- */
         function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
         function limpiarFiltrosPub() { document.getElementById('pubFiltroNombre').value = ''; document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
 
+        /* --- REPORTES --- */
         let currentReportData = [];
         async function generarReporte() {
             const form = document.getElementById('formReporte');
@@ -1654,6 +1795,7 @@
             doc.save('reporte_congregacion.pdf');
         }
 
+        /* --- DASHBOARD --- */
         async function cargarDashboard() {
             const mes = document.getElementById('dashMesSelect').value;
             const grp = isAdmin ? 0 : session.grupo;
@@ -1680,167 +1822,22 @@
             });
         }
 
-        let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = [];
-
-        async function cargarPublicadoresSelect(grupoId, mode = 'pending') {
-            try {
-                let url = `/api/publicadores?grupo=${grupoId}`;
-                if (mode === 'pending') url += `&pendientes=true`;
-                const res = await fetch(url);
-                cachePublicadores = await res.json();
-                const sel = document.getElementById('selectPubInfo');
-                const currentVal = sel.value;
-                sel.innerHTML = '<option value="">-- Seleccione --</option>';
-                cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
-                if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal;
-            } catch (e) { console.error(e); }
+        /* --- USUARIOS --- */
+        function editarUser(id) {
+            const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return;
+            const f = document.getElementById('formUsuario');
+            document.getElementById('userId').value = obj.id;
+            f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo;
+            abrirModal('usuario', id);
         }
-
-        function cargarDatosPub() {
-            const id = document.getElementById('selectPubInfo').value;
-            const pub = cachePublicadores.find(p => p.id == id);
-            if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); }
-            else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; }
-        }
-
-        function actualizarEstadoHoras(privilegio) {
-            const inputHoras = document.getElementById('inputHoras');
-            const p = (privilegio || "").trim().toUpperCase();
-            const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX'];
-            if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; }
-        }
-
-        async function cargarTablaInformes() {
-            const nombreMes = MESES[mesIndexActual];
-            document.getElementById('labelMesActual').textContent = nombreMes;
-            if (formMesSelect.value === "") formMesSelect.value = nombreMes;
-            const grp = isAdmin ? 0 : session.grupo;
-            const res = await fetch(`/api/informes?grupo=${grp}&mes=${nombreMes}`);
-            cacheInformes = await res.json();
-            const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
-            if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-inbox" style="font-size:2rem; display:block; margin-bottom:10px;"></i>No hay informes registrados en ${nombreMes}.</td></tr>`; return; }
-            cacheInformes.forEach(d => {
-                const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
-                const grpCell = isAdmin ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : '';
-                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                const editBtn = `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
-                tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b></td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
-            });
-        }
-
-        function editarInforme(id) {
-            const obj = cacheInformes.find(i => i.id == id); if (!obj) return;
-            const f = document.getElementById('formInforme');
-            document.getElementById('informeId').value = obj.id;
-            f.mes.value = obj.mes;
-
-            const processEdit = () => {
-                f.publicador_id.value = obj.publicador_id;
-                cargarDatosPub();
-                f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios;
-            };
-
-            const grupoTarget = isAdmin ? obj.grupo : session.grupo;
-            if (isAdmin) document.getElementById('infGrupoSelect').value = grupoTarget;
-
-            cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit);
-            abrirModal('informe', id); // Abrir modal en modo edición
-        }
-
-        function resetFormInforme(manualClean = false) {
-            document.getElementById('formInforme').reset();
-            document.getElementById('informeId').value = "";
-            document.getElementById('inputHoras').disabled = true;
-            if (manualClean) {
-                document.getElementById('readPriv3').value = "";
-                const grp = isAdmin ? document.getElementById('infGrupoSelect').value : session.grupo;
-                cargarPublicadoresSelect(grp, 'pending');
-            }
-        }
-
-        document.getElementById('formInforme').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const f = e.target; const rawData = Object.fromEntries(new FormData(f));
-            rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0;
-            const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
-            rawData.grupo = isAdmin ? document.getElementById('infGrupoSelect').value : session.grupo;
-            if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } }
-            // IMPORTANTE: Enviar mes para validación de cierre al editar
-            if (id) rawData.mes = f.mes.value;
-
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
-            const json = await res.json();
-            if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
-        });
-
-        /* --- PUBLICADORES --- */
-        async function cargarTablaPublicadores() {
-            let grp = isAdmin ? 0 : session.grupo;
-            const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null;
-            const fNombre = document.getElementById('pubFiltroNombre').value;
-            const fPriv3 = document.getElementById('pubFiltroPriv3').value;
-            if (isAdmin && fGrupo) grp = fGrupo;
-            const params = new URLSearchParams({ grupo: grp });
-            if (fNombre) params.append('nombre', fNombre);
-            if (fPriv3) params.append('priv3', fPriv3);
-            const res = await fetch(`/api/publicadores?${params.toString()}`);
-            cachePublicadores = await res.json();
-            const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
-
-            // STATS LOCALES
-            let stats = { total: 0, reg: 0, esp: 0, aux: 0, pub: 0, groups: {} };
-            for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
-
-            if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; }
-            else {
-                cachePublicadores.forEach(d => {
-                    stats.total++;
-                    const p = (d.priv3 || '').toUpperCase();
-                    if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
-                    if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
-
-                    const infoBadge = (d.informo === 'SI') ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
-                    const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                    const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
-                    tbody.innerHTML += `<tr><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
-                });
-            }
-            // Render Stats
-            document.getElementById('pub-stat-total').textContent = stats.total;
-            document.getElementById('pub-stat-reg').textContent = stats.reg;
-            document.getElementById('pub-stat-esp').textContent = stats.esp;
-            document.getElementById('pub-stat-aux').textContent = stats.aux;
-            document.getElementById('pub-stat-pub').textContent = stats.pub;
-            const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
-            Object.keys(stats.groups).forEach(g => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">GRUPO ${g}</div><div class="g-value">${stats.groups[g]}</div></div>`; });
-        }
-
-        function editarPub(id) {
-            if (!isAdmin) return;
-            const obj = cachePublicadores.find(p => p.id == id); if (!obj) return;
-            const f = document.getElementById('formPublicador');
-            document.getElementById('pubId').value = obj.id;
-            document.getElementById('pubGrupoSelect').value = obj.grupo;
-            f.nombre.value = obj.nombre; f.priv1.value = obj.priv1; f.priv2.value = obj.priv2; f.priv3.value = obj.priv3; f.informo.value = obj.informo; f.comentario.value = obj.comentario;
-            abrirModal('publicador', id); // Abrir modal en modo edición
-        }
-
-        function resetFormPub() {
-            document.getElementById('formPublicador').reset();
-            document.getElementById('pubId').value = "";
-        }
-
-        document.getElementById('formPublicador').addEventListener('submit', async (e) => {
+        function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
+        document.getElementById('formUsuario').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target));
-            const id = document.getElementById('pubId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores';
-            data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo;
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            const json = await res.json();
-            if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Publicador actualizado' : 'Publicador creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); }
+            const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
+            await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios();
         });
-
-        /* --- USUARIOS --- */
         async function cargarTablaUsuarios() {
             if (!isAdmin) return;
             const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json();
@@ -1849,38 +1846,6 @@
                 const editBtn = `<button class="btn-action btn-edit" onclick="editarUser(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
                 tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>${d.password}</td><td>${editBtn} <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td></tr>`;
             });
-        }
-
-        function editarUser(id) {
-            const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return;
-            const f = document.getElementById('formUsuario');
-            document.getElementById('userId').value = obj.id;
-            f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo;
-            abrirModal('usuario', id);
-        }
-
-        function resetFormUser() {
-            document.getElementById('formUsuario').reset();
-            document.getElementById('userId').value = "";
-        }
-
-        document.getElementById('formUsuario').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
-            await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios();
-        });
-
-        async function eliminar(entidad, id) {
-            const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' });
-            if (result.isConfirmed) {
-                let bodyData = { requester_group: session.grupo };
-                if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) bodyData.mes = inf.mes; }
-                const res = await fetch(`/api/${entidad}/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyData) });
-                const json = await res.json();
-                if (json.ok) { Toast.fire({ icon: 'success', title: 'Eliminado correctamente' }); if (entidad === 'informes') cargarTablaInformes(); if (entidad === 'publicadores') cargarTablaPublicadores(); if (entidad === 'usuarios') cargarTablaUsuarios(); if (entidad === 'reuniones') cargarTablaReuniones(); } else { Swal.fire('Error', json.msg, 'error'); }
-            }
         }
 
         showView('dashboard');
