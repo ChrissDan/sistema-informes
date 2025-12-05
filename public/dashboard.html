@@ -545,7 +545,7 @@
             padding: 25px;
         }
 
-        /* --- NAV MESES (REDISEÑADO) --- */
+        /* NAV MESES */
         .month-nav {
             display: flex;
             align-items: center;
@@ -554,21 +554,20 @@
             padding: 5px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .month-title {
             font-weight: 700;
             font-size: 0.9rem;
-            margin: 0 15px;
-            min-width: 120px;
+            margin: 0 10px;
+            min-width: 100px;
             text-align: center;
             color: #1e293b;
         }
 
         .btn-nav {
-            background: white;
-            border: 1px solid #e2e8f0;
+            background: transparent;
+            border: none;
             width: 32px;
             height: 32px;
             border-radius: 6px;
@@ -577,15 +576,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
         .btn-nav:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            transform: translateY(-1px);
+            background: #f1f5f9;
+            color: var(--primary);
         }
 
         /* STATS */
@@ -986,7 +981,7 @@
                         class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
             <li><a onclick="showView('informes'); toggleSidebar(false)" id="nav-informes"><i
                         class="fa-solid fa-file-lines"></i> Informes</a></li>
-            <li><a onclick="showView('reuniones'); toggleSidebar(false)" id="nav-reuniones"><i
+            <li class="admin-only"><a onclick="showView('reuniones'); toggleSidebar(false)" id="nav-reuniones"><i
                         class="fa-solid fa-users-rectangle"></i> Reuniones</a></li>
             <li><a onclick="showView('publicadores'); toggleSidebar(false)" id="nav-publicadores"><i
                         class="fa-solid fa-users"></i> Publicadores</a></li>
@@ -1611,10 +1606,13 @@
             const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
             rawData.grupo = isAdmin ? document.getElementById('infGrupoSelect').value : session.grupo;
             if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } }
+            // IMPORTANTE: Enviar mes para validación de cierre al editar
             if (id) rawData.mes = f.mes.value;
+
             const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
+            const json = await res.json();
             if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
-            else { Swal.fire('Error', 'No se pudo guardar', 'error'); }
+            else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
         });
 
         // --- PUBLICADORES ---
@@ -1642,6 +1640,7 @@
                 const p = (d.priv3 || '').toUpperCase();
                 if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
                 if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
+
                 const infoBadge = (d.informo === 'SI') ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
                 const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
