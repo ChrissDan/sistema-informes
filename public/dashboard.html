@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sistema de Gestión</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,106 +14,187 @@
             --primary-dark: #1d4ed8; 
             --sidebar-bg: #0f172a; 
             --sidebar-text: #f1f5f9; 
-            --bg: #f3f4f6; 
+            --bg: #f1f5f9; 
             --danger: #ef4444; 
             --success: #22c55e; 
             --text-main: #334155;
+            --sidebar-width: 260px;
         }
         
+        * { box-sizing: border-box; }
+
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; color: var(--text-main); }
         
-        .sidebar { width: 260px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 4px 0 10px rgba(0,0,0,0.05); }
-        .sidebar-header { padding: 25px 20px; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #1e293b; text-align: center; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .nav-links { list-style: none; padding: 0 15px; margin: 25px 0; flex: 1; }
-        .nav-links li { margin-bottom: 8px; }
-        .nav-links a { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 8px; transition: all 0.2s; cursor: pointer; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { background: var(--primary); color: white; transform: translateX(5px); }
-        .nav-links a i { width: 20px; text-align: center; font-size: 1.1rem; }
-        
-        .user-panel { padding: 20px; border-top: 1px solid #1e293b; background: #0b1120; }
-        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .user-avatar { width: 35px; height: 35px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
-        .btn-logout { color: #f87171; text-decoration: none; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        .btn-logout:hover { color: #fca5a5; }
+        /* --- SIDEBAR (RESPONSIVE) --- */
+        .sidebar { 
+            width: var(--sidebar-width); 
+            background: var(--sidebar-bg); 
+            color: var(--sidebar-text); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            height: 100%;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
 
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        h1 { margin: 0; font-size: 1.5rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        /* Overlay para móvil */
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 900;
+            display: none; opacity: 0; transition: opacity 0.3s;
+        }
+        .sidebar-overlay.active { display: block; opacity: 1; }
+
+        .sidebar-header { padding: 20px; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid #1e293b; text-align: center; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .nav-links { list-style: none; padding: 0 15px; margin: 20px 0; flex: 1; overflow-y: auto; }
+        .nav-links li { margin-bottom: 5px; }
+        .nav-links a { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 8px; transition: all 0.2s; cursor: pointer; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { background: var(--primary); color: white; }
+        .nav-links a i { width: 24px; text-align: center; font-size: 1.1rem; }
         
+        .user-panel { padding: 15px 20px; border-top: 1px solid #1e293b; background: #0b1120; }
+        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .user-avatar { width: 35px; height: 35px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; }
+        .btn-logout { color: #f87171; text-decoration: none; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; padding: 5px 0; }
+        
+        /* --- MAIN CONTENT --- */
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; }
+        
+        /* HEADER SUPERIOR */
+        header { 
+            background: white; 
+            padding: 15px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        h1 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        
+        /* Botón Hamburguesa (Móvil) */
+        .menu-toggle {
+            display: none; /* Oculto en escritorio */
+            background: none; border: none; font-size: 1.5rem; color: #334155; cursor: pointer; padding: 0;
+        }
+
+        /* Área de contenido con scroll */
+        .content-scroll { padding: 20px; overflow-y: auto; flex: 1; }
+
+        /* --- CARDS & UI --- */
         .section-view { display: none; animation: fadeIn 0.3s; }
         .section-view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 25px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
-        h2 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; font-size: 1.2rem; }
-        h3 { margin-top: 0; font-size: 1.1rem; color: #475569; display: flex; align-items: center; gap: 10px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        
+        /* Cabeceras de Card Flexibles */
+        .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
+        
+        h3 { margin: 0; font-size: 1.1rem; color: #475569; display: flex; align-items: center; gap: 10px; }
 
-        .table-container { overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background: #f8fafc; padding: 14px 20px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600; color: #64748b; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
-        td { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
+        /* TABLAS RESPONSIVE */
+        .table-container { 
+            width: 100%; 
+            overflow-x: auto; /* Scroll horizontal en móvil */
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 600px; /* Fuerza el ancho para activar scroll */ }
+        th { background: #f8fafc; padding: 12px 15px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; white-space: nowrap; }
+        td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
         tr:hover { background-color: #f8fafc; }
 
-        .btn-action { width: 32px; height: 32px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; margin-right: 4px; }
+        /* BOTONES */
+        .btn-action { width: 32px; height: 32px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; }
         .btn-del { background: #fee2e2; color: #dc2626; }
-        .btn-del:hover { background: #fecaca; }
         .btn-edit { background: #dbeafe; color: #2563eb; }
-        .btn-edit:hover { background: #bfdbfe; }
         
-        .btn-primary { background: var(--primary); color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-primary { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 0.95rem; }
+        .btn-cancel { background: #e2e8f0; color: #475569; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; display: none; font-weight: 500; margin-left: 10px; }
+
+        /* FORMULARIOS RESPONSIVE */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100%, 1fr)); gap: 15px; margin-bottom: 20px; }
+        @media (min-width: 640px) { .form-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
         
-        .btn-cancel { background: #e2e8f0; color: #475569; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; display: none; font-weight: 500; margin-left: 10px; }
-        .btn-cancel:hover { background: #cbd5e1; }
+        label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #fff; } /* 16px font evita zoom en iOS */
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        input:disabled { background-color: #f1f5f9; color: #94a3b8; }
 
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 8px; font-weight: 600; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s; background: #fff; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        input:disabled { background-color: #f1f5f9; cursor: not-allowed; color: #94a3b8; }
-
-        .month-nav { display: flex; align-items: center; justify-content: center; background: #fff; padding: 8px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 20px; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-        .month-title { font-weight: 700; font-size: 1rem; margin: 0 20px; min-width: 140px; text-align: center; color: #1e293b; }
-        .btn-nav { background: transparent; border: none; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: #64748b; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        /* NAV MESES */
+        .month-nav { display: flex; align-items: center; justify-content: center; background: #fff; padding: 5px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .month-title { font-weight: 700; font-size: 0.9rem; margin: 0 10px; min-width: 100px; text-align: center; color: #1e293b; }
+        .btn-nav { background: transparent; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; }
         .btn-nav:hover { background: #f1f5f9; color: var(--primary); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: transform 0.2s; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .stat-icon { position: absolute; top: -10px; right: -10px; font-size: 5rem; color: #f1f5f9; z-index: 0; opacity: 0.5; }
+        /* DASHBOARD CARDS */
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
+        @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+
+        .stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .stat-icon { position: absolute; top: -5px; right: -5px; font-size: 4rem; color: #f1f5f9; z-index: 0; opacity: 0.6; }
         .stat-content { position: relative; z-index: 1; }
-        .stat-card h4 { margin: 0 0 5px 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .stat-value { font-size: 2.5rem; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
-        .stat-detail { margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 0.9rem; color: #475569; display: flex; justify-content: space-between; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: #0f172a; }
         
-        .groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
-        .group-item { background: white; border: 1px solid #e2e8f0; padding: 15px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; }
-        .group-name { font-weight: 600; color: #334155; font-size: 0.95rem; }
-        .progress-bar-bg { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 8px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .group-perc { font-weight: 700; color: var(--primary); margin-left: 15px; min-width: 45px; text-align: right; }
+        /* BARRAS PROGRESO */
+        .groups-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 768px) { .groups-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } }
+        
+        .group-item { background: white; border: 1px solid #e2e8f0; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .progress-bar-bg { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 6px; }
+        .progress-bar-fill { height: 100%; background: var(--primary); width: 0%; border-radius: 3px; transition: width 0.8s; }
 
         .admin-only { display: none; }
-        .badge { padding: 4px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .badge { padding: 4px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
         .badge-si { background: #dcfce7; color: #15803d; } .badge-no { background: #fee2e2; color: #b91c1c; }
         .badge-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         .badge-grp { background: #e0e7ff; color: #4338ca; }
+
+        /* --- MEDIA QUERIES (MÓVIL) --- */
+        @media (max-width: 768px) {
+            .sidebar { 
+                position: fixed; 
+                left: -260px; /* Oculto por defecto */
+                top: 0; height: 100%; 
+            }
+            .sidebar.active { left: 0; }
+            
+            .menu-toggle { display: block; } /* Mostrar hamburguesa */
+            
+            .main-content { width: 100%; }
+            .content-scroll { padding: 15px; }
+            
+            h1 { font-size: 1.1rem; }
+            .card { padding: 15px; }
+            
+            /* Ajustes de botones para toque */
+            .btn-primary, .btn-cancel { width: 100%; justify-content: center; padding: 12px; }
+            
+            .nav-links a { padding: 14px 15px; } /* Áreas de toque más grandes */
+        }
     </style>
 </head>
 <body>
 
-    <nav class="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <i class="fa-solid fa-layer-group"></i>
             <span id="sidebarTitle">Gestión Cong.</span>
         </div>
         
         <ul class="nav-links">
-            <li><a onclick="showView('dashboard')" class="active" id="nav-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-            <li><a onclick="showView('informes')" id="nav-informes"><i class="fa-solid fa-file-lines"></i> Informes</a></li>
-            <li><a onclick="showView('publicadores')" id="nav-publicadores"><i class="fa-solid fa-users"></i> Publicadores</a></li>
-            <li class="admin-only"><a onclick="showView('usuarios')" id="nav-usuarios"><i class="fa-solid fa-user-shield"></i> Usuarios</a></li>
+            <li><a onclick="showView('dashboard'); toggleSidebar(false)" class="active" id="nav-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+            <li><a onclick="showView('informes'); toggleSidebar(false)" id="nav-informes"><i class="fa-solid fa-file-lines"></i> Informes</a></li>
+            <li><a onclick="showView('publicadores'); toggleSidebar(false)" id="nav-publicadores"><i class="fa-solid fa-users"></i> Publicadores</a></li>
+            <li class="admin-only"><a onclick="showView('usuarios'); toggleSidebar(false)" id="nav-usuarios"><i class="fa-solid fa-user-shield"></i> Usuarios</a></li>
         </ul>
         
         <div class="user-panel">
@@ -130,149 +211,170 @@
 
     <main class="main-content">
         <header>
-            <h1 id="pageTitle"><i class="fa-solid fa-gauge-high" style="color:var(--primary)"></i> Panel de Control</h1>
+            <div class="header-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h1 id="pageTitle"><i class="fa-solid fa-gauge-high" style="color:var(--primary)"></i> Panel</h1>
+            </div>
         </header>
         
-        <div id="view-dashboard" class="section-view active">
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #f1f5f9; padding-bottom:15px;">
-                    <h3><i class="fa-solid fa-calendar-day"></i> Resumen Mensual</h3>
-                    <select id="dashMesSelect" onchange="cargarDashboard()" style="width:auto; padding:8px 30px 8px 12px; font-weight:600; color:var(--primary); border-color:var(--primary); cursor:pointer; background-image:none;"></select>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <i class="fa-solid fa-person-walking stat-icon"></i>
-                        <div class="stat-content">
-                            <h4>PUB + PNB</h4>
-                            <div class="stat-value" id="stat-pub-count">0</div>
-                            <div class="stat-detail">
-                                <span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-pub-cursos">0</strong></span>
+        <div class="content-scroll">
+            
+            <div id="view-dashboard" class="section-view active">
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h3><i class="fa-solid fa-calendar-day"></i> Resumen</h3>
+                        <select id="dashMesSelect" onchange="cargarDashboard()" style="padding:8px; font-weight:600; color:var(--primary); border-color:var(--primary);"></select>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <i class="fa-solid fa-person-walking stat-icon"></i>
+                            <div class="stat-content">
+                                <h4>PUB + PNB</h4>
+                                <div class="stat-value" id="stat-pub-count">0</div>
+                                <div class="stat-detail"><span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-pub-cursos">0</strong></span></div>
                             </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fa-solid fa-stopwatch stat-icon"></i>
+                            <div class="stat-content">
+                                <h4>AUXILIARES</h4>
+                                <div class="stat-value" id="stat-aux-count">0</div>
+                                <div class="stat-detail">
+                                    <span><i class="fa-regular fa-clock"></i> <strong id="stat-aux-horas">0</strong>h</span>
+                                    <span><i class="fa-solid fa-book"></i> <strong id="stat-aux-cursos">0</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fa-solid fa-briefcase stat-icon"></i>
+                            <div class="stat-content">
+                                <h4>REGULARES</h4>
+                                <div class="stat-value" id="stat-reg-count">0</div>
+                                <div class="stat-detail">
+                                    <span><i class="fa-regular fa-clock"></i> <strong id="stat-reg-horas">0</strong>h</span>
+                                    <span><i class="fa-solid fa-book"></i> <strong id="stat-reg-cursos">0</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top:30px; margin-bottom:15px;"><i class="fa-solid fa-chart-bar"></i> Progreso Informes</h3>
+                    <div id="groups-progress-container" class="groups-grid"></div>
+                </div>
+            </div>
+
+            <div id="view-informes" class="section-view">
+                <div class="card">
+                    <h3 id="tituloFormInforme"><i class="fa-solid fa-circle-plus"></i> Nuevo Informe</h3>
+                    <form id="formInforme" class="form-grid">
+                        <input type="hidden" name="id" id="informeId">
+                        <div class="admin-only" style="grid-column: 1/-1;">
+                            <label>Grupo (Admin):</label>
+                            <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                            </select>
+                        </div>
+                        <div><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
+                        <div style="grid-column: span 2"><label>Publicador</label><select id="selectPubInfo" name="publicador_id" required onchange="cargarDatosPub()"><option value="">Cargando...</option></select></div>
+                        <div><label>Privilegio</label><input id="readPriv3" readonly style="background:#f8fafc; color:#64748b;"></div>
+                        <div><label>¿Predicó?</label><select name="predico" required><option value="">-</option><option value="SI">SÍ</option><option value="NO">NO</option></select></div>
+                        <div><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5" min="0"></div>
+                        <div><label>Cursos</label><input type="number" name="cursos" min="0"></div>
+                        <div style="grid-column: 1/-1"><label>Comentario</label><input name="comentarios" placeholder="Notas..."></div>
+                        <div style="grid-column: 1/-1; display:flex; flex-wrap:wrap; gap:10px;">
+                            <button type="submit" class="btn-primary" id="btnSaveInfo"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+                            <button type="button" class="btn-cancel" id="btnCancelInfo" onclick="resetFormInforme()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial</h3>
+                        <div class="month-nav">
+                            <button class="btn-nav" onclick="cambiarMes(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                            <div id="labelMesActual" class="month-title">...</div>
+                            <button class="btn-nav" onclick="cambiarMes(1)"><i class="fa-solid fa-chevron-right"></i></button>
                         </div>
                     </div>
                     
-                    <div class="stat-card">
-                        <i class="fa-solid fa-stopwatch stat-icon"></i>
-                        <div class="stat-content">
-                            <h4>AUXILIARES</h4>
-                            <div class="stat-value" id="stat-aux-count">0</div>
-                            <div class="stat-detail">
-                                <span><i class="fa-regular fa-clock"></i> <strong id="stat-aux-horas">0</strong>h</span>
-                                <span><i class="fa-solid fa-book"></i> <strong id="stat-aux-cursos">0</strong></span>
-                            </div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th class="admin-only">Grp</th><th>Nombre</th><th>Priv</th><th>Hrs</th><th>Cur</th><th>Pred</th><th>Comentario</th><th>Acciones</th></tr></thead>
+                            <tbody id="tablaInformes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-publicadores" class="section-view">
+                <div class="card admin-only">
+                    <h3 id="tituloFormPub"><i class="fa-solid fa-user-plus"></i> Agregar Publicador</h3>
+                    <form id="formPublicador" class="form-grid">
+                        <input type="hidden" name="id" id="pubId">
+                        <div class="admin-only"><label>Grupo</label><select id="pubGrupoSelect" name="grupo_manual"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>
+                        <div style="grid-column: span 2"><label>Nombre Completo</label><input name="nombre" required></div>
+                        <div><label>Priv 1</label><select name="priv1"><option value="">-</option><option value="SG">SG</option><option value="AXG">AXG</option></select></div>
+                        <div><label>Priv 2</label><select name="priv2"><option value="">-</option><option value="A">A</option><option value="SM">SM</option></select></div>
+                        <div><label>Priv 3</label><select name="priv3"><option>PUB</option><option>REG</option><option>AUX</option><option>AUX I</option><option>AUX M</option><option>PNB</option></select></div>
+                        <div><label>¿Informó?</label><select name="informo"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                        <div style="grid-column: span 2"><label>Comentario</label><input name="comentario"></div>
+                        <div style="align-self:end; display:flex; gap:10px; grid-column: 1/-1;">
+                            <button type="submit" class="btn-primary" id="btnSavePub"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+                            <button type="button" class="btn-cancel" id="btnCancelPub" onclick="resetFormPub()"><i class="fa-solid fa-xmark"></i></button>
                         </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3><i class="fa-solid fa-list"></i> Lista Detallada</h3>
+                    <div class="table-container">
+                        <table><thead><tr><th>Grp</th><th>Nombre</th><th>P1</th><th>P2</th><th>P3</th><th>Info?</th><th>Acciones</th></tr></thead><tbody id="tablaPublicadores"></tbody></table>
                     </div>
+                </div>
+            </div>
 
-                    <div class="stat-card">
-                        <i class="fa-solid fa-briefcase stat-icon"></i>
-                        <div class="stat-content">
-                            <h4>REGULARES</h4>
-                            <div class="stat-value" id="stat-reg-count">0</div>
-                            <div class="stat-detail">
-                                <span><i class="fa-regular fa-clock"></i> <strong id="stat-reg-horas">0</strong>h</span>
-                                <span><i class="fa-solid fa-book"></i> <strong id="stat-reg-cursos">0</strong></span>
-                            </div>
+            <div id="view-usuarios" class="section-view">
+                <div class="card">
+                    <h3 id="tituloFormUser"><i class="fa-solid fa-user-shield"></i> Crear Usuario</h3>
+                    <form id="formUsuario" class="form-grid">
+                        <input type="hidden" name="id" id="userId">
+                        <div><label>Nombre</label><input name="nombre" required></div>
+                        <div><label>Correo</label><input name="correo" type="email" required></div>
+                        <div><label>Contraseña</label><input name="password" required></div>
+                        <div><label>Grupo</label><select name="grupo"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="0">0 (Admin)</option></select></div>
+                        <div style="align-self:end; display:flex; gap:10px; grid-column: 1/-1;">
+                            <button type="submit" class="btn-primary" id="btnSaveUser"><i class="fa-solid fa-plus"></i> Crear</button>
+                            <button type="button" class="btn-cancel" id="btnCancelUser" onclick="resetFormUser()"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-
-                <h3 style="margin-top:40px; margin-bottom:20px;"><i class="fa-solid fa-chart-bar"></i> Progreso de Informes</h3>
-                <div id="groups-progress-container" class="groups-grid"></div>
-            </div>
-        </div>
-
-        <div id="view-informes" class="section-view">
-            <div class="card">
-                <h3 id="tituloFormInforme"><i class="fa-solid fa-circle-plus"></i> Nuevo Informe</h3>
-                <form id="formInforme" class="form-grid">
-                    <input type="hidden" name="id" id="informeId">
-                    <div class="admin-only" style="grid-column: 1/-1;">
-                        <label>Grupo (Admin):</label>
-                        <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
-                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-                            <option value="7">7</option><option value="8">8</option>
-                        </select>
+                <div class="card"><h3><i class="fa-solid fa-users-gear"></i> Lista Usuarios</h3>
+                    <div class="table-container">
+                        <table><thead><tr><th>Nombre</th><th>Correo</th><th>Grupo</th><th>Clave</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table>
                     </div>
-                    <div><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
-                    <div style="grid-column: span 2"><label>Publicador</label><select id="selectPubInfo" name="publicador_id" required onchange="cargarDatosPub()"><option value="">Cargando...</option></select></div>
-                    <div><label>Privilegio</label><input id="readPriv3" readonly style="background:#f8fafc; color:#64748b;"></div>
-                    <div><label>¿Predicó?</label><select name="predico" required><option value="">-</option><option value="SI">SÍ</option><option value="NO">NO</option></select></div>
-                    <div><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5" min="0"></div>
-                    <div><label>Cursos</label><input type="number" name="cursos" min="0"></div>
-                    <div style="grid-column: 1/-1"><label>Comentario</label><input name="comentarios" placeholder="Notas adicionales..."></div>
-                    <div style="grid-column: 1/-1; display:flex; gap:10px;">
-                        <button type="submit" class="btn-primary" id="btnSaveInfo"><i class="fa-solid fa-floppy-disk"></i> Guardar Informe</button>
-                        <button type="button" class="btn-cancel" id="btnCancelInfo" onclick="resetFormInforme()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
-                    </div>
-                </form>
-            </div>
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial</h3>
-                    <div class="month-nav">
-                        <button class="btn-nav" onclick="cambiarMes(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-                        <div id="labelMesActual" class="month-title">...</div>
-                        <button class="btn-nav" onclick="cambiarMes(1)"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                    <button class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;" onclick="cargarTablaInformes()"><i class="fa-solid fa-rotate"></i> Recargar</button>
-                </div>
-                <div class="table-container">
-                    <table><thead><tr><th class="admin-only">Grp</th><th>Nombre</th><th>Priv</th><th>Hrs</th><th>Cur</th><th>Pred</th><th>Comentario</th><th>Acciones</th></tr></thead><tbody id="tablaInformes"></tbody></table>
                 </div>
             </div>
         </div>
-
-        <div id="view-publicadores" class="section-view">
-            <div class="card admin-only">
-                <h3 id="tituloFormPub"><i class="fa-solid fa-user-plus"></i> Agregar Publicador</h3>
-                <form id="formPublicador" class="form-grid">
-                    <input type="hidden" name="id" id="pubId">
-                    <div class="admin-only"><label>Grupo</label><select id="pubGrupoSelect" name="grupo_manual"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>
-                    <div style="grid-column: span 2"><label>Nombre Completo</label><input name="nombre" required></div>
-                    <div><label>Priv 1</label><select name="priv1"><option value="">-</option><option value="SG">SG</option><option value="AXG">AXG</option></select></div>
-                    <div><label>Priv 2</label><select name="priv2"><option value="">-</option><option value="A">A</option><option value="SM">SM</option></select></div>
-                    <div><label>Priv 3</label><select name="priv3"><option>PUB</option><option>REG</option><option>AUX</option><option>AUX I</option><option>AUX M</option><option>PNB</option></select></div>
-                    <div><label>¿Informó?</label><select name="informo"><option value="SI">SI</option><option value="NO">NO</option></select></div>
-                    <div style="grid-column: span 2"><label>Comentario</label><input name="comentario"></div>
-                    <div style="align-self:end; display:flex; gap:10px;">
-                        <button type="submit" class="btn-primary" id="btnSavePub"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
-                        <button type="button" class="btn-cancel" id="btnCancelPub" onclick="resetFormPub()"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                </form>
-            </div>
-            <div class="card">
-                <h3><i class="fa-solid fa-list"></i> Lista Detallada</h3>
-                <div class="table-container">
-                    <table><thead><tr><th>Grp</th><th>Nombre</th><th>P1</th><th>P2</th><th>P3</th><th>Info?</th><th>Acciones</th></tr></thead><tbody id="tablaPublicadores"></tbody></table>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-usuarios" class="section-view">
-            <div class="card">
-                <h3 id="tituloFormUser"><i class="fa-solid fa-user-shield"></i> Crear Usuario</h3>
-                <form id="formUsuario" class="form-grid">
-                    <input type="hidden" name="id" id="userId">
-                    <div><label>Nombre</label><input name="nombre" required></div>
-                    <div><label>Correo</label><input name="correo" type="email" required></div>
-                    <div><label>Contraseña</label><input name="password" required></div>
-                    <div><label>Grupo</label><select name="grupo"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="0">0 (Admin)</option></select></div>
-                    <div style="align-self:end; display:flex; gap:10px;">
-                        <button type="submit" class="btn-primary" id="btnSaveUser"><i class="fa-solid fa-plus"></i> Crear</button>
-                        <button type="button" class="btn-cancel" id="btnCancelUser" onclick="resetFormUser()"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                </form>
-            </div>
-            <div class="card"><h3><i class="fa-solid fa-users-gear"></i> Lista Usuarios</h3><table><thead><tr><th>Nombre</th><th>Correo</th><th>Grupo</th><th>Clave</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div>
-        </div>
-
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
+        // LOGICA DE TOGGLE MENU MOVIL
+        function toggleSidebar(force) {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            if (force === false) {
+                sb.classList.remove('active');
+                ov.classList.remove('active');
+            } else {
+                sb.classList.toggle('active');
+                ov.classList.toggle('active');
+            }
+        }
+
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (!session) window.location.href = '/index.html';
 
@@ -281,7 +383,6 @@
 
         const isAdmin = session.grupo === 0;
         
-        // --- PERSONALIZACIÓN UI ---
         const sidebarTitle = document.getElementById('sidebarTitle');
         if(isAdmin) {
             sidebarTitle.textContent = "ADMINISTRADOR";
@@ -340,7 +441,6 @@
             if (viewName === 'dashboard') cargarDashboard();
         }
 
-        // --- DASHBOARD ---
         async function cargarDashboard() {
             const mes = document.getElementById('dashMesSelect').value;
             const grp = isAdmin ? 0 : session.grupo; 
@@ -467,7 +567,8 @@
             document.getElementById('btnCancelInfo').style.display = "inline-flex";
             document.getElementById('btnCancelInfo').style.alignItems = "center";
             document.getElementById('btnCancelInfo').style.gap = "5px";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Scroll al formulario (especialmente útil en móvil)
+            document.getElementById('tituloFormInforme').scrollIntoView({ behavior: 'smooth' });
         }
 
         function resetFormInforme() {
@@ -528,7 +629,7 @@
             document.getElementById('btnSavePub').innerHTML = `<i class="fa-solid fa-rotate"></i> Actualizar`;
             document.getElementById('btnCancelPub').style.display = "inline-flex";
             document.getElementById('btnCancelPub').style.alignItems = "center";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('tituloFormPub').scrollIntoView({ behavior: 'smooth' });
         }
 
         function resetFormPub() {
