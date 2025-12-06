@@ -152,32 +152,44 @@ app.get('/api/informes', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// POST: CREAR INFORME
 app.post('/api/informes', async (req, res) => {
     let { mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios } = req.body;
     const horasFinal = horas || 0; const cursosFinal = cursos || 0;
+    
     const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
     if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
+    
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
         await conn.query(`INSERT INTO informes (mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horasFinal, cursosFinal, predico, comentarios]);
-        if (predico === 'SI' || horasFinal > 0) { await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]); }
+        
+        // CORRECCIÓN: Quitamos el IF. Si se guarda un informe, SIEMPRE informó 'SI'.
+        await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]);
+        
         await conn.commit(); res.json({ ok: true });
     } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error' }); } finally { conn.release(); }
 });
 
+// PUT: EDITAR INFORME
 app.put('/api/informes/:id', async (req, res) => {
     let { horas, cursos, predico, comentarios, publicador_id, mes } = req.body;
     const horasFinal = horas || 0; const cursosFinal = cursos || 0;
+    
     if(mes) {
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
     }
+    
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
         await conn.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=? WHERE id=?', [horasFinal, cursosFinal, predico, comentarios, req.params.id]);
-        if (predico === 'SI' || horasFinal > 0) { await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]); }
+        
+        // CORRECCIÓN: Al editar, aseguramos que siga marcado como SI.
+        await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]); 
+        
         await conn.commit(); res.json({ ok: true });
     } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error' }); } finally { conn.release(); }
 });

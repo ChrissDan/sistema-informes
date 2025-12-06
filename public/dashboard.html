@@ -296,12 +296,13 @@
         </form>
         <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
-            <input type="hidden" name="informo" value="NO"> 
+            
             <div class="global-view" style="grid-column: 1/-1;"><label>Grupo</label><select id="pubGrupoSelect" name="grupo_manual"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>
-            <div style="grid-column: 1/-1;"><label>Nombre Completo</label><input name="nombre" required></div>
+            <div style="grid-column: 1/-1;"><label>Nombre Completo</label><input name="nombre" required></div>           
             <div class="col-span-1"><label>Priv 1</label><select name="priv1"><option value="">-</option><option value="SG">SG</option><option value="AXG">AXG</option></select></div>
             <div class="col-span-1"><label>Priv 2</label><select name="priv2"><option value="">-</option><option value="A">A</option><option value="SM">SM</option></select></div>
             <div class="col-span-1"><label>Priv 3</label><select name="priv3"><option>PUB</option><option>REG</option><option>AUX</option><option>AUX I</option><option>AUX M</option><option>PNB</option></select></div>
+            <div class="col-span-1"><label>¿Informó?</label><select name="informo"><option value="NO">NO</option><option value="SI">SÍ</option></select></div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentario" rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%" id="btnSavePub">Guardar</button></div>
         </form>
@@ -587,7 +588,16 @@
             const f = document.getElementById('formPublicador');
             document.getElementById('pubId').value = obj.id;
             document.getElementById('pubGrupoSelect').value = obj.grupo;
-            f.nombre.value = obj.nombre; f.priv1.value = obj.priv1; f.priv2.value = obj.priv2; f.priv3.value = obj.priv3; f.informo.value = obj.informo; f.comentario.value = obj.comentario;
+            
+            f.nombre.value = obj.nombre; 
+            f.priv1.value = obj.priv1; 
+            f.priv2.value = obj.priv2; 
+            f.priv3.value = obj.priv3; 
+            
+            // AGREGAR ESTA LÍNEA PARA QUE EL SELECT TOME EL VALOR CORRECTO
+            f.informo.value = obj.informo; 
+            
+            f.comentario.value = obj.comentario;
             abrirModal('publicador', id);
         }
 
@@ -600,7 +610,10 @@
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target));
             const id = document.getElementById('pubId').value; 
-            if (!id) data.informo = 'NO';
+            
+            // Esta línea ya no es crítica porque el select envía valor, pero no estorba
+            // if (!id) data.informo = 'NO'; 
+
             const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores';
             data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo; 
             const res = await fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)});
@@ -823,7 +836,7 @@
                 }
             }
         }
-
+        
         mesIndexActual
 
         showView('dashboard');
