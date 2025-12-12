@@ -87,7 +87,7 @@ app.get('/api/dashboard', async (req, res) => {
         const [reportsGroup] = await conn.query(qReports, paramsMes);
         const [pubStats] = await conn.query(`SELECT COUNT(*) as count, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('PUB', 'PNB') ${filterGrp}`, paramsMes);
         const [auxStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('AUX I', 'AUX M', 'AUX') ${filterGrp}`, paramsMes);
-        const [regStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('REG', 'ESP') ${filterGrp}`, paramsMes);
+        const [regStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('REG') ${filterGrp}`, paramsMes);
         conn.release();
         res.json({ groups: { totals: totalPubs, reports: reportsGroup }, stats: { pub: pubStats[0], aux: auxStats[0], reg: regStats[0] } });
     } catch (error) { res.status(500).json({ error: error.message }); }
