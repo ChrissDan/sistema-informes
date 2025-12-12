@@ -38,6 +38,18 @@
             color: var(--text-main);
         }
 
+        .swal2-container {
+            z-index: 99999 !important;
+        }
+
+        .modal-wrapper {
+            z-index: 10000 !important;
+        }
+
+        .sidebar {
+            z-index: 5000 !important;
+        }
+
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
@@ -47,7 +59,7 @@
             flex-shrink: 0;
             height: 100%;
             transition: transform 0.3s ease;
-            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
         }
 
         .sidebar-overlay {
@@ -57,7 +69,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 900;
+            z-index: 4000;
             display: none;
             opacity: 0;
             transition: opacity 0.3s;
@@ -249,9 +261,13 @@
             gap: 10px;
         }
 
+        /* TABLES - CABECERA FIJA */
         .table-container {
             width: 100%;
-            overflow-x: auto;
+            overflow: auto;
+            /* Scroll en ambas direcciones si hace falta */
+            max-height: 70vh;
+            /* Altura máxima para activar el scroll vertical */
             border-radius: 8px;
             border: 1px solid #e2e8f0;
         }
@@ -264,7 +280,14 @@
         }
 
         th {
+            position: sticky;
+            /* Fija la cabecera */
+            top: 0;
+            /* Al tope del contenedor */
+            z-index: 20;
+            /* Por encima de las filas */
             background: #f8fafc;
+            /* Fondo para que no se trasluzca */
             padding: 12px 15px;
             text-align: left;
             border-bottom: 2px solid #e2e8f0;
@@ -273,6 +296,8 @@
             font-size: 0.75rem;
             text-transform: uppercase;
             white-space: nowrap;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+            /* Sombra sutil al hacer scroll */
         }
 
         td {
@@ -1091,6 +1116,7 @@
                                     <th>Priv</th>
                                     <th>Hrs</th>
                                     <th>Cur</th>
+                                    <th>Cred</th>
                                     <th>Pred</th>
                                     <th>Comentario</th>
                                     <th>Acciones</th>
@@ -1280,6 +1306,7 @@
                                     <th>Priv</th>
                                     <th>Hrs</th>
                                     <th>Cur</th>
+                                    <th>Cred</th>
                                     <th>Pred</th>
                                     <th>Comentario</th>
                                 </tr>
@@ -1291,6 +1318,10 @@
                         <div class="summary-box">
                             <div class="summary-title">Total Horas</div>
                             <div class="summary-val" id="repSumHoras">0</div>
+                        </div>
+                        <div class="summary-box">
+                            <div class="summary-title">Total Crédito</div>
+                            <div class="summary-val" id="repSumCredito">0</div>
                         </div>
                         <div class="summary-box">
                             <div class="summary-title">Total Cursos</div>
@@ -1358,6 +1389,10 @@
                 </select></div>
             <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
                     min="0"></div>
+
+            <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
+                    step="0.5" min="0"></div>
+
             <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0"></div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
                     rows="3"></textarea></div>
@@ -1461,7 +1496,7 @@
 
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; }
-        else if (isSupervisor) { sidebarTitle.textContent = "Coordinador - Secretario"; document.getElementById('userRole').textContent = "SG - AXG"; }
+        else if (isSupervisor) { sidebarTitle.textContent = "COORDINADOR - SECRETARIO"; document.getElementById('userRole').textContent = "SG - AXG"; }
         else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "SG - AXG"; }
 
         document.getElementById('userName').textContent = session.nombre;
@@ -1498,7 +1533,6 @@
         const repMesSelect = document.getElementById('repMesSelect');
         const reuMesSelect = document.getElementById('reuMesSelect');
         const reuFilterMes = document.getElementById('reuFilterMes');
-        // infFiltroMes ya no es un select, es un input oculto
         const infFiltroMes = document.getElementById('infFiltroMes');
 
         formMesSelect.innerHTML = '<option value="">-- Seleccione --</option>';
@@ -1509,10 +1543,9 @@
             repMesSelect.appendChild(opt.cloneNode(true));
             reuMesSelect.appendChild(opt.cloneNode(true));
             reuFilterMes.appendChild(opt.cloneNode(true));
+            infFiltroMes.appendChild(opt.cloneNode(true));
         });
         dashMesSelect.value = MESES[mesIndexActual];
-
-        function cambiarMes(direccion) { mesIndexActual += direccion; if (mesIndexActual > 11) mesIndexActual = 0; if (mesIndexActual < 0) mesIndexActual = 11; cargarTablaInformes(); }
 
         // --- NAVEGACIÓN INFORMES ---
         function cambiarMesInformes(direccion) {
@@ -1600,9 +1633,23 @@
 
         function actualizarEstadoHoras(privilegio) {
             const inputHoras = document.getElementById('inputHoras');
+            const inputCredito = document.getElementById('inputCredito'); // NUEVO
             const p = (privilegio || "").trim().toUpperCase();
             const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX'];
-            if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; }
+            const reportanCredito = ['REG', 'ESP']; // Solo estos tienen crédito
+
+            if (reportan.includes(p)) {
+                inputHoras.disabled = false;
+            } else {
+                inputHoras.disabled = true; inputHoras.value = "";
+            }
+
+            // Lógica para Crédito
+            if (reportanCredito.includes(p)) {
+                inputCredito.disabled = false;
+            } else {
+                inputCredito.disabled = true; inputCredito.value = "";
+            }
         }
 
         /* --- LOGICA LIMPIAR --- */
@@ -1635,7 +1682,7 @@
             cacheInformes = await res.json();
             const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
 
-            if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron resultados para ${mes}.</td></tr>`; return; }
+            if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron resultados para ${mes}.</td></tr>`; return; }
 
             cacheInformes.forEach(d => {
                 const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
@@ -1645,7 +1692,21 @@
                 const canEdit = (isGlobal || d.grupo == session.grupo);
                 const editBtn = canEdit ? `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
 
-                tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b></td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+                // Mostrar crédito si existe
+                const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
+
+                tbody.innerHTML += `
+                <tr>
+                    ${grpCell}
+                    <td>${d.nombre_publicador || d.publicador_nombre}</td>
+                    <td><span class="badge badge-gray">${d.priv3}</span></td>
+                    <td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td>
+                    <td style="text-align:center">${d.cursos}</td>
+                    <td style="text-align:center">${d.credito_hrs || '-'}</td>
+                    <td style="text-align:center">${badge}</td>
+                    <td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td>
+                    <td>${editBtn} ${deleteBtn}</td>
+                </tr>`;
             });
             if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
         }
@@ -1659,6 +1720,7 @@
                 f.publicador_id.value = obj.publicador_id;
                 cargarDatosPub();
                 f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios;
+                f.credito_hrs.value = obj.credito_hrs; // Cargar crédito
             };
             const grupoTarget = isGlobal ? obj.grupo : session.grupo;
             if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget;
@@ -1671,6 +1733,7 @@
             document.getElementById('formInforme').reset();
             document.getElementById('informeId').value = "";
             document.getElementById('inputHoras').disabled = true;
+            document.getElementById('inputCredito').disabled = true; // Reset crédito
             if (manualClean) {
                 document.getElementById('readPriv3').value = "";
                 const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
@@ -1681,12 +1744,30 @@
         document.getElementById('formInforme').addEventListener('submit', async (e) => {
             e.preventDefault();
             const f = e.target; const rawData = Object.fromEntries(new FormData(f));
-            rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0;
+            rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
+            rawData.cursos = f.cursos.value || 0;
+            // Validar crédito deshabilitado
+            rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
+
+            // VALIDACION MATEMATICA EN FRONTEND
+            const h = parseFloat(rawData.horas) || 0;
+            const c = parseFloat(rawData.credito_hrs) || 0;
+            if ((h + c) > 55) {
+                const permitido = (55 - h) < 0 ? 0 : (55 - h);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Límite Excedido',
+                    text: `La suma de horas (${h}) + crédito (${c}) supera las 55 horas.\n\nCon ${h} horas reales, el crédito MÁXIMO que puedes poner es: ${permitido}.`
+                });
+                return; // Detener envío
+            }
+
             const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
             rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
             rawData.requester_group = session.grupo;
             if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } }
             if (id) rawData.mes = f.mes.value;
+
             const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
             const json = await res.json();
             if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
@@ -1850,27 +1931,15 @@
             document.getElementById('reporteResultados').style.display = 'block';
             document.getElementById('repTotalRows').textContent = currentReportData.length;
             const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = '';
-            let sumHoras = 0; let sumCursos = 0; let counts = {};
+            let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {};
             currentReportData.forEach(r => {
-                sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0);
+                sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0);
                 const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1;
-
-                const badge = r.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${r.mes}</td>
-                        <td style="text-align:center"><span class="badge badge-grp">${r.grupo}</span></td>
-                        <td style="font-weight:500">${r.nombre_publicador || r.publicador_nombre}</td>
-                        <td><span class="badge badge-gray">${r.priv3}</span></td>
-                        <td style="text-align:center"><b>${r.horas}</b></td>
-                        <td style="text-align:center">${r.cursos}</td>
-                        <td style="text-align:center">${badge}</td>
-                        <td style="font-size:0.8em; color:#666;">${r.comentarios || ''}</td>
-                    </tr>`;
+                tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td></tr>`;
             });
             document.getElementById('repSumHoras').textContent = sumHoras;
             document.getElementById('repSumCursos').textContent = sumCursos;
+            document.getElementById('repSumCredito').textContent = sumCredito;
             let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; }
             document.getElementById('repCats').innerHTML = catsHtml;
         }
@@ -1879,10 +1948,10 @@
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
             doc.setFontSize(18); doc.text("Reporte de Actividad", 14, 20); doc.setFontSize(10); doc.text(`Generado: ${new Date().toLocaleDateString()}`, 14, 28);
             let y = 35; doc.text("Resumen:", 14, y);
-            const sumHoras = document.getElementById('repSumHoras').textContent; const sumCursos = document.getElementById('repSumCursos').textContent;
-            doc.text(`Total Horas: ${sumHoras} | Total Cursos: ${sumCursos}`, 14, y + 6);
-            const body = currentReportData.map(r => [r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre, r.priv3, r.horas, r.cursos, r.predico, r.comentarios]);
-            doc.autoTable({ startY: y + 15, head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Pred', 'Com']], body: body, theme: 'grid', styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } });
+            const sumHoras = document.getElementById('repSumHoras').textContent; const sumCursos = document.getElementById('repSumCursos').textContent; const sumCredito = document.getElementById('repSumCredito').textContent;
+            doc.text(`Total Horas: ${sumHoras} | Total Crédito: ${sumCredito} | Total Cursos: ${sumCursos}`, 14, y + 6);
+            const body = currentReportData.map(r => [r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre, r.priv3, r.horas, r.cursos, r.credito_hrs, r.predico, r.comentarios]);
+            doc.autoTable({ startY: y + 15, head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']], body: body, theme: 'grid', styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } });
             doc.save('reporte_congregacion.pdf');
         }
 
@@ -1926,7 +1995,7 @@
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target));
             const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
-            data.requester_group = session.grupo; // Importante para validar permiso
+            data.requester_group = session.grupo;
             await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios();
         });
@@ -1943,14 +2012,9 @@
         async function eliminar(entidad, id) {
             const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' });
             if (result.isConfirmed) {
-                // PARAMETROS EN URL
                 const params = new URLSearchParams();
                 params.append('requester_group', session.grupo);
-                if (entidad === 'informes') {
-                    const inf = cacheInformes.find(i => i.id == id);
-                    if (inf) params.append('mes', inf.mes);
-                }
-
+                if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); }
                 const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' });
                 const json = await res.json();
                 if (json.ok) {

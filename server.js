@@ -42,7 +42,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/cierres', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT mes FROM cierres');
-        res.json(rows.map(r => r.mes));
+        res.json(rows.map(r => r.mes)); 
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -64,7 +64,7 @@ app.post('/api/cerrar-mes', async (req, res) => {
             return res.json({ ok: false, msg: `Mes ya cerrado.` });
         }
         await conn.query("INSERT INTO cierres (mes) VALUES (?)", [mes]);
-        await conn.query("UPDATE publicadores SET informo = 'NO'");
+        await conn.query("UPDATE publicadores SET informo = 'NO'"); 
         await conn.commit();
         res.json({ ok: true });
     } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: error.message }); } finally { conn.release(); }
@@ -113,97 +113,113 @@ app.get('/api/publicadores', async (req, res) => {
 app.post('/api/publicadores', async (req, res) => {
     const { grupo, nombre, priv1, priv2, priv3, informo, comentario, requester_group } = req.body;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede crear.' });
-    try { await pool.query('INSERT INTO publicadores (grupo, nombre, priv1, priv2, priv3, informo, comentario) VALUES (?, ?, ?, ?, ?, ?, ?)', [grupo, nombre, priv1, priv2, priv3, informo, comentario]); res.json({ ok: true }); }
+    try { await pool.query('INSERT INTO publicadores (grupo, nombre, priv1, priv2, priv3, informo, comentario) VALUES (?, ?, ?, ?, ?, ?, ?)', [grupo, nombre, priv1, priv2, priv3, informo, comentario]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.put('/api/publicadores/:id', async (req, res) => {
     const { nombre, priv1, priv2, priv3, informo, comentario, grupo, requester_group } = req.body;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-    try { await pool.query('UPDATE publicadores SET nombre=?, priv1=?, priv2=?, priv3=?, informo=?, comentario=?, grupo=? WHERE id=?', [nombre, priv1, priv2, priv3, informo, comentario, grupo, req.params.id]); res.json({ ok: true }); }
+    try { await pool.query('UPDATE publicadores SET nombre=?, priv1=?, priv2=?, priv3=?, informo=?, comentario=?, grupo=? WHERE id=?', [nombre, priv1, priv2, priv3, informo, comentario, grupo, req.params.id]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.delete('/api/publicadores/:id', async (req, res) => {
-    const requester_group = req.query.requester_group;
+    const requester_group = req.query.requester_group; 
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
     try {
         await pool.query('DELETE FROM publicadores WHERE id = ?', [req.params.id]);
         res.json({ ok: true });
-    } catch (error) {
-        if (error.code === 'ER_ROW_IS_REFERENCED_2') res.status(400).json({ ok: false, msg: 'Borra sus informes primero.' });
-        else res.status(500).json({ ok: false, msg: error.message });
+    } catch (error) { 
+        if(error.code === 'ER_ROW_IS_REFERENCED_2') res.status(400).json({ ok: false, msg: 'Borra sus informes primero.' });
+        else res.status(500).json({ ok: false, msg: error.message }); 
     }
 });
 
 // ==========================================
-// CRUD INFORMES (ACTUALIZADO CON FILTROS COMPLETOS)
+// CRUD INFORMES
 // ==========================================
 app.get('/api/informes', async (req, res) => {
-    const { grupo, mes, nombre, priv3 } = req.query; // Recibimos nuevos filtros
+    const { grupo, mes, nombre, priv3 } = req.query; 
     try {
         let query = `SELECT i.*, p.nombre as nombre_publicador FROM informes i LEFT JOIN publicadores p ON i.publicador_id = p.id WHERE 1=1 `;
         let params = [];
-
-        // Filtro Grupo (0 y 9 ven todo)
-        if (grupo && grupo != '0' && grupo != '9') { query += ` AND i.grupo = ?`; params.push(grupo); }
-
-        // Filtro Mes (Puede ser específico o todos)
+        if (grupo != '0' && grupo != '9') { query += ` AND i.grupo = ?`; params.push(grupo); }
         if (mes && mes !== 'TODOS' && mes !== '') { query += ` AND i.mes = ?`; params.push(mes); }
-
-        // Filtro Privilegio (Soporta Combinados)
-        if (priv3 && priv3 !== '') {
-            if (priv3 === 'AUX_COMBINED') { query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M')"; }
-            else if (priv3 === 'PUB_COMBINED') { query += " AND i.priv3 IN ('PUB', 'PNB')"; }
+        if (priv3 && priv3 !== '') { 
+            if (priv3 === 'AUX_COMBINED') { query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M')"; } 
+            else if (priv3 === 'PUB_COMBINED') { query += " AND i.priv3 IN ('PUB', 'PNB')"; } 
             else { query += " AND i.priv3 = ?"; params.push(priv3); }
         }
-
-        // Filtro Nombre (LIKE para búsqueda parcial insensible a mayúsculas)
         if (nombre && nombre !== '') { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); }
-
-        // Orden
         query += ` ORDER BY FIELD(i.mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') DESC, i.grupo ASC, p.nombre ASC`;
-
         const [rows] = await pool.query(query, params);
         res.json(rows);
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/informes', async (req, res) => {
-    let { mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios } = req.body;
-    const horasFinal = horas || 0; const cursosFinal = cursos || 0;
+    let { mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios, credito_hrs } = req.body;
+    const horasFinal = parseFloat(horas) || 0; 
+    const cursosFinal = parseInt(cursos) || 0;
+    const creditoFinal = parseFloat(credito_hrs) || 0;
+
+    // Validación suma 55h
+    if (horasFinal + creditoFinal > 55) {
+        const permitido = 55 - horasFinal;
+        return res.status(400).json({ ok: false, msg: `La suma supera 55h. Solo puedes agregar ${permitido > 0 ? permitido : 0} de crédito.` });
+    }
+
+    // VALIDACIÓN DE CIERRE ACTIVA PARA NUEVOS INFORMES
     const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
-    if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
+    if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado. No puedes agregar nuevos informes.` });
+    
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        await conn.query(`INSERT INTO informes (mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horasFinal, cursosFinal, predico, comentarios]);
+        await conn.query(
+            `INSERT INTO informes (mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios, credito_hrs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+            [mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horasFinal, cursosFinal, predico, comentarios, creditoFinal]
+        );
         if (predico === 'SI' || horasFinal > 0) { await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]); }
-        await conn.commit(); res.json({ ok: true });
-    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error' }); } finally { conn.release(); }
+        await conn.commit(); 
+        res.json({ ok: true });
+    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error: ' + error.message }); } finally { conn.release(); }
 });
 
 app.put('/api/informes/:id', async (req, res) => {
-    let { horas, cursos, predico, comentarios, publicador_id, mes } = req.body;
-    const horasFinal = horas || 0; const cursosFinal = cursos || 0;
-    if (mes) {
-        const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
-        if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
+    // RUTA MODIFICADA: PERMITE EDICIÓN AUNQUE EL MES ESTÉ CERRADO
+    let { horas, cursos, predico, comentarios, publicador_id, mes, credito_hrs } = req.body;
+    const horasFinal = parseFloat(horas) || 0; 
+    const cursosFinal = parseInt(cursos) || 0;
+    const creditoFinal = parseFloat(credito_hrs) || 0;
+
+    if (horasFinal + creditoFinal > 55) {
+        const permitido = 55 - horasFinal;
+        return res.status(400).json({ ok: false, msg: `La suma supera 55h. Solo puedes agregar ${permitido > 0 ? permitido : 0} de crédito.` });
     }
+
+    // [ELIMINADO] Bloque de validación de cierres para permitir modificación
+    
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        await conn.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=? WHERE id=?', [horasFinal, cursosFinal, predico, comentarios, req.params.id]);
+        await conn.query(
+            'UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=? WHERE id=?', 
+            [horasFinal, cursosFinal, predico, comentarios, creditoFinal, req.params.id]
+        );
         if (predico === 'SI' || horasFinal > 0) { await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]); }
-        await conn.commit(); res.json({ ok: true });
-    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error' }); } finally { conn.release(); }
+        await conn.commit(); 
+        res.json({ ok: true });
+    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error: ' + error.message }); } finally { conn.release(); }
 });
 
 app.delete('/api/informes/:id', async (req, res) => {
     const requester_group = req.query.requester_group;
     const mes = req.query.mes;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-    if (mes) {
+    // DELETE SIGUE BLOQUEADO SI EL MES ESTÁ CERRADO
+    if(mes) {
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
     }
@@ -223,7 +239,7 @@ app.post('/api/reportes/advanced', async (req, res) => {
         const params = [];
         if (mes) { query += " AND i.mes = ?"; params.push(mes); }
         if (grupo) { query += " AND i.grupo = ?"; params.push(grupo); }
-        if (priv3) {
+        if (priv3) { 
             if (priv3 === 'AUX_COMBINED') query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M')";
             else if (priv3 === 'PUB_COMBINED') query += " AND i.priv3 IN ('PUB', 'PNB')";
             else { query += " AND i.priv3 = ?"; params.push(priv3); }
@@ -252,7 +268,7 @@ app.post('/api/reuniones', async (req, res) => {
     const { mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, requester_group } = req.body;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' });
     const s1 = sem1 || 0; const s2 = sem2 || 0; const s3 = sem3 || 0; const s4 = sem4 || 0; const s5 = sem5 || 0;
-    try { await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [mes, tipo, modalidad, s1, s2, s3, s4, s5]); res.json({ ok: true }); }
+    try { await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [mes, tipo, modalidad, s1, s2, s3, s4, s5]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
@@ -260,14 +276,14 @@ app.put('/api/reuniones/:id', async (req, res) => {
     const { sem1, sem2, sem3, sem4, sem5, requester_group } = req.body;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' });
     const s1 = sem1 || 0; const s2 = sem2 || 0; const s3 = sem3 || 0; const s4 = sem4 || 0; const s5 = sem5 || 0;
-    try { await pool.query('UPDATE reuniones SET sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [s1, s2, s3, s4, s5, req.params.id]); res.json({ ok: true }); }
+    try { await pool.query('UPDATE reuniones SET sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [s1, s2, s3, s4, s5, req.params.id]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.delete('/api/reuniones/:id', async (req, res) => {
     const requester_group = req.query.requester_group;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-    try { await pool.query('DELETE FROM reuniones WHERE id = ?', [req.params.id]); res.json({ ok: true }); }
+    try { await pool.query('DELETE FROM reuniones WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
@@ -275,24 +291,24 @@ app.delete('/api/reuniones/:id', async (req, res) => {
 // CRUD USUARIOS
 // ==========================================
 app.get('/api/usuarios', async (req, res) => {
-    try { const [rows] = await pool.query('SELECT id, nombre, grupo, correo, password FROM usuarios ORDER BY grupo ASC'); res.json(rows); }
+    try { const [rows] = await pool.query('SELECT id, nombre, grupo, correo, password FROM usuarios ORDER BY grupo ASC'); res.json(rows); } 
     catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/usuarios', async (req, res) => {
     const { nombre, grupo, correo, password } = req.body;
-    try { await pool.query('INSERT INTO usuarios (nombre, grupo, correo, password) VALUES (?, ?, ?, ?)', [nombre, grupo, correo, password]); res.json({ ok: true }); }
+    try { await pool.query('INSERT INTO usuarios (nombre, grupo, correo, password) VALUES (?, ?, ?, ?)', [nombre, grupo, correo, password]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.delete('/api/usuarios/:id', async (req, res) => {
-    try { await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]); res.json({ ok: true }); }
+    try { await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.put('/api/usuarios/:id', async (req, res) => {
     const { nombre, grupo, correo, password } = req.body;
-    try { await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=?, password=? WHERE id=?', [nombre, grupo, correo, password, req.params.id]); res.json({ ok: true }); }
+    try { await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=?, password=? WHERE id=?', [nombre, grupo, correo, password, req.params.id]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
