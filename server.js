@@ -24,6 +24,8 @@ const pool = mysql.createPool({
     keepAliveInitialDelay: 0
 });
 
+const MESES_ORDER = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+
 // --- LOGIN ---
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
@@ -36,14 +38,10 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ ok: false, msg: 'Error de servidor' }); }
 });
 
-// ==========================================
-// GESTIÓN DE CIERRES
-// ==========================================
+// --- GESTIÓN DE CIERRES ---
 app.get('/api/cierres', async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT mes FROM cierres');
-        res.json(rows.map(r => r.mes)); 
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    try { const [rows] = await pool.query('SELECT mes FROM cierres'); res.json(rows.map(r => r.mes)); } 
+    catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/cerrar-mes', async (req, res) => {
@@ -53,10 +51,10 @@ app.post('/api/cerrar-mes', async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const [pendientes] = await conn.query("SELECT COUNT(*) as total FROM publicadores WHERE informo = 'NO'");
+        const [pendientes] = await conn.query("SELECT COUNT(*) as total FROM publicadores WHERE informo = 'NO' AND activo = 1");
         if (pendientes[0].total > 0) {
             await conn.rollback();
-            return res.json({ ok: false, msg: `Faltan ${pendientes[0].total} informes.` });
+            return res.json({ ok: false, msg: `Faltan ${pendientes[0].total} informes de publicadores activos.` });
         }
         const [existe] = await conn.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (existe.length > 0) {
@@ -70,9 +68,7 @@ app.post('/api/cerrar-mes', async (req, res) => {
     } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: error.message }); } finally { conn.release(); }
 });
 
-// ==========================================
-// DASHBOARD STATS
-// ==========================================
+// --- DASHBOARD ---
 app.get('/api/dashboard', async (req, res) => {
     const { mes, grupo } = req.query;
     try {
@@ -81,31 +77,33 @@ app.get('/api/dashboard', async (req, res) => {
         const isClosed = cierre.length > 0;
         let filterGrp = ""; let paramsTotal = []; let paramsMes = [mes];
         if (grupo && grupo != '0' && grupo != '9') { filterGrp = " AND grupo = ?"; paramsTotal.push(grupo); paramsMes.push(grupo); }
-        let qTotal = isClosed ? `SELECT grupo, COUNT(*) as total FROM informes WHERE mes = ? ${filterGrp} GROUP BY grupo` : `SELECT grupo, COUNT(*) as total FROM publicadores WHERE 1=1 ${filterGrp.replace('AND', 'AND')} GROUP BY grupo`;
+        
+        let qTotal = isClosed ? `SELECT grupo, COUNT(*) as total FROM informes WHERE mes = ? ${filterGrp} GROUP BY grupo` : `SELECT grupo, COUNT(*) as total FROM publicadores WHERE activo = 1 ${filterGrp.replace('AND', 'AND')} GROUP BY grupo`;
         const [totalPubs] = await conn.query(qTotal, isClosed ? paramsMes : paramsTotal);
+        
         let qReports = `SELECT grupo, COUNT(*) as count FROM informes WHERE mes = ? ${filterGrp} GROUP BY grupo`;
         const [reportsGroup] = await conn.query(qReports, paramsMes);
+        
         const [pubStats] = await conn.query(`SELECT COUNT(*) as count, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('PUB', 'PNB') ${filterGrp}`, paramsMes);
         const [auxStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('AUX I', 'AUX M', 'AUX') ${filterGrp}`, paramsMes);
-        const [regStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('REG') ${filterGrp}`, paramsMes);
+        const [regStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 = 'REG' ${filterGrp}`, paramsMes);
+        
         conn.release();
         res.json({ groups: { totals: totalPubs, reports: reportsGroup }, stats: { pub: pubStats[0], aux: auxStats[0], reg: regStats[0] } });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ==========================================
-// CRUD PUBLICADORES
-// ==========================================
+// --- PUBLICADORES ---
 app.get('/api/publicadores', async (req, res) => {
     const { grupo, pendientes, nombre, priv3 } = req.query;
     try {
         let query = "SELECT * FROM publicadores WHERE 1=1";
         const params = [];
         if (grupo && grupo != '0' && grupo != '9') { query += " AND grupo = ?"; params.push(grupo); }
-        if (pendientes === 'true') { query += " AND informo = 'NO'"; }
+        if (pendientes === 'true') { query += " AND informo = 'NO' AND activo = 1"; }
         if (priv3 && priv3 !== '') { query += " AND priv3 = ?"; params.push(priv3); }
         if (nombre && nombre !== '') { query += " AND nombre LIKE ?"; params.push(`%${nombre}%`); }
-        query += " ORDER BY grupo ASC, nombre ASC";
+        query += " ORDER BY activo ASC, grupo ASC, nombre ASC";
         const [rows] = await pool.query(query, params); res.json(rows);
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -113,7 +111,7 @@ app.get('/api/publicadores', async (req, res) => {
 app.post('/api/publicadores', async (req, res) => {
     const { grupo, nombre, priv1, priv2, priv3, informo, comentario, requester_group } = req.body;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede crear.' });
-    try { await pool.query('INSERT INTO publicadores (grupo, nombre, priv1, priv2, priv3, informo, comentario) VALUES (?, ?, ?, ?, ?, ?, ?)', [grupo, nombre, priv1, priv2, priv3, informo, comentario]); res.json({ ok: true }); } 
+    try { await pool.query('INSERT INTO publicadores (grupo, nombre, priv1, priv2, priv3, informo, comentario, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)', [grupo, nombre, priv1, priv2, priv3, informo, comentario]); res.json({ ok: true }); } 
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
@@ -124,21 +122,115 @@ app.put('/api/publicadores/:id', async (req, res) => {
     catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
+app.patch('/api/publicadores/:id/estado', async (req, res) => {
+    const { activo, requester_group } = req.body;
+    if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede cambiar estado.' });
+    try {
+        await pool.query('UPDATE publicadores SET activo = ? WHERE id = ?', [activo ? 1 : 0, req.params.id]);
+        res.json({ ok: true });
+    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+});
+
 app.delete('/api/publicadores/:id', async (req, res) => {
     const requester_group = req.query.requester_group; 
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-    try {
-        await pool.query('DELETE FROM publicadores WHERE id = ?', [req.params.id]);
-        res.json({ ok: true });
-    } catch (error) { 
+    try { await pool.query('DELETE FROM publicadores WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
+    catch (error) { 
         if(error.code === 'ER_ROW_IS_REFERENCED_2') res.status(400).json({ ok: false, msg: 'Borra sus informes primero.' });
         else res.status(500).json({ ok: false, msg: error.message }); 
     }
 });
 
-// ==========================================
-// CRUD INFORMES
-// ==========================================
+// --- LÓGICA INTELIGENTE DE INACTIVOS (SOLO MESES CERRADOS + UMBRAL DINÁMICO) ---
+app.get('/api/check-inactivos', async (req, res) => {
+    const { grupo } = req.query;
+    try {
+        const fechaActual = new Date();
+        const currentMonthIndex = fechaActual.getMonth(); 
+
+        // 1. Obtener publicadores ACTIVOS
+        let sqlPubs = "SELECT id, nombre, grupo FROM publicadores WHERE activo = 1";
+        let paramsPubs = [];
+        if (grupo && grupo != '0' && grupo != '9') {
+            sqlPubs += " AND grupo = ?";
+            paramsPubs.push(grupo);
+        }
+        const [publicadores] = await pool.query(sqlPubs, paramsPubs);
+
+        // 2. Obtener informes existentes (mapa rápido)
+        const [informes] = await pool.query("SELECT publicador_id, mes, predico, horas FROM informes");
+        const informesMap = new Set();
+        informes.forEach(inf => {
+            if (inf.predico === 'SI' || inf.horas > 0) {
+                informesMap.add(`${inf.publicador_id}-${inf.mes}`);
+            }
+        });
+
+        // 3. OBTENER MESES CERRADOS (Esta es la clave para no contar meses futuros o no gestionados)
+        const [cierres] = await pool.query("SELECT mes FROM cierres");
+        const mesesCerradosSet = new Set(cierres.map(c => c.mes));
+
+        // 4. Calcular racha de inactividad
+        const candidatos = [];
+        const mesesAtrasMax = 12; // Escanear hasta 1 año atrás
+
+        for (const pub of publicadores) {
+            let mesesSinInformar = 0;
+            
+            // Retroceder mes a mes desde el actual hacia el pasado
+            for (let i = 1; i <= mesesAtrasMax; i++) {
+                let mesIdx = currentMonthIndex - i;
+                if (mesIdx < 0) mesIdx = 12 + mesIdx; // Ajuste circular para años anteriores
+                
+                const nombreMes = MESES_ORDER[mesIdx];
+
+                // LÓGICA CLAVE 1: Si el mes NO está cerrado en el sistema, NO cuenta como falta.
+                // Esto evita que cuente meses antes de que empezaras a usar la app.
+                if (!mesesCerradosSet.has(nombreMes)) {
+                    continue; 
+                }
+
+                // Verificar si informó en este mes cerrado
+                const key = `${pub.id}-${nombreMes}`;
+
+                if (!informesMap.has(key)) {
+                    mesesSinInformar++; // No hay informe, suma inactividad
+                } else {
+                    break; // Encontró informe, se rompe la racha consecutiva
+                }
+            }
+
+            // Si debe al menos 1 mes cerrado consecutivo, lo agregamos a la lista temporal
+            if (mesesSinInformar > 0) { 
+                candidatos.push({
+                    ...pub,
+                    meses_sin_informar: mesesSinInformar
+                });
+            }
+        }
+        
+        // 5. LÓGICA CLAVE 2: UMBRAL DINÁMICO (Set and Forget)
+        // Define qué tan estricto ser dependiendo de cuánta historia tiene el sistema.
+        const totalMesesCerrados = mesesCerradosSet.size;
+        let umbralAlerta = 6; // La meta es 6 meses
+
+        if (totalMesesCerrados < 6) {
+            // Si el sistema es nuevo (ej: solo 3 meses cerrados), avisa con tener 1 falta.
+            umbralAlerta = 1; 
+        }
+
+        // Aplicamos el filtro final
+        const finalList = candidatos.filter(c => c.meses_sin_informar >= umbralAlerta);
+
+        // Ordenar: Los que deben más meses aparecen primero
+        finalList.sort((a, b) => b.meses_sin_informar - a.meses_sin_informar);
+
+        res.json({ candidatos: finalList }); 
+
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// --- INFORMES ---
 app.get('/api/informes', async (req, res) => {
     const { grupo, mes, nombre, priv3 } = req.query; 
     try {
@@ -164,15 +256,13 @@ app.post('/api/informes', async (req, res) => {
     const cursosFinal = parseInt(cursos) || 0;
     const creditoFinal = parseFloat(credito_hrs) || 0;
 
-    // Validación suma 55h
     if (horasFinal + creditoFinal > 55) {
         const permitido = 55 - horasFinal;
-        return res.status(400).json({ ok: false, msg: `La suma supera 55h. Solo puedes agregar ${permitido > 0 ? permitido : 0} de crédito.` });
+        return res.status(400).json({ ok: false, msg: `La suma supera 55h. Crédito máx: ${permitido > 0 ? permitido : 0}.` });
     }
 
-    // VALIDACIÓN DE CIERRE ACTIVA PARA NUEVOS INFORMES
     const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
-    if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado. No puedes agregar nuevos informes.` });
+    if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
     
     const conn = await pool.getConnection();
     try {
@@ -188,7 +278,6 @@ app.post('/api/informes', async (req, res) => {
 });
 
 app.put('/api/informes/:id', async (req, res) => {
-    // RUTA MODIFICADA: PERMITE EDICIÓN AUNQUE EL MES ESTÉ CERRADO
     let { horas, cursos, predico, comentarios, publicador_id, mes, credito_hrs } = req.body;
     const horasFinal = parseFloat(horas) || 0; 
     const cursosFinal = parseInt(cursos) || 0;
@@ -196,11 +285,9 @@ app.put('/api/informes/:id', async (req, res) => {
 
     if (horasFinal + creditoFinal > 55) {
         const permitido = 55 - horasFinal;
-        return res.status(400).json({ ok: false, msg: `La suma supera 55h. Solo puedes agregar ${permitido > 0 ? permitido : 0} de crédito.` });
+        return res.status(400).json({ ok: false, msg: `La suma supera 55h. Crédito máx: ${permitido > 0 ? permitido : 0}.` });
     }
 
-    // [ELIMINADO] Bloque de validación de cierres para permitir modificación
-    
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -218,20 +305,15 @@ app.delete('/api/informes/:id', async (req, res) => {
     const requester_group = req.query.requester_group;
     const mes = req.query.mes;
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-    // DELETE SIGUE BLOQUEADO SI EL MES ESTÁ CERRADO
     if(mes) {
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
     }
-    try {
-        await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]);
-        res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    try { await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
+    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
-// ==========================================
-// REPORTES AVANZADOS
-// ==========================================
+// --- REPORTES ---
 app.post('/api/reportes/advanced', async (req, res) => {
     const { mes, grupo, nombre, priv3 } = req.body;
     try {
@@ -250,66 +332,14 @@ app.post('/api/reportes/advanced', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ==========================================
-// CRUD REUNIONES
-// ==========================================
-app.get('/api/reuniones', async (req, res) => {
-    const { mes } = req.query;
-    try {
-        let query = "SELECT * FROM reuniones";
-        const params = [];
-        if (mes && mes !== 'TODOS') { query += " WHERE mes = ?"; params.push(mes); }
-        query += ` ORDER BY FIELD(mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, tipo ASC, modalidad ASC`;
-        const [rows] = await pool.query(query, params); res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/reuniones', async (req, res) => {
-    const { mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, requester_group } = req.body;
-    if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' });
-    const s1 = sem1 || 0; const s2 = sem2 || 0; const s3 = sem3 || 0; const s4 = sem4 || 0; const s5 = sem5 || 0;
-    try { await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [mes, tipo, modalidad, s1, s2, s3, s4, s5]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
-});
-
-app.put('/api/reuniones/:id', async (req, res) => {
-    const { sem1, sem2, sem3, sem4, sem5, requester_group } = req.body;
-    if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' });
-    const s1 = sem1 || 0; const s2 = sem2 || 0; const s3 = sem3 || 0; const s4 = sem4 || 0; const s5 = sem5 || 0;
-    try { await pool.query('UPDATE reuniones SET sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [s1, s2, s3, s4, s5, req.params.id]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
-});
-
-app.delete('/api/reuniones/:id', async (req, res) => {
-    const requester_group = req.query.requester_group;
-    if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-    try { await pool.query('DELETE FROM reuniones WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
-});
-
-// ==========================================
-// CRUD USUARIOS
-// ==========================================
-app.get('/api/usuarios', async (req, res) => {
-    try { const [rows] = await pool.query('SELECT id, nombre, grupo, correo, password FROM usuarios ORDER BY grupo ASC'); res.json(rows); } 
-    catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/usuarios', async (req, res) => {
-    const { nombre, grupo, correo, password } = req.body;
-    try { await pool.query('INSERT INTO usuarios (nombre, grupo, correo, password) VALUES (?, ?, ?, ?)', [nombre, grupo, correo, password]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
-});
-
-app.delete('/api/usuarios/:id', async (req, res) => {
-    try { await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
-});
-
-app.put('/api/usuarios/:id', async (req, res) => {
-    const { nombre, grupo, correo, password } = req.body;
-    try { await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=?, password=? WHERE id=?', [nombre, grupo, correo, password, req.params.id]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
-});
+// --- REUNIONES y USUARIOS (Sin cambios) ---
+app.get('/api/reuniones', async (req, res) => { try { let query = "SELECT * FROM reuniones"; const params = []; if (req.query.mes && req.query.mes !== 'TODOS') { query += " WHERE mes = ?"; params.push(req.query.mes); } query += ` ORDER BY FIELD(mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, tipo ASC, modalidad ASC`; const [rows] = await pool.query(query, params); res.json(rows); } catch (error) { res.status(500).json({ error: error.message }); } });
+app.post('/api/reuniones', async (req, res) => { const { mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' }); try { await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [mes, tipo, modalidad, sem1||0, sem2||0, sem3||0, sem4||0, sem5||0]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
+app.put('/api/reuniones/:id', async (req, res) => { const { sem1, sem2, sem3, sem4, sem5, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' }); try { await pool.query('UPDATE reuniones SET sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [sem1||0, sem2||0, sem3||0, sem4||0, sem5||0, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
+app.delete('/api/reuniones/:id', async (req, res) => { const requester_group = req.query.requester_group; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { await pool.query('DELETE FROM reuniones WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
+app.get('/api/usuarios', async (req, res) => { try { const [rows] = await pool.query('SELECT id, nombre, grupo, correo, password FROM usuarios ORDER BY grupo ASC'); res.json(rows); } catch (error) { res.status(500).json({ error: error.message }); } });
+app.post('/api/usuarios', async (req, res) => { const { nombre, grupo, correo, password } = req.body; try { await pool.query('INSERT INTO usuarios (nombre, grupo, correo, password) VALUES (?, ?, ?, ?)', [nombre, grupo, correo, password]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
+app.delete('/api/usuarios/:id', async (req, res) => { try { await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
+app.put('/api/usuarios/:id', async (req, res) => { const { nombre, grupo, correo, password } = req.body; try { await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=?, password=? WHERE id=?', [nombre, grupo, correo, password, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
 
 app.listen(PORT, () => { console.log(`🚀 Sistema corriendo en http://localhost:${PORT}`); });

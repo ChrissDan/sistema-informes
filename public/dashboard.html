@@ -38,6 +38,7 @@
             color: var(--text-main);
         }
 
+        /* CORRECCIONES Z-INDEX */
         .swal2-container {
             z-index: 99999 !important;
         }
@@ -48,6 +49,76 @@
 
         .sidebar {
             z-index: 5000 !important;
+        }
+
+        /* SWITCH STYLE */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: var(--success);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--success);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* FILA INACTIVA */
+        .row-inactivo {
+            background-color: #f8fafc !important;
+            color: #94a3b8;
+        }
+
+        .row-inactivo td {
+            color: #94a3b8;
+        }
+
+        .row-inactivo b {
+            color: #64748b !important;
         }
 
         .sidebar {
@@ -261,13 +332,10 @@
             gap: 10px;
         }
 
-        /* TABLES - CABECERA FIJA */
         .table-container {
             width: 100%;
             overflow: auto;
-            /* Scroll en ambas direcciones si hace falta */
             max-height: 70vh;
-            /* Altura máxima para activar el scroll vertical */
             border-radius: 8px;
             border: 1px solid #e2e8f0;
         }
@@ -281,13 +349,9 @@
 
         th {
             position: sticky;
-            /* Fija la cabecera */
             top: 0;
-            /* Al tope del contenedor */
             z-index: 20;
-            /* Por encima de las filas */
             background: #f8fafc;
-            /* Fondo para que no se trasluzca */
             padding: 12px 15px;
             text-align: left;
             border-bottom: 2px solid #e2e8f0;
@@ -297,7 +361,6 @@
             text-transform: uppercase;
             white-space: nowrap;
             box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
-            /* Sombra sutil al hacer scroll */
         }
 
         td {
@@ -474,7 +537,6 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1247,7 +1309,7 @@
                                     <th>P1</th>
                                     <th>P2</th>
                                     <th>P3</th>
-                                    <th>Info?</th>
+                                    <th class="admin-only">Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -1398,6 +1460,8 @@
                     rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveInfo">Guardar</button></div>
+            <div style="grid-column: 1/-1;"><label>Adjuntar Documento (PDF)</label><input type="file" name="archivo"
+                    accept="application/pdf"></div>
         </form>
         <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
@@ -1496,8 +1560,8 @@
 
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; }
-        else if (isSupervisor) { sidebarTitle.textContent = "COORDINADOR - SECRETARIO"; document.getElementById('userRole').textContent = "SG - AXG"; }
-        else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "SG - AXG"; }
+        else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; }
+        else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
 
         document.getElementById('userName').textContent = session.nombre;
         document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
@@ -1555,6 +1619,33 @@
             document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes];
             cargarTablaInformes();
         }
+
+        // --- VERIFICAR INACTIVOS ---
+        async function verificarInactivos() {
+            try {
+                const grp = isGlobal ? 0 : session.grupo;
+                const res = await fetch(`/api/check-inactivos?grupo=${grp}`);
+                const data = await res.json();
+
+                if (data.candidatos && data.candidatos.length > 0) {
+                    let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`;
+                    data.candidatos.forEach(c => {
+                        listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`;
+                    });
+                    listaHtml += `</ul>`;
+
+                    Swal.fire({
+                        title: '⚠️ Irregulares Detectados',
+                        html: `Los siguientes publicadores varios <b>meses</b> consecutivos sin informar:<br><br>${listaHtml}`,
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            } catch (e) { console.error("Error checking inactives", e); }
+        }
+
+        // Ejecutar verificación al inicio
+        verificarInactivos();
 
         function showView(viewName) {
             document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
@@ -1695,6 +1786,12 @@
                 // Mostrar crédito si existe
                 const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
 
+                // Botón PDF
+                let btnPdf = '';
+                if (d.pdf_archivo) {
+                    btnPdf = `<a href="/uploads/${d.pdf_archivo}" target="_blank" class="btn-action" style="background:#e0e7ff; color:#3730a3;" title="Ver PDF"><i class="fa-solid fa-file-pdf"></i></a>`;
+                }
+
                 tbody.innerHTML += `
                 <tr>
                     ${grpCell}
@@ -1705,7 +1802,7 @@
                     <td style="text-align:center">${d.credito_hrs || '-'}</td>
                     <td style="text-align:center">${badge}</td>
                     <td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td>
-                    <td>${editBtn} ${deleteBtn}</td>
+                    <td>${editBtn} ${deleteBtn} ${btnPdf}</td>
                 </tr>`;
             });
             if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
@@ -1744,14 +1841,16 @@
         document.getElementById('formInforme').addEventListener('submit', async (e) => {
             e.preventDefault();
             const f = e.target; const rawData = Object.fromEntries(new FormData(f));
-            rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
-            rawData.cursos = f.cursos.value || 0;
-            // Validar crédito deshabilitado
-            rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
+            // FormData para archivo
+            const formData = new FormData(f);
+
+            // Forzar valores disabled si formdata no los trae
+            if (document.getElementById('inputHoras').disabled) formData.set('horas', 0);
+            if (document.getElementById('inputCredito').disabled) formData.set('credito_hrs', 0);
 
             // VALIDACION MATEMATICA EN FRONTEND
-            const h = parseFloat(rawData.horas) || 0;
-            const c = parseFloat(rawData.credito_hrs) || 0;
+            const h = parseFloat(formData.get('horas')) || 0;
+            const c = parseFloat(formData.get('credito_hrs')) || 0;
             if ((h + c) > 55) {
                 const permitido = (55 - h) < 0 ? 0 : (55 - h);
                 Swal.fire({
@@ -1763,12 +1862,25 @@
             }
 
             const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
-            rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
-            rawData.requester_group = session.grupo;
-            if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } }
-            if (id) rawData.mes = f.mes.value;
 
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
+            // Datos extra
+            formData.append('requester_group', session.grupo);
+            const grpVal = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
+            formData.set('grupo', grpVal);
+
+            if (!id) {
+                const pubId = formData.get('publicador_id');
+                const pub = cachePublicadores.find(p => p.id == pubId);
+                if (pub) {
+                    formData.append('publicador_nombre', pub.nombre);
+                    formData.append('priv1', pub.priv1);
+                    formData.append('priv2', pub.priv2);
+                    formData.append('priv3', pub.priv3);
+                }
+            }
+            if (id) formData.set('mes', f.mes.value);
+
+            const res = await fetch(url, { method: method, body: formData }); // Sin header JSON
             const json = await res.json();
             if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
             else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
@@ -1794,15 +1906,29 @@
             if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
 
             cachePublicadores.forEach(d => {
-                stats.total++;
-                const p = (d.priv3 || '').toUpperCase();
-                if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
-                if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
+                // Solo contar estadísticas de activos
+                if (d.activo) {
+                    stats.total++;
+                    const p = (d.priv3 || '').toUpperCase();
+                    if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
+                    if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
+                }
 
-                const infoBadge = (d.informo === 'SI') ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
+                // Estilo para fila inactiva
+                const rowClass = d.activo ? '' : 'row-inactivo';
+                // Switch HTML con lógica de reversión visual si cancela
+                const switchHtml = `
+                    <label class="switch admin-only">
+                      <input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)">
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="${d.activo ? 'badge badge-si' : 'badge badge-no'} global-view" ${isAdmin ? 'style="display:none"' : ''}>${d.activo ? 'ACTIVO' : 'INACTIVO'}</span>
+                `;
+
                 const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
-                tbody.innerHTML += `<tr><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             });
 
             document.getElementById('pub-stat-total').textContent = stats.total;
@@ -1812,6 +1938,53 @@
             document.getElementById('pub-stat-pub').textContent = stats.pub;
             const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
             Object.keys(stats.groups).forEach(g => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${g}</div><div class="g-value">${stats.groups[g]}</div></div>`; });
+
+            // Re-aplicar visibilidad admin
+            if (isAdmin) {
+                document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+                document.querySelectorAll('.global-view.badge').forEach(e => e.style.display = 'none');
+            }
+        }
+
+        // --- NUEVA LÓGICA CON CONFIRMACIÓN ---
+        async function toggleEstado(id, nuevoEstado, checkbox) {
+            const estadoTexto = nuevoEstado ? 'ACTIVO' : 'INACTIVO';
+            const accionTexto = nuevoEstado ? 'activar' : 'desactivar';
+
+            const result = await Swal.fire({
+                title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} publicador?`,
+                text: `El publicador pasará a estado ${estadoTexto}.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, cambiar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/publicadores/${id}/estado`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo })
+                    });
+                    const json = await res.json();
+                    if (json.ok) {
+                        Toast.fire({ icon: 'success', title: `Publicador ${nuevoEstado ? 'activado' : 'desactivado'}` });
+                        cargarTablaPublicadores(); // Recargar para ordenar
+                    } else {
+                        Swal.fire('Error', json.msg, 'error');
+                        checkbox.checked = !nuevoEstado; // Revertir visualmente si hay error
+                    }
+                } catch (e) {
+                    console.error(e);
+                    checkbox.checked = !nuevoEstado;
+                }
+            } else {
+                // Si cancela, revertir el checkbox visualmente al estado anterior
+                checkbox.checked = !nuevoEstado;
+            }
         }
 
         function editarPub(id) {
@@ -2012,9 +2185,14 @@
         async function eliminar(entidad, id) {
             const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' });
             if (result.isConfirmed) {
+                // PARAMETROS EN URL
                 const params = new URLSearchParams();
                 params.append('requester_group', session.grupo);
-                if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); }
+                if (entidad === 'informes') {
+                    const inf = cacheInformes.find(i => i.id == id);
+                    if (inf) params.append('mes', inf.mes);
+                }
+
                 const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' });
                 const json = await res.json();
                 if (json.ok) {
