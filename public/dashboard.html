@@ -1287,7 +1287,7 @@
                                 <option value="">(Todos)</option>
                                 <option value="PUB">PUB</option>
                                 <option value="REG">REG</option>
-                                <option value="AUX">AUX</option>
+                                <option value="AUX">AUX I + AUX M</option>
                                 <option value="PNB">PNB</option>
                             </select></div>
                         <div style="align-self:end; display:flex; gap:10px;">
@@ -1309,6 +1309,7 @@
                                     <th>P1</th>
                                     <th>P2</th>
                                     <th>P3</th>
+                                    <th>Comentario</th>
                                     <th class="admin-only">Estado</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -1928,7 +1929,10 @@
                 const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
 
-                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">
+            ${d.comentario || ''}
+        </td>
+        <td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             });
 
             document.getElementById('pub-stat-total').textContent = stats.total;

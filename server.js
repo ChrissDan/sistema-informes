@@ -101,7 +101,15 @@ app.get('/api/publicadores', async (req, res) => {
         const params = [];
         if (grupo && grupo != '0' && grupo != '9') { query += " AND grupo = ?"; params.push(grupo); }
         if (pendientes === 'true') { query += " AND informo = 'NO' AND activo = 1"; }
-        if (priv3 && priv3 !== '') { query += " AND priv3 = ?"; params.push(priv3); }
+        if (priv3 && priv3 !== '') { 
+            if (priv3 === 'AUX') {
+                // Si buscan 'AUX', traemos todos los tipos de auxiliares
+                query += " AND priv3 IN ('AUX', 'AUX I', 'AUX M')";
+            } else {
+                query += " AND priv3 = ?"; 
+                params.push(priv3); 
+            }
+        }
         if (nombre && nombre !== '') { query += " AND nombre LIKE ?"; params.push(`%${nombre}%`); }
         query += " ORDER BY activo ASC, grupo ASC, nombre ASC";
         const [rows] = await pool.query(query, params); res.json(rows);
