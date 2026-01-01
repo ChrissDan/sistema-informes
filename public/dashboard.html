@@ -537,6 +537,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1461,8 +1462,6 @@
                     rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveInfo">Guardar</button></div>
-            <div style="grid-column: 1/-1;"><label>Adjuntar Documento (PDF)</label><input type="file" name="archivo"
-                    accept="application/pdf"></div>
         </form>
         <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
@@ -1621,9 +1620,10 @@
             cargarTablaInformes();
         }
 
-        // --- VERIFICAR INACTIVOS ---
+        // --- VERIFICAR INACTIVOS (6 MESES) ---
         async function verificarInactivos() {
             try {
+                // Solo ejecutar para Admin, Supervisor o Encargado (muestra inactivos de SU grupo)
                 const grp = isGlobal ? 0 : session.grupo;
                 const res = await fetch(`/api/check-inactivos?grupo=${grp}`);
                 const data = await res.json();
@@ -1636,8 +1636,8 @@
                     listaHtml += `</ul>`;
 
                     Swal.fire({
-                        title: '⚠️ Irregulares Detectados',
-                        html: `Los siguientes publicadores varios <b>meses</b> consecutivos sin informar:<br><br>${listaHtml}`,
+                        title: '⚠️ Posibles Inactivos',
+                        html: `Detectamos publicadores sin actividad en los últimos 6 meses (${data.meses[5]} - ${data.meses[0]}):<br><br>${listaHtml}`,
                         icon: 'warning',
                         confirmButtonText: 'Entendido'
                     });
@@ -1787,12 +1787,6 @@
                 // Mostrar crédito si existe
                 const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
 
-                // Botón PDF
-                let btnPdf = '';
-                if (d.pdf_archivo) {
-                    btnPdf = `<a href="/uploads/${d.pdf_archivo}" target="_blank" class="btn-action" style="background:#e0e7ff; color:#3730a3;" title="Ver PDF"><i class="fa-solid fa-file-pdf"></i></a>`;
-                }
-
                 tbody.innerHTML += `
                 <tr>
                     ${grpCell}
@@ -1803,7 +1797,7 @@
                     <td style="text-align:center">${d.credito_hrs || '-'}</td>
                     <td style="text-align:center">${badge}</td>
                     <td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td>
-                    <td>${editBtn} ${deleteBtn} ${btnPdf}</td>
+                    <td>${editBtn} ${deleteBtn}</td>
                 </tr>`;
             });
             if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
@@ -1842,16 +1836,14 @@
         document.getElementById('formInforme').addEventListener('submit', async (e) => {
             e.preventDefault();
             const f = e.target; const rawData = Object.fromEntries(new FormData(f));
-            // FormData para archivo
-            const formData = new FormData(f);
 
-            // Forzar valores disabled si formdata no los trae
-            if (document.getElementById('inputHoras').disabled) formData.set('horas', 0);
-            if (document.getElementById('inputCredito').disabled) formData.set('credito_hrs', 0);
+            // Forzar valores disabled si formdata no los trae (JSON)
+            if (document.getElementById('inputHoras').disabled) rawData.horas = 0;
+            if (document.getElementById('inputCredito').disabled) rawData.credito_hrs = 0;
 
             // VALIDACION MATEMATICA EN FRONTEND
-            const h = parseFloat(formData.get('horas')) || 0;
-            const c = parseFloat(formData.get('credito_hrs')) || 0;
+            const h = parseFloat(rawData.horas) || 0;
+            const c = parseFloat(rawData.credito_hrs) || 0;
             if ((h + c) > 55) {
                 const permitido = (55 - h) < 0 ? 0 : (55 - h);
                 Swal.fire({
@@ -1865,23 +1857,23 @@
             const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
 
             // Datos extra
-            formData.append('requester_group', session.grupo);
+            rawData.requester_group = session.grupo;
             const grpVal = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
-            formData.set('grupo', grpVal);
+            rawData.grupo = grpVal;
 
             if (!id) {
-                const pubId = formData.get('publicador_id');
+                const pubId = rawData.publicador_id;
                 const pub = cachePublicadores.find(p => p.id == pubId);
                 if (pub) {
-                    formData.append('publicador_nombre', pub.nombre);
-                    formData.append('priv1', pub.priv1);
-                    formData.append('priv2', pub.priv2);
-                    formData.append('priv3', pub.priv3);
+                    rawData.publicador_nombre = pub.nombre;
+                    rawData.priv1 = pub.priv1;
+                    rawData.priv2 = pub.priv2;
+                    rawData.priv3 = pub.priv3;
                 }
             }
-            if (id) formData.set('mes', f.mes.value);
+            if (id) rawData.mes = f.mes.value;
 
-            const res = await fetch(url, { method: method, body: formData }); // Sin header JSON
+            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); // JSON RESTORED
             const json = await res.json();
             if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
             else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
@@ -1929,10 +1921,8 @@
                 const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
 
-                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">
-            ${d.comentario || ''}
-        </td>
-        <td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+                // Mostrar siempre, pero si no es admin, ocultar el switch via CSS o JS (admin-only class lo maneja)
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             });
 
             document.getElementById('pub-stat-total').textContent = stats.total;
@@ -1946,6 +1936,7 @@
             // Re-aplicar visibilidad admin
             if (isAdmin) {
                 document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+                // Asegurar que los badges de estado estáticos se oculten para admin si el switch es visible
                 document.querySelectorAll('.global-view.badge').forEach(e => e.style.display = 'none');
             }
         }
