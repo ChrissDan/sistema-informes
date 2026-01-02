@@ -38,7 +38,7 @@
             color: var(--text-main);
         }
 
-        /* CORRECCIONES Z-INDEX */
+        /* --- Z-INDEXES --- */
         .swal2-container {
             z-index: 99999 !important;
         }
@@ -51,76 +51,7 @@
             z-index: 5000 !important;
         }
 
-        /* SWITCH STYLE */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 22px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #cbd5e1;
-            transition: .4s;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-        }
-
-        input:checked+.slider {
-            background-color: var(--success);
-        }
-
-        input:focus+.slider {
-            box-shadow: 0 0 1px var(--success);
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(22px);
-        }
-
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
-
-        /* FILA INACTIVA */
-        .row-inactivo {
-            background-color: #f8fafc !important;
-            color: #94a3b8;
-        }
-
-        .row-inactivo td {
-            color: #94a3b8;
-        }
-
-        .row-inactivo b {
-            color: #64748b !important;
-        }
-
+        /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
@@ -133,31 +64,12 @@
             box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
         }
 
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 4000;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-            opacity: 1;
-        }
-
         .sidebar-header {
-            padding: 25px 20px;
+            padding: 0 20px;
+            height: 70px;
             font-size: 1.1rem;
             font-weight: 700;
             border-bottom: 1px solid #1e293b;
-            text-align: center;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -166,14 +78,13 @@
 
         .nav-links {
             list-style: none;
-            padding: 0 15px;
-            margin: 20px 0;
+            padding: 20px 15px;
+            margin: 0;
             flex: 1;
             overflow-y: auto;
-        }
-
-        .nav-links li {
-            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .nav-links a {
@@ -183,27 +94,29 @@
             padding: 12px 15px;
             color: #94a3b8;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 10px;
             transition: all 0.2s;
             cursor: pointer;
             font-weight: 500;
+            width: 100%;
         }
 
         .nav-links a:hover,
         .nav-links a.active {
             background: var(--primary);
             color: white;
-            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: translateX(3px);
         }
 
         .nav-links a i {
-            width: 20px;
+            width: 24px;
             text-align: center;
             font-size: 1.1rem;
         }
 
         .user-panel {
-            padding: 15px 20px;
+            padding: 20px;
             border-top: 1px solid #1e293b;
             background: #0b1120;
         }
@@ -211,13 +124,13 @@
         .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         .user-avatar {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             background: var(--primary);
             border-radius: 50%;
             display: flex;
@@ -226,6 +139,7 @@
             font-weight: bold;
             color: white;
             flex-shrink: 0;
+            font-size: 1.1rem;
         }
 
         .btn-logout {
@@ -233,13 +147,22 @@
             text-decoration: none;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: 0.2s;
-            padding: 5px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            width: 100%;
         }
 
+        .btn-logout:hover {
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        /* --- MAIN CONTENT --- */
         .main-content {
             flex: 1;
             display: flex;
@@ -247,11 +170,13 @@
             height: 100vh;
             overflow: hidden;
             width: 100%;
+            position: relative;
         }
 
         header {
             background: white;
-            padding: 15px 20px;
+            padding: 0 20px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -283,22 +208,54 @@
             font-size: 1.5rem;
             color: #334155;
             cursor: pointer;
-            padding: 0;
+            padding: 5px;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 4000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(3px);
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
         }
 
         .content-scroll {
             padding: 20px;
             overflow-y: auto;
             flex: 1;
+            -webkit-overflow-scrolling: touch;
         }
 
         .section-view {
             display: none;
-            animation: fadeIn 0.3s;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .section-view.active {
             display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .card {
@@ -332,26 +289,35 @@
             gap: 10px;
         }
 
+        /* --- TABLAS (SCROLL + STICKY HEADER) --- */
         .table-container {
             width: 100%;
-            overflow: auto;
-            max-height: 70vh;
+            overflow-y: auto;
+            /* Scroll vertical activado */
+            overflow-x: auto;
+            /* Scroll horizontal si es necesario */
+            max-height: 65vh;
+            /* Altura máxima para forzar el scroll */
             border-radius: 8px;
             border: 1px solid #e2e8f0;
+            position: relative;
+            /* Contexto para el sticky */
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            min-width: 600px;
+            min-width: 700px;
         }
 
+        /* Cabecera Fija */
         th {
             position: sticky;
             top: 0;
-            z-index: 20;
+            z-index: 10;
             background: #f8fafc;
+            /* Fondo para tapar el contenido al scrollear */
             padding: 12px 15px;
             text-align: left;
             border-bottom: 2px solid #e2e8f0;
@@ -360,7 +326,8 @@
             font-size: 0.75rem;
             text-transform: uppercase;
             white-space: nowrap;
-            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.05);
+            /* Sombra sutil */
         }
 
         td {
@@ -374,6 +341,20 @@
             background-color: #f8fafc;
         }
 
+        .row-inactivo {
+            background-color: #f8fafc !important;
+            color: #94a3b8;
+        }
+
+        .row-inactivo td {
+            color: #94a3b8;
+        }
+
+        .row-inactivo b {
+            color: #64748b !important;
+        }
+
+        /* --- UI ELEMENTS --- */
         .btn-action {
             width: 32px;
             height: 32px;
@@ -384,6 +365,11 @@
             align-items: center;
             justify-content: center;
             margin-right: 4px;
+            transition: transform 0.1s;
+        }
+
+        .btn-action:active {
+            transform: scale(0.95);
         }
 
         .btn-del {
@@ -410,6 +396,10 @@
             gap: 8px;
             transition: 0.2s;
             font-size: 0.95rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
         }
 
         .btn-cancel {
@@ -462,10 +452,111 @@
             transition: 0.2s;
         }
 
+        .btn-add-new:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(37, 99, 235, 0.25);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-si {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge-no {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .badge-gray {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .badge-grp {
+            background: #e0e7ff;
+            color: #4338ca;
+            border: 1px solid #c7d2fe;
+        }
+
+        /* --- SWITCH --- */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: var(--success);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(18px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* --- FORMULARIOS & MODAL --- */
         .form-layout {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 15px;
+            gap: 20px;
         }
 
         @media (min-width: 600px) {
@@ -503,7 +594,7 @@
             display: block;
             font-size: 0.85rem;
             color: #64748b;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-weight: 600;
         }
 
@@ -511,15 +602,16 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
             background: #fff;
         }
 
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
@@ -537,14 +629,14 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
         }
 
         .modal-wrapper.active {
@@ -557,7 +649,7 @@
             width: 95%;
             max-width: 650px;
             border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow-y: auto;
             max-height: 90vh;
             transform: translateY(20px);
@@ -571,7 +663,7 @@
         }
 
         .modal-header {
-            padding: 20px;
+            padding: 20px 25px;
             border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
@@ -584,23 +676,29 @@
 
         .modal-header h3 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: #1e293b;
+            font-weight: 700;
         }
 
         .close-modal-btn {
             background: none;
             border: none;
             font-size: 1.5rem;
-            color: #64748b;
+            color: #94a3b8;
             cursor: pointer;
             transition: 0.2s;
+        }
+
+        .close-modal-btn:hover {
+            color: #64748b;
         }
 
         .modal-body {
             padding: 25px;
         }
 
+        /* --- DASHBOARD COMPONENTS --- */
         .month-nav {
             display: flex;
             align-items: center;
@@ -659,6 +757,11 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
         }
 
         .stat-icon {
@@ -706,7 +809,7 @@
         .groups-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 10px;
+            gap: 15px;
         }
 
         @media (min-width: 768px) {
@@ -718,41 +821,44 @@
         .group-item {
             background: white;
             border: 1px solid #e2e8f0;
-            padding: 12px 15px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .group-name {
-            font-weight: 600;
+            font-weight: 700;
             color: #334155;
-            font-size: 0.95rem;
+            font-size: 1rem;
         }
 
         .progress-bar-bg {
             width: 100%;
-            height: 6px;
+            height: 8px;
             background: #e2e8f0;
-            border-radius: 3px;
-            margin-top: 6px;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
         }
 
         .progress-bar-fill {
             height: 100%;
             background: var(--primary);
             width: 0%;
-            border-radius: 3px;
-            transition: width 0.8s;
+            border-radius: 4px;
+            transition: width 1s ease-out;
         }
 
         .group-perc {
-            font-weight: 700;
+            font-weight: 800;
             color: var(--primary);
             margin-left: 15px;
-            min-width: 45px;
+            min-width: 50px;
             text-align: right;
+            font-size: 1.1rem;
         }
 
         .pub-overview {
@@ -764,7 +870,7 @@
 
         .pub-total-card {
             flex: 1;
-            min-width: 220px;
+            min-width: 240px;
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             border-radius: 16px;
@@ -773,22 +879,22 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
             position: relative;
             overflow: hidden;
         }
 
         .pub-total-card i {
-            font-size: 8rem;
+            font-size: 10rem;
             position: absolute;
             right: -20px;
-            bottom: -20px;
+            bottom: -30px;
             opacity: 0.15;
             transform: rotate(-15deg);
         }
 
         .pub-total-card .value {
-            font-size: 4.5rem;
+            font-size: 5rem;
             font-weight: 800;
             line-height: 1;
             z-index: 1;
@@ -800,6 +906,8 @@
             opacity: 0.9;
             margin-top: 10px;
             z-index: 1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .pub-breakdown-grid {
@@ -813,16 +921,21 @@
         .mini-stat-card {
             background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s;
+        }
+
+        .mini-stat-card:hover {
+            transform: translateY(-2px);
         }
 
         .mini-stat-card .value {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: #334155;
         }
@@ -845,11 +958,12 @@
         }
 
         .group-stat-card {
-            background: #f8fafc;
+            background: #fff;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 12px;
+            padding: 12px;
             text-align: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .group-stat-card .g-label {
@@ -860,10 +974,40 @@
         }
 
         .group-stat-card .g-value {
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 800;
             color: var(--primary);
-            margin-top: 2px;
+            margin-top: 4px;
+        }
+
+        .report-summary {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-title {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .summary-val {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #334155;
         }
 
         .reu-stats-grid {
@@ -874,13 +1018,14 @@
         }
 
         .reu-stat-box {
-            background: #f8fafc;
+            background: white;
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .reu-stat-title {
@@ -902,73 +1047,12 @@
             margin-top: 4px;
         }
 
-        .report-summary {
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .summary-box {
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-        }
-
-        .summary-title {
-            font-size: 0.8rem;
-            color: #64748b;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-
-        .summary-val {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #334155;
-        }
-
         .admin-only {
             display: none;
         }
 
         .global-view {
             display: none;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 99px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            white-space: nowrap;
-        }
-
-        .badge-si {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .badge-no {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .badge-gray {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        .badge-grp {
-            background: #e0e7ff;
-            color: #4338ca;
         }
 
         @media (max-width: 768px) {
@@ -1000,16 +1084,27 @@
             .btn-add-new {
                 width: 100%;
                 justify-content: center;
-                padding: 12px;
-                margin-bottom: 5px;
+                padding: 14px;
+                margin-bottom: 10px;
             }
 
-            .nav-links a {
-                padding: 14px 15px;
+            .card-header-flex {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .card-header-flex>* {
+                width: 100%;
+            }
+
+            .card-header-flex select,
+            .card-header-flex button {
+                width: 100%;
+                margin-top: 5px;
             }
 
             .pub-total-card .value {
-                font-size: 3.5rem;
+                font-size: 4rem;
             }
         }
     </style>
@@ -1041,6 +1136,8 @@
                         class="fa-solid fa-users-rectangle"></i> Reuniones</a></li>
             <li><a onclick="showView('publicadores'); toggleSidebar(false)" id="nav-publicadores"><i
                         class="fa-solid fa-users"></i> Publicadores</a></li>
+            <li class="admin-only"><a onclick="showView('grupos'); toggleSidebar(false)" id="nav-grupos"><i
+                        class="fa-solid fa-layer-group"></i> Grupos</a></li>
             <li class="global-view"><a onclick="showView('reportes'); toggleSidebar(false)" id="nav-reportes"><i
                         class="fa-solid fa-print"></i> Reportes</a></li>
             <li class="admin-only"><a onclick="showView('usuarios'); toggleSidebar(false)" id="nav-usuarios"><i
@@ -1120,7 +1217,6 @@
                     <button class="btn-add-new" onclick="abrirModal('informe')"><i class="fa-solid fa-circle-plus"></i>
                         Nuevo Informe</button>
                 </div>
-
                 <div class="card">
                     <h3><i class="fa-solid fa-filter"></i> Buscar Informe</h3>
                     <div class="form-grid">
@@ -1135,18 +1231,11 @@
                             </div>
                             <input type="hidden" id="infFiltroMes">
                         </div>
-
-                        <div class="global-view"><label>Grupo</label><select id="infFiltroGrupo">
-                                <option value="">(Todos)</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select></div>
+                        <div class="global-view"><label>Grupo</label>
+                            <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
                         <div><label>Privilegio</label><select id="infFiltroPriv3">
                                 <option value="">(Todos)</option>
                                 <option value="REG">REG</option>
@@ -1154,7 +1243,6 @@
                                 <option value="PUB_COMBINED">PUB + PNB</option>
                             </select></div>
                         <div><label>Nombre</label><input id="infFiltroNombre" placeholder="Buscar..."></div>
-
                         <div style="align-self:end; display:flex; gap:10px;">
                             <button class="btn-primary" onclick="cargarTablaInformes()"><i
                                     class="fa-solid fa-magnifying-glass"></i> Buscar</button>
@@ -1163,11 +1251,10 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="card">
                     <div class="card-header-flex">
-                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3>
-                        <button class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3><button
+                            class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
                             onclick="cargarTablaInformes()"><i class="fa-solid fa-rotate"></i> Recargar</button>
                     </div>
                     <div class="table-container">
@@ -1186,6 +1273,86 @@
                                 </tr>
                             </thead>
                             <tbody id="tablaInformes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-publicadores" class="section-view">
+                <div class="admin-only" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <button class="btn-add-new" onclick="abrirModal('publicador')"><i class="fa-solid fa-user-plus"></i>
+                        Agregar Publicador</button>
+                </div>
+                <div class="card">
+                    <h3><i class="fa-solid fa-chart-simple"></i> Resumen de Publicadores</h3>
+                    <div class="pub-overview">
+                        <div class="pub-total-card"><i class="fa-solid fa-users"></i>
+                            <div class="label">TOTAL PUBLICADORES</div>
+                            <div class="value" id="pub-stat-total">0</div>
+                        </div>
+                        <div class="pub-breakdown-grid">
+                            <div class="mini-stat-card">
+                                <div class="label">Regulares</div>
+                                <div class="value" id="pub-stat-reg">0</div>
+                            </div>
+                            <div class="mini-stat-card">
+                                <div class="label">Especiales</div>
+                                <div class="value" id="pub-stat-esp">0</div>
+                            </div>
+                            <div class="mini-stat-card">
+                                <div class="label">Auxiliares</div>
+                                <div class="value" id="pub-stat-aux">0</div>
+                            </div>
+                            <div class="mini-stat-card">
+                                <div class="label">PUB + PNB</div>
+                                <div class="value" id="pub-stat-pub">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h4 style="margin: 15px 0; color:#475569;">Totales por Grupo</h4>
+                    <div class="pub-groups-grid" id="pub-groups-container"></div>
+                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
+                    <h3><i class="fa-solid fa-filter"></i> Buscar Publicador</h3>
+                    <div class="form-grid">
+                        <div class="global-view"><label>Grupo</label>
+                            <select id="pubFiltroGrupo">
+                                <option value="">(Todos)</option>
+                            </select>
+                        </div>
+                        <div><label>Nombre</label><input id="pubFiltroNombre" placeholder="Buscar nombre..."></div>
+                        <div><label>Privilegio</label><select id="pubFiltroPriv3">
+                                <option value="">(Todos)</option>
+                                <option value="PUB">PUB</option>
+                                <option value="REG">REG</option>
+                                <option value="AUX">AUX I + AUX M</option>
+                                <option value="PNB">PNB</option>
+                            </select></div>
+                        <div style="align-self:end; display:flex; gap:10px;">
+                            <button class="btn-primary" onclick="cargarTablaPublicadores()"><i
+                                    class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+                            <button class="btn-cancel btn-reset" onclick="limpiarFiltrosPub()"><i
+                                    class="fa-solid fa-eraser"></i> Limpiar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3><i class="fa-solid fa-list"></i> Lista Detallada</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Grp</th>
+                                    <th>Nombre</th>
+                                    <th>P1</th>
+                                    <th>P2</th>
+                                    <th>P3</th>
+                                    <th>Info?</th>
+                                    <th>Comentario</th>
+                                    <th class="admin-only">Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaPublicadores"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1236,86 +1403,25 @@
                 </div>
             </div>
 
-            <div id="view-publicadores" class="section-view">
-                <div class="admin-only" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('publicador')"><i class="fa-solid fa-user-plus"></i>
-                        Agregar Publicador</button>
+            <div id="view-grupos" class="section-view">
+                <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <button class="btn-add-new" onclick="abrirModal('grupo')"><i class="fa-solid fa-plus"></i> Nuevo
+                        Grupo</button>
                 </div>
                 <div class="card">
-                    <h3><i class="fa-solid fa-chart-simple"></i> Resumen de Publicadores</h3>
-                    <div class="pub-overview">
-                        <div class="pub-total-card"><i class="fa-solid fa-users"></i>
-                            <div class="label">TOTAL PUBLICADORES</div>
-                            <div class="value" id="pub-stat-total">0</div>
-                        </div>
-                        <div class="pub-breakdown-grid">
-                            <div class="mini-stat-card">
-                                <div class="label">Regulares</div>
-                                <div class="value" id="pub-stat-reg">0</div>
-                            </div>
-                            <div class="mini-stat-card">
-                                <div class="label">Especiales</div>
-                                <div class="value" id="pub-stat-esp">0</div>
-                            </div>
-                            <div class="mini-stat-card">
-                                <div class="label">Auxiliares</div>
-                                <div class="value" id="pub-stat-aux">0</div>
-                            </div>
-                            <div class="mini-stat-card">
-                                <div class="label">PUB + PNB</div>
-                                <div class="value" id="pub-stat-pub">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    <h4 style="margin: 15px 0; color:#475569;">Totales por Grupo</h4>
-                    <div class="pub-groups-grid" id="pub-groups-container"></div>
-                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
-                    <h3><i class="fa-solid fa-filter"></i> Buscar Publicador</h3>
-                    <div class="form-grid">
-                        <div class="global-view"><label>Grupo</label><select id="pubFiltroGrupo">
-                                <option value="">(Todos)</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select></div>
-                        <div><label>Nombre</label><input id="pubFiltroNombre" placeholder="Buscar nombre..."></div>
-                        <div><label>Privilegio</label><select id="pubFiltroPriv3">
-                                <option value="">(Todos)</option>
-                                <option value="PUB">PUB</option>
-                                <option value="REG">REG</option>
-                                <option value="AUX">AUX I + AUX M</option>
-                                <option value="PNB">PNB</option>
-                            </select></div>
-                        <div style="align-self:end; display:flex; gap:10px;">
-                            <button class="btn-primary" onclick="cargarTablaPublicadores()"><i
-                                    class="fa-solid fa-magnifying-glass"></i> Buscar</button>
-                            <button class="btn-cancel btn-reset" onclick="limpiarFiltrosPub()"><i
-                                    class="fa-solid fa-eraser"></i> Limpiar</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3><i class="fa-solid fa-list"></i> Lista Detallada</h3>
+                    <h3><i class="fa-solid fa-list"></i> Gestión de Grupos</h3>
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Grp</th>
-                                    <th>Nombre</th>
-                                    <th>P1</th>
-                                    <th>P2</th>
-                                    <th>P3</th>
-                                    <th>Comentario</th>
-                                    <th class="admin-only">Estado</th>
+                                    <th>Gpo</th>
+                                    <th>SG</th>
+                                    <th>AXG</th>
+                                    <th>Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="tablaPublicadores"></tbody>
+                            <tbody id="tablaGrupos"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1328,16 +1434,8 @@
                         <div><label>Mes</label><select name="mes" id="repMesSelect">
                                 <option value="">(Todos)</option>
                             </select></div>
-                        <div><label>Grupo</label><select name="grupo">
+                        <div><label>Grupo</label><select name="grupo" id="repGrupoSelect">
                                 <option value="">(Todos)</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
                             </select></div>
                         <div><label>Privilegio 3</label><select name="priv3">
                                 <option value="">(Todos)</option>
@@ -1422,23 +1520,18 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </main>
 
     <div id="formsContainer" style="display:none;">
         <form id="formInforme" class="form-layout">
             <input type="hidden" name="id" id="informeId">
-            <div class="global-view col-span-1"><label>Grupo (Admin):</label><select id="infGrupoSelect"
-                    onchange="cargarPublicadoresSelect(this.value)">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                </select></div>
+            <div class="global-view col-span-1"><label>Grupo (Admin):</label>
+                <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
             <div class="col-span-1"><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
             <div style="grid-column: 1/-1;"><label>Publicador</label><select id="selectPubInfo" name="publicador_id"
                     required onchange="cargarDatosPub()">
@@ -1453,31 +1546,27 @@
                 </select></div>
             <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
                     min="0"></div>
-
             <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
                     step="0.5" min="0"></div>
-
             <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0"></div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
                     rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveInfo">Guardar</button></div>
         </form>
+
         <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
-            <input type="hidden" name="informo" value="NO">
-            <div class="global-view" style="grid-column: 1/-1;"><label>Grupo</label><select id="pubGrupoSelect"
-                    name="grupo_manual">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                </select></div>
+            <div class="global-view" style="grid-column: 1/-1;"><label>Grupo</label>
+                <select id="pubGrupoSelect" name="grupo_manual">
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
             <div style="grid-column: 1/-1;"><label>Nombre Completo</label><input name="nombre" required></div>
+            <div class="col-span-1"><label>¿Informó?</label><select name="informo">
+                    <option value="NO">NO</option>
+                    <option value="SI">SÍ</option>
+                </select></div>
             <div class="col-span-1"><label>Priv 1</label><select name="priv1">
                     <option value="">-</option>
                     <option value="SG">SG</option>
@@ -1501,6 +1590,7 @@
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSavePub">Guardar</button></div>
         </form>
+
         <form id="formReunion" class="form-layout">
             <input type="hidden" name="id" id="reunionId">
             <div class="col-span-1"><label>Mes</label><select name="mes" id="reuMesSelect" required></select></div>
@@ -1520,12 +1610,14 @@
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveReu">Guardar</button></div>
         </form>
+
         <form id="formUsuario" class="form-layout">
             <input type="hidden" name="id" id="userId">
             <div style="grid-column: 1/-1;"><label>Nombre</label><input name="nombre" required></div>
             <div class="col-span-2"><label>Correo</label><input name="correo" type="email" required></div>
             <div class="col-span-1"><label>Contraseña</label><input name="password" required></div>
-            <div style="grid-column: 1/-1;"><label>Grupo</label><select name="grupo">
+            <div style="grid-column: 1/-1;"><label>Grupo</label>
+                <select name="grupo">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1536,676 +1628,331 @@
                     <option value="8">8</option>
                     <option value="0">0 (Admin)</option>
                     <option value="9">9 (Supervisor)</option>
-                </select></div>
+                </select>
+            </div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveUser">Crear</button></div>
+        </form>
+
+        <form id="formGrupo" class="form-layout">
+            <input type="hidden" name="id" id="grupoId">
+            <div class="col-span-1"><label>Número</label><input name="nombre" placeholder="Ej: 1" required></div>
+            <div class="col-span-1"><label>Estado</label><select name="estado">
+                    <option value="ACTIVO">ACTIVO</option>
+                    <option value="INACTIVO">INACTIVO</option>
+                </select></div>
+            <div class="col-span-1"></div>
+            <div class="col-span-1"><label>Encargado (SG)</label><input name="encargado_sg"></div>
+            <div class="col-span-2"><label>Encargado (AXG)</label><input name="encargado_axg"></div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveGrupo">Guardar</button></div>
         </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function toggleSidebar(force) {
-            const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay');
-            if (force === false) { sb.classList.remove('active'); ov.classList.remove('active'); } else { sb.classList.toggle('active'); ov.classList.toggle('active'); }
-        }
+        function toggleSidebar(force) { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if (force === false) { sb.classList.remove('active'); ov.classList.remove('active'); } else { sb.classList.toggle('active'); ov.classList.toggle('active'); } }
+        const session = JSON.parse(localStorage.getItem('user_session')); if (!session) window.location.href = '/index.html';
+        function logout() { localStorage.removeItem('user_session'); window.location.href = '/index.html'; } document.getElementById('btnLogoutSide').addEventListener('click', logout);
+        const isAdmin = session.grupo == 0; const isSupervisor = session.grupo == 9; const isGlobal = (isAdmin || isSupervisor);
+        const sidebarTitle = document.getElementById('sidebarTitle'); if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; } else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; } else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
+        document.getElementById('userName').textContent = session.nombre; document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
 
-        const session = JSON.parse(localStorage.getItem('user_session'));
-        if (!session) window.location.href = '/index.html';
-        function logout() { localStorage.removeItem('user_session'); window.location.href = '/index.html'; }
-        document.getElementById('btnLogoutSide').addEventListener('click', logout);
-
-        const isAdmin = session.grupo == 0;
-        const isSupervisor = session.grupo == 9;
-        const isGlobal = (isAdmin || isSupervisor);
-
-        const sidebarTitle = document.getElementById('sidebarTitle');
-        if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; }
-        else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; }
-        else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
-
-        document.getElementById('userName').textContent = session.nombre;
-        document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
-
-        if (isAdmin) {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('th.admin-only').forEach(el => el.style.display = 'table-cell');
-            document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell');
-        } else if (isSupervisor) {
-            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell');
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-        } else {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'none');
-            document.getElementById('nav-usuarios').parentElement.style.display = 'none';
-            document.getElementById('nav-reportes').parentElement.style.display = 'none';
-            document.getElementById('nav-reuniones').parentElement.style.display = 'none';
-        }
+        if (isAdmin) { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block'); document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block'); document.querySelectorAll('th.admin-only').forEach(el => el.style.display = 'table-cell'); document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell'); }
+        else if (isSupervisor) { document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block'); document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell'); document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); }
+        else { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); document.querySelectorAll('.global-view').forEach(el => el.style.display = 'none'); document.getElementById('nav-usuarios').parentElement.style.display = 'none'; document.getElementById('nav-reportes').parentElement.style.display = 'none'; document.getElementById('nav-reuniones').parentElement.style.display = 'none'; }
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
         const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        let mesActual = new Date().getMonth(); let mesIndexActual = (mesActual === 0) ? 11 : mesActual - 1; let mesIndexInformes = mesIndexActual;
 
-        // --- MES ANTERIOR POR DEFECTO ---
-        let mesActual = new Date().getMonth();
-        let mesIndexActual = (mesActual === 0) ? 11 : mesActual - 1;
-        let mesIndexInformes = mesIndexActual; // INDEPENDIENTE PARA INFORMES
-        let mesIndexReporte = mesIndexActual;
-
-        const formMesSelect = document.getElementById('formMesSelect');
-        const dashMesSelect = document.getElementById('dashMesSelect');
-        const repMesSelect = document.getElementById('repMesSelect');
-        const reuMesSelect = document.getElementById('reuMesSelect');
-        const reuFilterMes = document.getElementById('reuFilterMes');
-        const infFiltroMes = document.getElementById('infFiltroMes');
-
+        const formMesSelect = document.getElementById('formMesSelect'); const dashMesSelect = document.getElementById('dashMesSelect'); const repMesSelect = document.getElementById('repMesSelect'); const reuMesSelect = document.getElementById('reuMesSelect'); const reuFilterMes = document.getElementById('reuFilterMes'); const infFiltroMes = document.getElementById('infFiltroMes');
         formMesSelect.innerHTML = '<option value="">-- Seleccione --</option>';
-        MESES.forEach(m => {
-            const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
-            formMesSelect.appendChild(opt);
-            dashMesSelect.appendChild(opt.cloneNode(true));
-            repMesSelect.appendChild(opt.cloneNode(true));
-            reuMesSelect.appendChild(opt.cloneNode(true));
-            reuFilterMes.appendChild(opt.cloneNode(true));
-            infFiltroMes.appendChild(opt.cloneNode(true));
-        });
+        MESES.forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.textContent = m; formMesSelect.appendChild(opt); dashMesSelect.appendChild(opt.cloneNode(true)); repMesSelect.appendChild(opt.cloneNode(true)); reuMesSelect.appendChild(opt.cloneNode(true)); reuFilterMes.appendChild(opt.cloneNode(true)); infFiltroMes.appendChild(opt.cloneNode(true)); });
         dashMesSelect.value = MESES[mesIndexActual];
 
-        // --- NAVEGACIÓN INFORMES ---
-        function cambiarMesInformes(direccion) {
-            mesIndexInformes += direccion;
-            if (mesIndexInformes > 11) mesIndexInformes = 0;
-            if (mesIndexInformes < 0) mesIndexInformes = 11;
-            document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes];
-            cargarTablaInformes();
-        }
-
-        // --- VERIFICAR INACTIVOS (6 MESES) ---
-        async function verificarInactivos() {
-            try {
-                // Solo ejecutar para Admin, Supervisor o Encargado (muestra inactivos de SU grupo)
-                const grp = isGlobal ? 0 : session.grupo;
-                const res = await fetch(`/api/check-inactivos?grupo=${grp}`);
-                const data = await res.json();
-
-                if (data.candidatos && data.candidatos.length > 0) {
-                    let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`;
-                    data.candidatos.forEach(c => {
-                        listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`;
-                    });
-                    listaHtml += `</ul>`;
-
-                    Swal.fire({
-                        title: '⚠️ Posibles Inactivos',
-                        html: `Detectamos publicadores sin actividad en los últimos 6 meses (${data.meses[5]} - ${data.meses[0]}):<br><br>${listaHtml}`,
-                        icon: 'warning',
-                        confirmButtonText: 'Entendido'
-                    });
-                }
-            } catch (e) { console.error("Error checking inactives", e); }
-        }
-
-        // Ejecutar verificación al inicio
         verificarInactivos();
+        cargarSelectsDeGrupos();
+
+        function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesIndexInformes > 11) mesIndexInformes = 0; if (mesIndexInformes < 0) mesIndexInformes = 11; document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); }
+
+        // --- CARGA DINÁMICA DE GRUPOS (FIXED: Solo ID) ---
+        async function cargarSelectsDeGrupos() {
+            try {
+                const res = await fetch('/api/grupos?estado=ACTIVO');
+                const gruposActivos = await res.json();
+
+                const resAll = await fetch('/api/grupos');
+                const gruposTodos = await resAll.json();
+
+                const infSelect = document.getElementById('infGrupoSelect');
+                if (infSelect) {
+                    infSelect.innerHTML = '';
+                    gruposActivos.forEach(g => { infSelect.innerHTML += `<option value="${g.id}">${g.id}</option>`; });
+                    if (!isAdmin && !isSupervisor) infSelect.value = session.grupo;
+                }
+
+                const pubSelect = document.getElementById('pubGrupoSelect');
+                if (pubSelect) {
+                    pubSelect.innerHTML = '';
+                    gruposActivos.forEach(g => { pubSelect.innerHTML += `<option value="${g.id}">${g.id}</option>`; });
+                }
+
+                ['pubFiltroGrupo', 'repGrupoSelect'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.innerHTML = '<option value="">(Todos)</option>';
+                        gruposTodos.forEach(g => {
+                            const estadoTxt = g.estado === 'INACTIVO' ? ' (Inactivo)' : '';
+                            el.innerHTML += `<option value="${g.id}">${g.id}${estadoTxt}</option>`;
+                        });
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function verificarInactivos() { try { const grp = isGlobal ? 0 : session.grupo; const res = await fetch(`/api/check-inactivos?grupo=${grp}`); const data = await res.json(); if (data.candidatos && data.candidatos.length > 0) { let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`; data.candidatos.forEach(c => { listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`; }); listaHtml += `</ul>`; Swal.fire({ title: '⚠️ Irregulares Detectados', html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> consecutivos sin informar:<br><br>${listaHtml}`, icon: 'warning', confirmButtonText: 'Entendido' }); } } catch (e) { console.error("Error checking inactives", e); } }
 
         function showView(viewName) {
             document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
             document.getElementById(`view-${viewName}`).classList.add('active');
             document.getElementById(`nav-${viewName}`).classList.add('active');
-
-            const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones' };
-            const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle' };
+            const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones', 'grupos': 'Gestión de Grupos' };
+            const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle', 'grupos': 'layer-group' };
             document.getElementById('pageTitle').innerHTML = `<i class="fa-solid fa-${icons[viewName]}" style="color:var(--primary)"></i> ${titles[viewName]}`;
-
-            if (viewName === 'informes') {
-                // Inicializar etiqueta mes
-                document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes];
-                cargarTablaInformes();
-                cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending');
-                verificarCierres();
-            }
+            if (viewName === 'informes') { document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending'); verificarCierres(); }
             if (viewName === 'publicadores') cargarTablaPublicadores();
             if (viewName === 'usuarios') cargarTablaUsuarios();
             if (viewName === 'dashboard') cargarDashboard();
             if (viewName === 'reuniones') cargarTablaReuniones();
-
-            // Inicializar etiqueta de mes en reportes
-            if (viewName === 'reportes') document.getElementById('labelMesReporte') // En reportes usamos select por ahora
+            if (viewName === 'grupos') cargarTablaGrupos();
         }
 
-        /* --- LOGICA MODAL --- */
+        /* --- LOGICA MODAL (FIXED) --- */
         function abrirModal(tipo, id = null) {
-            const modalWrapper = document.getElementById('mainModal');
-            const modalBody = document.getElementById('modalBody');
-            const modalTitle = document.getElementById('modalTitle');
-            modalBody.innerHTML = '';
+            const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const modalTitle = document.getElementById('modalTitle'); modalBody.innerHTML = ''; let formId = '';
 
-            let formId = '';
+            // Forzar recarga de selects al abrir modal para asegurar datos frescos
+            if (tipo === 'informe' || tipo === 'publicador') {
+                cargarSelectsDeGrupos();
+            }
+
             if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); }
             else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); }
             else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); }
             else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); }
+            else if (tipo === 'grupo') { formId = 'formGrupo'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Grupo' : '<i class="fa-solid fa-plus"></i> Nuevo Grupo'; if (!id) resetFormGrupo(); }
 
-            const form = document.getElementById(formId);
-            if (form) { form.style.display = 'grid'; modalBody.appendChild(form); }
-            modalWrapper.classList.add('active');
+            const form = document.getElementById(formId); if (form) { form.style.display = 'grid'; modalBody.appendChild(form); } modalWrapper.classList.add('active');
         }
+        function cerrarModal() { const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const formsContainer = document.getElementById('formsContainer'); modalWrapper.classList.remove('active'); while (modalBody.firstChild) { formsContainer.appendChild(modalBody.firstChild); } }
 
-        function cerrarModal() {
-            const modalWrapper = document.getElementById('mainModal');
-            const modalBody = document.getElementById('modalBody');
-            const formsContainer = document.getElementById('formsContainer');
-            modalWrapper.classList.remove('active');
-            while (modalBody.firstChild) { formsContainer.appendChild(modalBody.firstChild); }
-        }
-
-        /* --- FUNCIONES CRUD Y LOGICA --- */
+        /* --- CRUD Y LOGICA --- */
         let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let cacheReuniones = [];
-
-        async function cargarPublicadoresSelect(grupoId, mode = 'pending') {
-            try {
-                let url = `/api/publicadores?grupo=${grupoId}`;
-                if (mode === 'pending') url += `&pendientes=true`;
-                const res = await fetch(url); cachePublicadores = await res.json();
-                const sel = document.getElementById('selectPubInfo');
-                const currentVal = sel.value;
-                sel.innerHTML = '<option value="">-- Seleccione --</option>';
-                cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
-                if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal;
-            } catch (e) { console.error(e); }
-        }
-
-        function cargarDatosPub() {
-            const id = document.getElementById('selectPubInfo').value;
-            const pub = cachePublicadores.find(p => p.id == id);
-            if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); }
-            else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; }
-        }
-
-        function actualizarEstadoHoras(privilegio) {
-            const inputHoras = document.getElementById('inputHoras');
-            const inputCredito = document.getElementById('inputCredito'); // NUEVO
-            const p = (privilegio || "").trim().toUpperCase();
-            const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX'];
-            const reportanCredito = ['REG', 'ESP']; // Solo estos tienen crédito
-
-            if (reportan.includes(p)) {
-                inputHoras.disabled = false;
-            } else {
-                inputHoras.disabled = true; inputHoras.value = "";
-            }
-
-            // Lógica para Crédito
-            if (reportanCredito.includes(p)) {
-                inputCredito.disabled = false;
-            } else {
-                inputCredito.disabled = true; inputCredito.value = "";
-            }
-        }
-
-        /* --- LOGICA LIMPIAR --- */
-        function limpiarFiltrosInformes() {
-            if (isGlobal) document.getElementById('infFiltroGrupo').value = '';
-            document.getElementById('infFiltroPriv3').value = '';
-            document.getElementById('infFiltroNombre').value = '';
-            // No reseteamos mes, mantenemos el del navegador
-            cargarTablaInformes();
-        }
+        async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') url += `&pendientes=true`; const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; } catch (e) { console.error(e); } }
+        function cargarDatosPub() { const id = document.getElementById('selectPubInfo').value; const pub = cachePublicadores.find(p => p.id == id); if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); } else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; } }
+        function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } }
+        function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; document.getElementById('infFiltroNombre').value = ''; cargarTablaInformes(); }
 
         // --- INFORMES ---
         async function cargarTablaInformes() {
-            // USAR MES DE FLECHAS
-            let mes = MESES[mesIndexInformes];
-
-            let grp = isGlobal ? 0 : session.grupo;
-            const fGrupo = document.getElementById('infFiltroGrupo') ? document.getElementById('infFiltroGrupo').value : null;
-            if (isGlobal && fGrupo) grp = fGrupo;
-
-            const fPriv3 = document.getElementById('infFiltroPriv3').value;
-            const fNombre = document.getElementById('infFiltroNombre').value;
-
-            const params = new URLSearchParams({ grupo: grp });
-            if (mes) params.append('mes', mes);
-            if (fPriv3) params.append('priv3', fPriv3);
-            if (fNombre) params.append('nombre', fNombre);
-
-            const res = await fetch(`/api/informes?${params.toString()}`);
-            cacheInformes = await res.json();
-            const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
-
+            let mes = MESES[mesIndexInformes]; let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('infFiltroGrupo') ? document.getElementById('infFiltroGrupo').value : null; if (isGlobal && fGrupo) grp = fGrupo; const fPriv3 = document.getElementById('infFiltroPriv3').value; const fNombre = document.getElementById('infFiltroNombre').value; const params = new URLSearchParams({ grupo: grp }); if (mes) params.append('mes', mes); if (fPriv3) params.append('priv3', fPriv3); if (fNombre) params.append('nombre', fNombre);
+            const res = await fetch(`/api/informes?${params.toString()}`); cacheInformes = await res.json(); const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
             if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron resultados para ${mes}.</td></tr>`; return; }
-
             cacheInformes.forEach(d => {
-                const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
-                const grpCell = isGlobal ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : '';
-
-                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                const canEdit = (isGlobal || d.grupo == session.grupo);
-                const editBtn = canEdit ? `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
-
-                // Mostrar crédito si existe
-                const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
-
-                tbody.innerHTML += `
-                <tr>
-                    ${grpCell}
-                    <td>${d.nombre_publicador || d.publicador_nombre}</td>
-                    <td><span class="badge badge-gray">${d.priv3}</span></td>
-                    <td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td>
-                    <td style="text-align:center">${d.cursos}</td>
-                    <td style="text-align:center">${d.credito_hrs || '-'}</td>
-                    <td style="text-align:center">${badge}</td>
-                    <td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td>
-                    <td>${editBtn} ${deleteBtn}</td>
-                </tr>`;
-            });
-            if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
+                const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>'; const grpCell = isGlobal ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : ''; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const canEdit = (isGlobal || d.grupo == session.grupo); const editBtn = canEdit ? `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : ''; const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
+                tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${d.credito_hrs || '-'}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+            }); if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
         }
-
-        function editarInforme(id) {
-            const obj = cacheInformes.find(i => i.id == id); if (!obj) return;
-            const f = document.getElementById('formInforme');
-            document.getElementById('informeId').value = obj.id;
-            f.mes.value = obj.mes;
-            const processEdit = () => {
-                f.publicador_id.value = obj.publicador_id;
-                cargarDatosPub();
-                f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios;
-                f.credito_hrs.value = obj.credito_hrs; // Cargar crédito
-            };
-            const grupoTarget = isGlobal ? obj.grupo : session.grupo;
-            if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget;
-
-            cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit);
-            abrirModal('informe', id);
-        }
-
-        function resetFormInforme(manualClean = false) {
-            document.getElementById('formInforme').reset();
-            document.getElementById('informeId').value = "";
-            document.getElementById('inputHoras').disabled = true;
-            document.getElementById('inputCredito').disabled = true; // Reset crédito
-            if (manualClean) {
-                document.getElementById('readPriv3').value = "";
-                const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
-                cargarPublicadoresSelect(grp, 'pending');
-            }
-        }
-
-        document.getElementById('formInforme').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const f = e.target; const rawData = Object.fromEntries(new FormData(f));
-
-            // Forzar valores disabled si formdata no los trae (JSON)
-            if (document.getElementById('inputHoras').disabled) rawData.horas = 0;
-            if (document.getElementById('inputCredito').disabled) rawData.credito_hrs = 0;
-
-            // VALIDACION MATEMATICA EN FRONTEND
-            const h = parseFloat(rawData.horas) || 0;
-            const c = parseFloat(rawData.credito_hrs) || 0;
-            if ((h + c) > 55) {
-                const permitido = (55 - h) < 0 ? 0 : (55 - h);
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Límite Excedido',
-                    text: `La suma de horas (${h}) + crédito (${c}) supera las 55 horas.\n\nCon ${h} horas reales, el crédito MÁXIMO que puedes poner es: ${permitido}.`
-                });
-                return; // Detener envío
-            }
-
-            const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
-
-            // Datos extra
-            rawData.requester_group = session.grupo;
-            const grpVal = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
-            rawData.grupo = grpVal;
-
-            if (!id) {
-                const pubId = rawData.publicador_id;
-                const pub = cachePublicadores.find(p => p.id == pubId);
-                if (pub) {
-                    rawData.publicador_nombre = pub.nombre;
-                    rawData.priv1 = pub.priv1;
-                    rawData.priv2 = pub.priv2;
-                    rawData.priv3 = pub.priv3;
-                }
-            }
-            if (id) rawData.mes = f.mes.value;
-
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); // JSON RESTORED
-            const json = await res.json();
-            if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
-            else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
-        });
+        function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
+        function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
+        document.getElementById('formInforme').addEventListener('submit', async (e) => { e.preventDefault(); const f = e.target; const rawData = Object.fromEntries(new FormData(f)); rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0; rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0; if ((h + c) > 55) { const permitido = (55 - h) < 0 ? 0 : (55 - h); Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `La suma de horas (${h}) + crédito (${c}) supera las 55 horas.\n\nCon ${h} horas reales, el crédito MÁXIMO que puedes poner es: ${permitido}.` }); return; } const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes'; rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; rawData.requester_group = session.grupo; if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } } if (id) rawData.mes = f.mes.value; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); const json = await res.json(); if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); } });
 
         // --- PUBLICADORES ---
         async function cargarTablaPublicadores() {
-            let grp = isGlobal ? 0 : session.grupo;
-            const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null;
-            const fNombre = document.getElementById('pubFiltroNombre').value;
-            const fPriv3 = document.getElementById('pubFiltroPriv3').value;
-            if (isGlobal && fGrupo) grp = fGrupo;
-            const params = new URLSearchParams({ grupo: grp });
-            if (fNombre) params.append('nombre', fNombre);
-            if (fPriv3) params.append('priv3', fPriv3);
-            const res = await fetch(`/api/publicadores?${params.toString()}`);
-            cachePublicadores = await res.json();
-            const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
+            let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null; const fNombre = document.getElementById('pubFiltroNombre').value; const fPriv3 = document.getElementById('pubFiltroPriv3').value; if (isGlobal && fGrupo) grp = fGrupo; const params = new URLSearchParams({ grupo: grp }); if (fNombre) params.append('nombre', fNombre); if (fPriv3) params.append('priv3', fPriv3); const res = await fetch(`/api/publicadores?${params.toString()}`); cachePublicadores = await res.json(); const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
 
             let stats = { total: 0, reg: 0, esp: 0, aux: 0, pub: 0, groups: {} };
-            for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
+            cachePublicadores.forEach(d => { if (d.activo) stats.groups[d.grupo] = 0; });
 
-            if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
-
+            if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
             cachePublicadores.forEach(d => {
-                // Solo contar estadísticas de activos
-                if (d.activo) {
-                    stats.total++;
-                    const p = (d.priv3 || '').toUpperCase();
-                    if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
-                    if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
-                }
-
-                // Estilo para fila inactiva
+                if (d.activo) { stats.total++; const p = (d.priv3 || '').toUpperCase(); if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++; if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++; }
                 const rowClass = d.activo ? '' : 'row-inactivo';
-                // Switch HTML con lógica de reversión visual si cancela
+
+                // SWITCH + TEXTO (Igual que Grupos)
                 const switchHtml = `
-                    <label class="switch admin-only">
-                      <input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)">
-                      <span class="slider round"></span>
-                    </label>
-                    <span class="${d.activo ? 'badge badge-si' : 'badge badge-no'} global-view" ${isAdmin ? 'style="display:none"' : ''}>${d.activo ? 'ACTIVO' : 'INACTIVO'}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label class="switch admin-only">
+                            <input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="badge ${d.activo ? 'badge-si' : 'badge-no'}" style="min-width:60px; justify-content:center;">
+                            ${d.activo ? 'ACTIVO' : 'INACTIVO'}
+                        </span>
+                    </div>
                 `;
 
                 const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
+                const infoBadge = d.informo === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
 
-                // Mostrar siempre, pero si no es admin, ocultar el switch via CSS o JS (admin-only class lo maneja)
-                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             });
-
-            document.getElementById('pub-stat-total').textContent = stats.total;
-            document.getElementById('pub-stat-reg').textContent = stats.reg;
-            document.getElementById('pub-stat-esp').textContent = stats.esp;
-            document.getElementById('pub-stat-aux').textContent = stats.aux;
-            document.getElementById('pub-stat-pub').textContent = stats.pub;
-            const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
-            Object.keys(stats.groups).forEach(g => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${g}</div><div class="g-value">${stats.groups[g]}</div></div>`; });
-
-            // Re-aplicar visibilidad admin
-            if (isAdmin) {
-                document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
-                // Asegurar que los badges de estado estáticos se oculten para admin si el switch es visible
-                document.querySelectorAll('.global-view.badge').forEach(e => e.style.display = 'none');
-            }
+            document.getElementById('pub-stat-total').textContent = stats.total; document.getElementById('pub-stat-reg').textContent = stats.reg; document.getElementById('pub-stat-esp').textContent = stats.esp; document.getElementById('pub-stat-aux').textContent = stats.aux; document.getElementById('pub-stat-pub').textContent = stats.pub; const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
+            Object.keys(stats.groups).forEach(gId => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${gId}</div><div class="g-value">${stats.groups[gId]}</div></div>`; });
+            if (isAdmin) { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'table-cell'); }
         }
 
-        // --- NUEVA LÓGICA CON CONFIRMACIÓN ---
-        async function toggleEstado(id, nuevoEstado, checkbox) {
-            const estadoTexto = nuevoEstado ? 'ACTIVO' : 'INACTIVO';
-            const accionTexto = nuevoEstado ? 'activar' : 'desactivar';
+        async function toggleEstado(id, nuevoEstado, checkbox) { const estadoTexto = nuevoEstado ? 'ACTIVO' : 'INACTIVO'; const accionTexto = nuevoEstado ? 'activar' : 'desactivar'; const result = await Swal.fire({ title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} publicador?`, text: `El publicador pasará a estado ${estadoTexto}.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Sí, cambiar', cancelButtonText: 'Cancelar' }); if (result.isConfirmed) { try { const res = await fetch(`/api/publicadores/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: `Publicador ${nuevoEstado ? 'activado' : 'desactivado'}` }); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstado; } } catch (e) { console.error(e); checkbox.checked = !nuevoEstado; } } else { checkbox.checked = !nuevoEstado; } }
 
-            const result = await Swal.fire({
-                title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} publicador?`,
-                text: `El publicador pasará a estado ${estadoTexto}.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, cambiar',
-                cancelButtonText: 'Cancelar'
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    const res = await fetch(`/api/publicadores/${id}/estado`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo })
-                    });
-                    const json = await res.json();
-                    if (json.ok) {
-                        Toast.fire({ icon: 'success', title: `Publicador ${nuevoEstado ? 'activado' : 'desactivado'}` });
-                        cargarTablaPublicadores(); // Recargar para ordenar
-                    } else {
-                        Swal.fire('Error', json.msg, 'error');
-                        checkbox.checked = !nuevoEstado; // Revertir visualmente si hay error
-                    }
-                } catch (e) {
-                    console.error(e);
-                    checkbox.checked = !nuevoEstado;
-                }
-            } else {
-                // Si cancela, revertir el checkbox visualmente al estado anterior
-                checkbox.checked = !nuevoEstado;
-            }
-        }
-
-        function editarPub(id) {
+        // CORREGIDO: Función ASYNC
+        async function editarPub(id) {
             if (!isAdmin) return;
-            const obj = cachePublicadores.find(p => p.id == id); if (!obj) return;
+            const obj = cachePublicadores.find(p => p.id == id);
+            if (!obj) return;
+            abrirModal('publicador', id);
+            await cargarSelectsDeGrupos(); // Esperar carga de grupos
             const f = document.getElementById('formPublicador');
             document.getElementById('pubId').value = obj.id;
             document.getElementById('pubGrupoSelect').value = obj.grupo;
-            f.nombre.value = obj.nombre; f.priv1.value = obj.priv1; f.priv2.value = obj.priv2; f.priv3.value = obj.priv3; f.informo.value = obj.informo; f.comentario.value = obj.comentario;
-            abrirModal('publicador', id);
+            f.nombre.value = obj.nombre;
+            f.priv1.value = obj.priv1;
+            f.priv2.value = obj.priv2;
+            f.priv3.value = obj.priv3;
+            f.informo.value = obj.informo;
+            f.comentario.value = obj.comentario;
         }
 
-        function resetFormPub() {
-            document.getElementById('formPublicador').reset();
-            document.getElementById('pubId').value = "";
-        }
+        function resetFormPub() { document.getElementById('formPublicador').reset(); document.getElementById('pubId').value = ""; }
+        document.getElementById('formPublicador').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('pubId').value; if (!id) data.informo = 'NO'; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); } });
 
-        document.getElementById('formPublicador').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            const id = document.getElementById('pubId').value;
-            if (!id) data.informo = 'NO';
-            const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores';
-            data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo;
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            const json = await res.json();
-            if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); }
-        });
-
-        // --- REUNIONES ---
-        async function cargarTablaReuniones() {
-            const filterMes = document.getElementById('reuFilterMes').value;
-            const url = filterMes ? `/api/reuniones?mes=${filterMes}` : '/api/reuniones';
-            const res = await fetch(url); cacheReuniones = await res.json();
-            const tbody = document.getElementById('tbodyReuniones'); tbody.innerHTML = '';
-            const summaryContainer = document.getElementById('resumenReunionesContainer'); summaryContainer.innerHTML = '';
-            let totalPromedioMensual = 0; let datosPorMes = {};
-            cacheReuniones.forEach(r => {
-                if (!datosPorMes[r.mes]) datosPorMes[r.mes] = { totalSemanal: 0, countMeetings: 0 };
-                const s1 = r.sem1 || 0; const s2 = r.sem2 || 0; const s3 = r.sem3 || 0; const s4 = r.sem4 || 0; const s5 = r.sem5 || 0;
-                const sumaSem = s1 + s2 + s3 + s4 + s5;
-                let weeksCount = 0; if (s1 > 0) weeksCount++; if (s2 > 0) weeksCount++; if (s3 > 0) weeksCount++; if (s4 > 0) weeksCount++; if (s5 > 0) weeksCount++;
-                const promedio = weeksCount > 0 ? Math.round(sumaSem / weeksCount) : 0;
-                const iconTipo = r.tipo === 'ENTRE SEMANA' ? '<i class="fa-solid fa-calendar-days" style="color:#64748b"></i>' : '<i class="fa-solid fa-calendar-week" style="color:#d97706"></i>';
-                const iconMod = r.modalidad === 'PRESENCIAL' ? '<span class="badge badge-grp">PRES</span>' : '<span class="badge badge-gray">ZOOM</span>';
-                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('reuniones', ${r.id})"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick='editarReunion(${JSON.stringify(r)})'><i class="fa-solid fa-pen"></i></button>` : '';
-                tbody.innerHTML += `<tr><td style="font-weight:bold">${r.mes}</td><td>${iconTipo} <span style="font-size:0.8em">${r.tipo}</span></td><td>${iconMod}</td><td style="text-align:center">${r.sem1 || '-'}</td><td style="text-align:center">${r.sem2 || '-'}</td><td style="text-align:center">${r.sem3 || '-'}</td><td style="text-align:center">${r.sem4 || '-'}</td><td style="text-align:center">${r.sem5 || '-'}</td><td style="text-align:center; font-weight:bold; color:var(--primary)">${promedio}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
-            });
-            const mathData = {};
-            cacheReuniones.forEach(r => {
-                const key = r.mes + '|' + r.tipo; if (!mathData[key]) mathData[key] = { mes: r.mes, tipo: r.tipo, total: 0, weeks: new Set() };
-                [r.sem1, r.sem2, r.sem3, r.sem4, r.sem5].forEach((val, idx) => { if (val > 0) { mathData[key].total += val; mathData[key].weeks.add(idx); } });
-            });
-            Object.values(mathData).forEach(d => {
-                const semanasCount = d.weeks.size; const promedio = semanasCount > 0 ? Math.round(d.total / semanasCount) : 0;
-                totalPromedioMensual += promedio;
-                const cardHtml = `<div class="reu-stat-box" style="margin-bottom:10px;"><div><div class="reu-stat-title" style="color:var(--primary)">${d.mes} - ${d.tipo}</div><div class="reu-stat-sub">Asist: ${d.total} | Semanas: ${semanasCount}</div></div><div class="reu-stat-val">${promedio}</div></div>`;
-                summaryContainer.innerHTML += cardHtml;
-            });
-            const promedioFinalAnual = Math.round(totalPromedioMensual / 12);
-            document.getElementById('reuTotalAnual').textContent = promedioFinalAnual;
-        }
-
-        function editarReunion(r) {
-            if (!isAdmin) return;
-            const f = document.getElementById('formReunion');
-            document.getElementById('reunionId').value = r.id;
-            f.mes.value = r.mes; f.tipo.value = r.tipo; f.modalidad.value = r.modalidad;
-            f.sem1.value = r.sem1 || 0; f.sem2.value = r.sem2 || 0; f.sem3.value = r.sem3 || 0; f.sem4.value = r.sem4 || 0; f.sem5.value = r.sem5 || 0;
-            abrirModal('reunion', r.id);
-        }
-
-        function resetFormReu() { document.getElementById('formReunion').reset(); document.getElementById('reunionId').value = ""; }
-        document.getElementById('formReunion').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            data.requester_group = session.grupo;
-            const id = document.getElementById('reunionId').value;
-            const method = id ? 'PUT' : 'POST';
-            const url = id ? `/api/reuniones/${id}` : '/api/reuniones';
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); }
-            else { Swal.fire('Error', 'No se pudo guardar', 'error'); }
-        });
-
-        // --- LÓGICA CIERRE ---
-        let mesesCerrados = [];
-        async function verificarCierres() {
-            try {
-                const res = await fetch('/api/cierres'); mesesCerrados = await res.json();
-                Array.from(formMesSelect.options).forEach(opt => { if (mesesCerrados.includes(opt.value)) { opt.disabled = true; opt.textContent += " (Cerrado)"; } });
-            } catch (e) { console.error(e); }
-        }
-
-        async function cerrarMes() {
-            const mes = document.getElementById('dashMesSelect').value;
-            const confirm = await Swal.fire({ title: `¿Cerrar ${mes}?`, html: "Esta acción validará 'SI' y reseteará a 'NO'.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, Cerrar' });
-            if (confirm.isConfirmed) {
-                const res = await fetch('/api/cerrar-mes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, requester_group: session.grupo }) });
-                const json = await res.json();
-                if (json.ok) { Swal.fire('Cerrado', `Mes ${mes} cerrado.`, 'success'); verificarCierres(); } else { Swal.fire('Error', json.msg, 'error'); }
-            }
-        }
-
-        /* --- LOGICA LIMPIAR --- */
-        function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
-        function limpiarFiltrosPub() { document.getElementById('pubFiltroNombre').value = ''; document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
-
-        /* --- REPORTES --- */
-        let currentReportData = [];
-        async function generarReporte() {
-            const form = document.getElementById('formReporte');
-            const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, nombre: form.nombre.value };
-            const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            currentReportData = await res.json();
-            document.getElementById('reporteResultados').style.display = 'block';
-            document.getElementById('repTotalRows').textContent = currentReportData.length;
-            const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = '';
-            let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {};
-            currentReportData.forEach(r => {
-                sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0);
-                const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1;
-                tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td></tr>`;
-            });
-            document.getElementById('repSumHoras').textContent = sumHoras;
-            document.getElementById('repSumCursos').textContent = sumCursos;
-            document.getElementById('repSumCredito').textContent = sumCredito;
-            let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; }
-            document.getElementById('repCats').innerHTML = catsHtml;
-        }
-        function descargarPDF() {
-            if (currentReportData.length === 0) { Swal.fire('Vacío', 'Genera un reporte primero', 'info'); return; }
-            const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            doc.setFontSize(18); doc.text("Reporte de Actividad", 14, 20); doc.setFontSize(10); doc.text(`Generado: ${new Date().toLocaleDateString()}`, 14, 28);
-            let y = 35; doc.text("Resumen:", 14, y);
-            const sumHoras = document.getElementById('repSumHoras').textContent; const sumCursos = document.getElementById('repSumCursos').textContent; const sumCredito = document.getElementById('repSumCredito').textContent;
-            doc.text(`Total Horas: ${sumHoras} | Total Crédito: ${sumCredito} | Total Cursos: ${sumCursos}`, 14, y + 6);
-            const body = currentReportData.map(r => [r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre, r.priv3, r.horas, r.cursos, r.credito_hrs, r.predico, r.comentarios]);
-            doc.autoTable({ startY: y + 15, head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']], body: body, theme: 'grid', styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } });
-            doc.save('reporte_congregacion.pdf');
-        }
-
-        /* --- DASHBOARD --- */
+        // --- DASHBOARD ---
         async function cargarDashboard() {
             const mes = document.getElementById('dashMesSelect').value;
             const grp = isGlobal ? 0 : session.grupo;
-            const res = await fetch(`/api/dashboard?mes=${mes}&grupo=${grp}`);
+            try {
+                const res = await fetch(`/api/dashboard?mes=${mes}&grupo=${grp}`);
+                const data = await res.json();
+
+                document.getElementById('stat-pub-count').textContent = data.stats.pub.count;
+                document.getElementById('stat-pub-cursos').textContent = data.stats.pub.cursos || 0;
+                document.getElementById('stat-aux-count').textContent = data.stats.aux.count;
+                document.getElementById('stat-aux-horas').textContent = data.stats.aux.horas || 0;
+                document.getElementById('stat-aux-cursos').textContent = data.stats.aux.cursos || 0;
+                document.getElementById('stat-reg-count').textContent = data.stats.reg.count;
+                document.getElementById('stat-reg-horas').textContent = data.stats.reg.horas || 0;
+                document.getElementById('stat-reg-cursos').textContent = data.stats.reg.cursos || 0;
+
+                const container = document.getElementById('groups-progress-container');
+                container.innerHTML = '';
+
+                const activeGroupsList = data.groups_details || [];
+
+                if (activeGroupsList.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">No hay grupos activos configurados.</div>';
+                    return;
+                }
+
+                activeGroupsList.forEach(g => {
+                    const total = g.total_publicadores || 0;
+                    const reportados = g.informaron || 0;
+                    const percent = total > 0 ? Math.round((reportados / total) * 100) : 0;
+                    let color = 'var(--primary)';
+                    if (percent === 100) color = 'var(--success)';
+                    else if (percent < 50) color = 'var(--danger)';
+                    const encargadoText = g.encargado_sg ? `(${g.encargado_sg})` : '';
+
+                    container.innerHTML += `
+                    <div class="group-item">
+                        <div style="width:100%">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                <div><span class="group-name">${g.nombre}</span><span style="font-size:0.75em; color:#94a3b8; font-weight:400; margin-left:5px;"></span></div>
+                                <span style="font-size:0.8em; color:#64748b;">${reportados} / ${total}</span>
+                            </div>
+                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%; background:${color}"></div></div>
+                        </div>
+                        <div class="group-perc" style="color:${color}">${percent}%</div>
+                    </div>`;
+                });
+            } catch (error) { console.error("Error cargando dashboard:", error); }
+        }
+
+        /* --- GRUPOS --- */
+        async function cargarTablaGrupos() {
+            const res = await fetch('/api/grupos');
             const data = await res.json();
-            document.getElementById('stat-pub-count').textContent = data.stats.pub.count;
-            document.getElementById('stat-pub-cursos').textContent = data.stats.pub.cursos || 0;
-            document.getElementById('stat-aux-count').textContent = data.stats.aux.count;
-            document.getElementById('stat-aux-horas').textContent = data.stats.aux.horas || 0;
-            document.getElementById('stat-aux-cursos').textContent = data.stats.aux.cursos || 0;
-            document.getElementById('stat-reg-count').textContent = data.stats.reg.count;
-            document.getElementById('stat-reg-horas').textContent = data.stats.reg.horas || 0;
-            document.getElementById('stat-reg-cursos').textContent = data.stats.reg.cursos || 0;
-            const container = document.getElementById('groups-progress-container'); container.innerHTML = '';
-            const gruposInfo = {};
-            data.groups.totals.forEach(g => gruposInfo[g.grupo] = { total: g.total, reported: 0 });
-            data.groups.reports.forEach(g => { if (gruposInfo[g.grupo]) gruposInfo[g.grupo].reported = g.count; });
-            Object.keys(gruposInfo).forEach(grpNum => {
-                if (grpNum == 0) return;
-                const g = gruposInfo[grpNum];
-                const percent = Math.round((g.reported / g.total) * 100) || 0;
-                let color = 'var(--primary)'; if (percent === 100) color = 'var(--success)'; if (percent < 50) color = 'var(--danger)';
-                container.innerHTML += `<div class="group-item"><div class="group-info"><div class="group-name">Grupo ${grpNum} <span style="font-weight:400; font-size:0.85em; color:#64748b;">(${g.reported}/${g.total})</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%; background:${color}"></div></div></div><div class="group-perc" style="color:${color}">${percent}%</div></div>`;
+            const tbody = document.getElementById('tablaGrupos');
+            tbody.innerHTML = '';
+
+            data.forEach(g => {
+                const esActivo = g.estado === 'ACTIVO';
+                // Switch + Texto (Igual que en Publicadores)
+                const switchHtml = `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label class="switch">
+                            <input type="checkbox" ${esActivo ? 'checked' : ''} onchange="toggleEstadoGrupo(${g.id}, this.checked, this)">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="badge ${esActivo ? 'badge-si' : 'badge-no'}" style="min-width:60px; justify-content:center;">
+                            ${g.estado}
+                        </span>
+                    </div>
+                `;
+
+                tbody.innerHTML += `
+                    <tr class="${esActivo ? '' : 'row-inactivo'}">
+                        <td style="font-weight:bold;">${g.nombre}</td>
+                        <td style="font-size:0.9em">${g.encargado_sg || '-'}</td>
+                        <td style="font-size:0.9em">${g.encargado_axg || '-'}</td>
+                        <td>${switchHtml}</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick='editarGrupo(${JSON.stringify(g)})'><i class="fa-solid fa-pen"></i></button>
+                        </td>
+                    </tr>`;
             });
         }
 
-        /* --- USUARIOS --- */
-        function editarUser(id) {
-            const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return;
-            const f = document.getElementById('formUsuario');
-            document.getElementById('userId').value = obj.id;
-            f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo;
-            abrirModal('usuario', id);
-        }
-        function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
-        document.getElementById('formUsuario').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
-            data.requester_group = session.grupo;
-            await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios();
-        });
-        async function cargarTablaUsuarios() {
-            if (!isAdmin) return;
-            const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json();
-            const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = '';
-            cacheUsuarios.forEach(d => {
-                const editBtn = `<button class="btn-action btn-edit" onclick="editarUser(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
-                tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>${d.password}</td><td>${editBtn} <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td></tr>`;
-            });
-        }
-
-        async function eliminar(entidad, id) {
-            const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' });
+        async function toggleEstadoGrupo(id, nuevoEstadoBool, checkbox) {
+            const nuevoEstadoStr = nuevoEstadoBool ? 'ACTIVO' : 'INACTIVO';
+            const accionTexto = nuevoEstadoBool ? 'activar' : 'desactivar';
+            const result = await Swal.fire({ title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} grupo?`, text: `El grupo pasará a estado ${nuevoEstadoStr}.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Sí, cambiar', cancelButtonText: 'Cancelar' });
             if (result.isConfirmed) {
-                // PARAMETROS EN URL
-                const params = new URLSearchParams();
-                params.append('requester_group', session.grupo);
-                if (entidad === 'informes') {
-                    const inf = cacheInformes.find(i => i.id == id);
-                    if (inf) params.append('mes', inf.mes);
-                }
-
-                const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' });
-                const json = await res.json();
-                if (json.ok) {
-                    Toast.fire({ icon: 'success', title: 'Eliminado correctamente' });
-                    if (entidad === 'informes') cargarTablaInformes();
-                    if (entidad === 'publicadores') cargarTablaPublicadores();
-                    if (entidad === 'usuarios') cargarTablaUsuarios();
-                    if (entidad === 'reuniones') cargarTablaReuniones();
-                    if (entidad === 'publicadores' && document.getElementById('view-publicadores').classList.contains('active')) cargarTablaPublicadores();
-                } else {
-                    Swal.fire('Error', json.msg, 'error');
-                }
-            }
+                try {
+                    const res = await fetch(`/api/grupos/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: nuevoEstadoStr, requester_group: session.grupo }) });
+                    const json = await res.json();
+                    if (json.ok) { Toast.fire({ icon: 'success', title: `Grupo ${nuevoEstadoStr.toLowerCase()}` }); cargarTablaGrupos(); cargarSelectsDeGrupos(); if (document.getElementById('view-dashboard').classList.contains('active')) cargarDashboard(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstadoBool; }
+                } catch (e) { console.error(e); checkbox.checked = !nuevoEstadoBool; }
+            } else { checkbox.checked = !nuevoEstadoBool; }
         }
+
+        function editarGrupo(g) { const f = document.getElementById('formGrupo'); document.getElementById('grupoId').value = g.id; f.nombre.value = g.nombre; f.encargado_sg.value = g.encargado_sg; f.encargado_axg.value = g.encargado_axg; f.estado.value = g.estado; abrirModal('grupo', g.id); }
+        function resetFormGrupo() { document.getElementById('formGrupo').reset(); document.getElementById('grupoId').value = ""; }
+        document.getElementById('formGrupo').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); data.requester_group = session.grupo; const id = document.getElementById('grupoId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/grupos/${id}` : '/api/grupos'; const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { Toast.fire({ icon: 'success', title: 'Grupo guardado' }); cerrarModal(); cargarTablaGrupos(); cargarSelectsDeGrupos(); if (document.getElementById('view-dashboard').classList.contains('active')) cargarDashboard(); } else { Swal.fire('Error', 'No se pudo guardar', 'error'); } });
+
+        /* --- REUNIONES, REPORTES, USUARIOS... (Sin cambios mayores) --- */
+        async function cargarTablaReuniones() { const filterMes = document.getElementById('reuFilterMes').value; const url = filterMes ? `/api/reuniones?mes=${filterMes}` : '/api/reuniones'; const res = await fetch(url); cacheReuniones = await res.json(); const tbody = document.getElementById('tbodyReuniones'); tbody.innerHTML = ''; const summaryContainer = document.getElementById('resumenReunionesContainer'); summaryContainer.innerHTML = ''; let totalPromedioMensual = 0; let datosPorMes = {}; cacheReuniones.forEach(r => { if (!datosPorMes[r.mes]) datosPorMes[r.mes] = { totalSemanal: 0, countMeetings: 0 }; const s1 = r.sem1 || 0; const s2 = r.sem2 || 0; const s3 = r.sem3 || 0; const s4 = r.sem4 || 0; const s5 = r.sem5 || 0; const sumaSem = s1 + s2 + s3 + s4 + s5; let weeksCount = 0; if (s1 > 0) weeksCount++; if (s2 > 0) weeksCount++; if (s3 > 0) weeksCount++; if (s4 > 0) weeksCount++; if (s5 > 0) weeksCount++; const promedio = weeksCount > 0 ? Math.round(sumaSem / weeksCount) : 0; const iconTipo = r.tipo === 'ENTRE SEMANA' ? '<i class="fa-solid fa-calendar-days" style="color:#64748b"></i>' : '<i class="fa-solid fa-calendar-week" style="color:#d97706"></i>'; const iconMod = r.modalidad === 'PRESENCIAL' ? '<span class="badge badge-grp">PRES</span>' : '<span class="badge badge-gray">ZOOM</span>'; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('reuniones', ${r.id})"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick='editarReunion(${JSON.stringify(r)})'><i class="fa-solid fa-pen"></i></button>` : ''; tbody.innerHTML += `<tr><td style="font-weight:bold">${r.mes}</td><td>${iconTipo} <span style="font-size:0.8em">${r.tipo}</span></td><td>${iconMod}</td><td style="text-align:center">${r.sem1 || '-'}</td><td style="text-align:center">${r.sem2 || '-'}</td><td style="text-align:center">${r.sem3 || '-'}</td><td style="text-align:center">${r.sem4 || '-'}</td><td style="text-align:center">${r.sem5 || '-'}</td><td style="text-align:center; font-weight:bold; color:var(--primary)">${promedio}</td><td>${editBtn} ${deleteBtn}</td></tr>`; }); const mathData = {}; cacheReuniones.forEach(r => { const key = r.mes + '|' + r.tipo; if (!mathData[key]) mathData[key] = { mes: r.mes, tipo: r.tipo, total: 0, weeks: new Set() };[r.sem1, r.sem2, r.sem3, r.sem4, r.sem5].forEach((val, idx) => { if (val > 0) { mathData[key].total += val; mathData[key].weeks.add(idx); } }); }); Object.values(mathData).forEach(d => { const semanasCount = d.weeks.size; const promedio = semanasCount > 0 ? Math.round(d.total / semanasCount) : 0; totalPromedioMensual += promedio; const cardHtml = `<div class="reu-stat-box" style="margin-bottom:10px;"><div><div class="reu-stat-title" style="color:var(--primary)">${d.mes} - ${d.tipo}</div><div class="reu-stat-sub">Asist: ${d.total} | Semanas: ${semanasCount}</div></div><div class="reu-stat-val">${promedio}</div></div>`; summaryContainer.innerHTML += cardHtml; }); const promedioFinalAnual = Math.round(totalPromedioMensual / 12); document.getElementById('reuTotalAnual').textContent = promedioFinalAnual; }
+        function editarReunion(r) { if (!isAdmin) return; const f = document.getElementById('formReunion'); document.getElementById('reunionId').value = r.id; f.mes.value = r.mes; f.tipo.value = r.tipo; f.modalidad.value = r.modalidad; f.sem1.value = r.sem1 || 0; f.sem2.value = r.sem2 || 0; f.sem3.value = r.sem3 || 0; f.sem4.value = r.sem4 || 0; f.sem5.value = r.sem5 || 0; abrirModal('reunion', r.id); }
+        function resetFormReu() { document.getElementById('formReunion').reset(); document.getElementById('reunionId').value = ""; }
+        document.getElementById('formReunion').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); data.requester_group = session.grupo; const id = document.getElementById('reunionId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/reuniones/${id}` : '/api/reuniones'; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); } else { Swal.fire('Error', 'No se pudo guardar', 'error'); } });
+
+        async function verificarCierres() { try { const res = await fetch('/api/cierres'); mesesCerrados = await res.json(); Array.from(formMesSelect.options).forEach(opt => { if (mesesCerrados.includes(opt.value)) { opt.disabled = true; opt.textContent += " (Cerrado)"; } }); } catch (e) { console.error(e); } }
+        async function cerrarMes() { const mes = document.getElementById('dashMesSelect').value; const confirm = await Swal.fire({ title: `¿Cerrar ${mes}?`, html: "Esta acción validará 'SI' y reseteará a 'NO'.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, Cerrar' }); if (confirm.isConfirmed) { const res = await fetch('/api/cerrar-mes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Swal.fire('Cerrado', `Mes ${mes} cerrado.`, 'success'); verificarCierres(); } else { Swal.fire('Error', json.msg, 'error'); } } }
+        function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
+        function limpiarFiltrosPub() { document.getElementById('pubFiltroNombre').value = ''; document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
+
+        async function generarReporte() { const form = document.getElementById('formReporte'); const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, nombre: form.nombre.value }; const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); currentReportData = await res.json(); document.getElementById('reporteResultados').style.display = 'block'; document.getElementById('repTotalRows').textContent = currentReportData.length; const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = ''; let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {}; currentReportData.forEach(r => { sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0); const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1; tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td></tr>`; }); document.getElementById('repSumHoras').textContent = sumHoras; document.getElementById('repSumCursos').textContent = sumCursos; document.getElementById('repSumCredito').textContent = sumCredito; let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; } document.getElementById('repCats').innerHTML = catsHtml; }
+        function descargarPDF() { if (currentReportData.length === 0) { Swal.fire('Vacío', 'Genera un reporte primero', 'info'); return; } const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.setFontSize(18); doc.text("Reporte de Actividad", 14, 20); doc.setFontSize(10); doc.text(`Generado: ${new Date().toLocaleDateString()}`, 14, 28); let y = 35; doc.text("Resumen:", 14, y); const sumHoras = document.getElementById('repSumHoras').textContent; const sumCursos = document.getElementById('repSumCursos').textContent; const sumCredito = document.getElementById('repSumCredito').textContent; doc.text(`Total Horas: ${sumHoras} | Total Crédito: ${sumCredito} | Total Cursos: ${sumCursos}`, 14, y + 6); const body = currentReportData.map(r => [r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre, r.priv3, r.horas, r.cursos, r.credito_hrs, r.predico, r.comentarios]); doc.autoTable({ startY: y + 15, head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']], body: body, theme: 'grid', styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } }); doc.save('reporte_congregacion.pdf'); }
+
+        function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo; abrirModal('usuario', id); }
+        function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
+        document.getElementById('formUsuario').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios'; data.requester_group = session.grupo; await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios(); });
+        async function cargarTablaUsuarios() { if (!isAdmin) return; const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json(); const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = ''; cacheUsuarios.forEach(d => { const editBtn = `<button class="btn-action btn-edit" onclick="editarUser(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`; tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>${d.password}</td><td>${editBtn} <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }); }
+        async function eliminar(entidad, id) { const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' }); if (result.isConfirmed) { const params = new URLSearchParams(); params.append('requester_group', session.grupo); if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); } const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: 'Eliminado correctamente' }); if (entidad === 'informes') cargarTablaInformes(); if (entidad === 'publicadores') cargarTablaPublicadores(); if (entidad === 'usuarios') cargarTablaUsuarios(); if (entidad === 'reuniones') cargarTablaReuniones(); if (entidad === 'publicadores' && document.getElementById('view-publicadores').classList.contains('active')) cargarTablaPublicadores(); if (entidad === 'grupos') cargarTablaGrupos(); } else { Swal.fire('Error', json.msg, 'error'); } } }
 
         showView('dashboard');
     </script>
-
 </body>
 
 </html>
