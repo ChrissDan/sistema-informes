@@ -293,15 +293,11 @@
         .table-container {
             width: 100%;
             overflow-y: auto;
-            /* Scroll vertical activado */
             overflow-x: auto;
-            /* Scroll horizontal si es necesario */
             max-height: 65vh;
-            /* Altura máxima para forzar el scroll */
             border-radius: 8px;
             border: 1px solid #e2e8f0;
             position: relative;
-            /* Contexto para el sticky */
         }
 
         table {
@@ -311,13 +307,11 @@
             min-width: 700px;
         }
 
-        /* Cabecera Fija */
         th {
             position: sticky;
             top: 0;
             z-index: 10;
             background: #f8fafc;
-            /* Fondo para tapar el contenido al scrollear */
             padding: 12px 15px;
             text-align: left;
             border-bottom: 2px solid #e2e8f0;
@@ -327,7 +321,6 @@
             text-transform: uppercase;
             white-space: nowrap;
             box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.05);
-            /* Sombra sutil */
         }
 
         td {
@@ -607,6 +600,7 @@
             border-radius: 10px;
             font-size: 1rem;
             background: #fff;
+            transition: border-color 0.2s;
         }
 
         input:focus,
@@ -653,7 +647,7 @@
             overflow-y: auto;
             max-height: 90vh;
             transform: translateY(20px);
-            transition: transform 0.3s;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
         }
@@ -1676,7 +1670,7 @@
 
         function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesIndexInformes > 11) mesIndexInformes = 0; if (mesIndexInformes < 0) mesIndexInformes = 11; document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); }
 
-        // --- CARGA DINÁMICA DE GRUPOS (FIXED: Solo ID) ---
+        // --- CARGA DINÁMICA DE GRUPOS (SOLO ID) ---
         async function cargarSelectsDeGrupos() {
             try {
                 const res = await fetch('/api/grupos?estado=ACTIVO');
@@ -1729,7 +1723,7 @@
             if (viewName === 'grupos') cargarTablaGrupos();
         }
 
-        /* --- LOGICA MODAL (FIXED) --- */
+        /* --- LOGICA MODAL (CORREGIDA CON AWAIT) --- */
         function abrirModal(tipo, id = null) {
             const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const modalTitle = document.getElementById('modalTitle'); modalBody.innerHTML = ''; let formId = '';
 
@@ -1738,8 +1732,8 @@
                 cargarSelectsDeGrupos();
             }
 
-            if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); }
-            else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); }
+            if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) { resetFormInforme(true); cargarSelectsDeGrupos(); } }
+            else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) { resetFormPub(); cargarSelectsDeGrupos(); } }
             else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); }
             else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); }
             else if (tipo === 'grupo') { formId = 'formGrupo'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Grupo' : '<i class="fa-solid fa-plus"></i> Nuevo Grupo'; if (!id) resetFormGrupo(); }
@@ -1765,7 +1759,28 @@
                 tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${d.credito_hrs || '-'}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             }); if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
         }
-        function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
+
+        // ASYNC EDIT INFORME (FIXED)
+        async function editarInforme(id) {
+            const obj = cacheInformes.find(i => i.id == id);
+            if (!obj) return;
+            abrirModal('informe', id);
+            await cargarSelectsDeGrupos(); // Wait for groups
+            const f = document.getElementById('formInforme');
+            document.getElementById('informeId').value = obj.id;
+            f.mes.value = obj.mes;
+            const grupoTarget = isGlobal ? obj.grupo : session.grupo;
+            if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget;
+            await cargarPublicadoresSelect(grupoTarget, 'all'); // Wait for publishers
+            f.publicador_id.value = obj.publicador_id;
+            cargarDatosPub();
+            f.predico.value = obj.predico;
+            f.horas.value = obj.horas;
+            f.cursos.value = obj.cursos;
+            f.comentarios.value = obj.comentarios;
+            f.credito_hrs.value = obj.credito_hrs;
+        }
+
         function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
         document.getElementById('formInforme').addEventListener('submit', async (e) => { e.preventDefault(); const f = e.target; const rawData = Object.fromEntries(new FormData(f)); rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0; rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0; if ((h + c) > 55) { const permitido = (55 - h) < 0 ? 0 : (55 - h); Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `La suma de horas (${h}) + crédito (${c}) supera las 55 horas.\n\nCon ${h} horas reales, el crédito MÁXIMO que puedes poner es: ${permitido}.` }); return; } const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes'; rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; rawData.requester_group = session.grupo; if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } } if (id) rawData.mes = f.mes.value; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); const json = await res.json(); if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); } });
 
@@ -1781,7 +1796,7 @@
                 if (d.activo) { stats.total++; const p = (d.priv3 || '').toUpperCase(); if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++; if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++; }
                 const rowClass = d.activo ? '' : 'row-inactivo';
 
-                // SWITCH + TEXTO (Igual que Grupos)
+                // SWITCH + TEXTO
                 const switchHtml = `
                     <div style="display:flex; align-items:center; gap:8px;">
                         <label class="switch admin-only">
@@ -1798,7 +1813,7 @@
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
                 const infoBadge = d.informo === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
 
-                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td class="admin-only" style="white-space:nowrap;">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             });
             document.getElementById('pub-stat-total').textContent = stats.total; document.getElementById('pub-stat-reg').textContent = stats.reg; document.getElementById('pub-stat-esp').textContent = stats.esp; document.getElementById('pub-stat-aux').textContent = stats.aux; document.getElementById('pub-stat-pub').textContent = stats.pub; const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
             Object.keys(stats.groups).forEach(gId => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${gId}</div><div class="g-value">${stats.groups[gId]}</div></div>`; });
@@ -1807,13 +1822,13 @@
 
         async function toggleEstado(id, nuevoEstado, checkbox) { const estadoTexto = nuevoEstado ? 'ACTIVO' : 'INACTIVO'; const accionTexto = nuevoEstado ? 'activar' : 'desactivar'; const result = await Swal.fire({ title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} publicador?`, text: `El publicador pasará a estado ${estadoTexto}.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Sí, cambiar', cancelButtonText: 'Cancelar' }); if (result.isConfirmed) { try { const res = await fetch(`/api/publicadores/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: `Publicador ${nuevoEstado ? 'activado' : 'desactivado'}` }); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstado; } } catch (e) { console.error(e); checkbox.checked = !nuevoEstado; } } else { checkbox.checked = !nuevoEstado; } }
 
-        // CORREGIDO: Función ASYNC
+        // ASYNC EDIT PUB (FIXED)
         async function editarPub(id) {
             if (!isAdmin) return;
             const obj = cachePublicadores.find(p => p.id == id);
             if (!obj) return;
             abrirModal('publicador', id);
-            await cargarSelectsDeGrupos(); // Esperar carga de grupos
+            await cargarSelectsDeGrupos(); // Wait for groups
             const f = document.getElementById('formPublicador');
             document.getElementById('pubId').value = obj.id;
             document.getElementById('pubGrupoSelect').value = obj.grupo;
@@ -1828,7 +1843,7 @@
         function resetFormPub() { document.getElementById('formPublicador').reset(); document.getElementById('pubId').value = ""; }
         document.getElementById('formPublicador').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('pubId').value; if (!id) data.informo = 'NO'; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); } });
 
-        // --- DASHBOARD ---
+        // --- DASHBOARD (ACTUALIZADO DINAMICO) ---
         async function cargarDashboard() {
             const mes = document.getElementById('dashMesSelect').value;
             const grp = isGlobal ? 0 : session.grupo;
@@ -1848,6 +1863,7 @@
                 const container = document.getElementById('groups-progress-container');
                 container.innerHTML = '';
 
+                // Usamos la lista de grupos activos que viene de la BD
                 const activeGroupsList = data.groups_details || [];
 
                 if (activeGroupsList.length === 0) {
