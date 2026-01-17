@@ -50,74 +50,7 @@
             z-index: 5000 !important;
         }
 
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 22px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #cbd5e1;
-            transition: .4s;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-        }
-
-        input:checked+.slider {
-            background-color: var(--success);
-        }
-
-        input:focus+.slider {
-            box-shadow: 0 0 1px var(--success);
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(22px);
-        }
-
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
-
-        .row-inactivo {
-            background-color: #f8fafc !important;
-            color: #94a3b8;
-        }
-
-        .row-inactivo td {
-            color: #94a3b8;
-        }
-
-        .row-inactivo b {
-            color: #64748b !important;
-        }
-
+        /* SIDEBAR FIXED */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
@@ -130,31 +63,12 @@
             box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
         }
 
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 4000;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-            opacity: 1;
-        }
-
         .sidebar-header {
-            padding: 25px 20px;
+            padding: 0 20px;
+            height: 70px;
             font-size: 1.1rem;
             font-weight: 700;
             border-bottom: 1px solid #1e293b;
-            text-align: center;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -163,14 +77,18 @@
 
         .nav-links {
             list-style: none;
-            padding: 0 15px;
-            margin: 20px 0;
+            padding: 20px 15px;
+            margin: 0;
             flex: 1;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .nav-links li {
-            margin-bottom: 8px;
+            width: 100%;
+            display: block;
         }
 
         .nav-links a {
@@ -180,27 +98,30 @@
             padding: 12px 15px;
             color: #94a3b8;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 10px;
             transition: all 0.2s;
             cursor: pointer;
             font-weight: 500;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .nav-links a:hover,
         .nav-links a.active {
             background: var(--primary);
             color: white;
-            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: translateX(3px);
         }
 
         .nav-links a i {
-            width: 20px;
+            width: 24px;
             text-align: center;
             font-size: 1.1rem;
         }
 
         .user-panel {
-            padding: 15px 20px;
+            padding: 20px;
             border-top: 1px solid #1e293b;
             background: #0b1120;
         }
@@ -208,13 +129,13 @@
         .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         .user-avatar {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             background: var(--primary);
             border-radius: 50%;
             display: flex;
@@ -223,6 +144,7 @@
             font-weight: bold;
             color: white;
             flex-shrink: 0;
+            font-size: 1.1rem;
         }
 
         .btn-logout {
@@ -230,11 +152,19 @@
             text-decoration: none;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: 0.2s;
-            padding: 5px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .btn-logout:hover {
+            background: rgba(248, 113, 113, 0.1);
         }
 
         .main-content {
@@ -248,7 +178,8 @@
 
         header {
             background: white;
-            padding: 15px 20px;
+            padding: 0 20px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -280,22 +211,54 @@
             font-size: 1.5rem;
             color: #334155;
             cursor: pointer;
-            padding: 0;
+            padding: 5px;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 4000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(3px);
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
         }
 
         .content-scroll {
             padding: 20px;
             overflow-y: auto;
             flex: 1;
+            -webkit-overflow-scrolling: touch;
         }
 
         .section-view {
             display: none;
-            animation: fadeIn 0.3s;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .section-view.active {
             display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .card {
@@ -381,6 +344,11 @@
             align-items: center;
             justify-content: center;
             margin-right: 4px;
+            transition: transform 0.1s;
+        }
+
+        .btn-action:active {
+            transform: scale(0.95);
         }
 
         .btn-del {
@@ -407,6 +375,10 @@
             gap: 8px;
             transition: 0.2s;
             font-size: 0.95rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
         }
 
         .btn-cancel {
@@ -459,10 +431,15 @@
             transition: 0.2s;
         }
 
+        .btn-add-new:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(37, 99, 235, 0.25);
+        }
+
         .form-layout {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 15px;
+            gap: 20px;
         }
 
         @media (min-width: 600px) {
@@ -500,7 +477,7 @@
             display: block;
             font-size: 0.85rem;
             color: #64748b;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-weight: 600;
         }
 
@@ -508,15 +485,17 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
             background: #fff;
+            transition: border-color 0.2s;
         }
 
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
@@ -540,7 +519,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(4px);
             z-index: 10000;
         }
 
@@ -554,11 +533,11 @@
             width: 95%;
             max-width: 650px;
             border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow-y: auto;
             max-height: 90vh;
             transform: translateY(20px);
-            transition: transform 0.3s;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
         }
@@ -568,7 +547,7 @@
         }
 
         .modal-header {
-            padding: 20px;
+            padding: 20px 25px;
             border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
@@ -581,17 +560,22 @@
 
         .modal-header h3 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: #1e293b;
+            font-weight: 700;
         }
 
         .close-modal-btn {
             background: none;
             border: none;
             font-size: 1.5rem;
-            color: #64748b;
+            color: #94a3b8;
             cursor: pointer;
             transition: 0.2s;
+        }
+
+        .close-modal-btn:hover {
+            color: #64748b;
         }
 
         .modal-body {
@@ -656,6 +640,11 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
         }
 
         .stat-icon {
@@ -715,41 +704,44 @@
         .group-item {
             background: white;
             border: 1px solid #e2e8f0;
-            padding: 12px 15px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .group-name {
-            font-weight: 600;
+            font-weight: 700;
             color: #334155;
-            font-size: 0.95rem;
+            font-size: 1rem;
         }
 
         .progress-bar-bg {
             width: 100%;
-            height: 6px;
+            height: 8px;
             background: #e2e8f0;
-            border-radius: 3px;
-            margin-top: 6px;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
         }
 
         .progress-bar-fill {
             height: 100%;
             background: var(--primary);
             width: 0%;
-            border-radius: 3px;
-            transition: width 0.8s;
+            border-radius: 4px;
+            transition: width 1s ease-out;
         }
 
         .group-perc {
-            font-weight: 700;
+            font-weight: 800;
             color: var(--primary);
             margin-left: 15px;
-            min-width: 45px;
+            min-width: 50px;
             text-align: right;
+            font-size: 1.1rem;
         }
 
         .pub-overview {
@@ -761,7 +753,7 @@
 
         .pub-total-card {
             flex: 1;
-            min-width: 220px;
+            min-width: 240px;
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             border-radius: 16px;
@@ -770,22 +762,22 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
             position: relative;
             overflow: hidden;
         }
 
         .pub-total-card i {
-            font-size: 8rem;
+            font-size: 10rem;
             position: absolute;
             right: -20px;
-            bottom: -20px;
+            bottom: -30px;
             opacity: 0.15;
             transform: rotate(-15deg);
         }
 
         .pub-total-card .value {
-            font-size: 4.5rem;
+            font-size: 5rem;
             font-weight: 800;
             line-height: 1;
             z-index: 1;
@@ -797,6 +789,8 @@
             opacity: 0.9;
             margin-top: 10px;
             z-index: 1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .pub-breakdown-grid {
@@ -810,16 +804,21 @@
         .mini-stat-card {
             background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s;
+        }
+
+        .mini-stat-card:hover {
+            transform: translateY(-2px);
         }
 
         .mini-stat-card .value {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: #334155;
         }
@@ -857,10 +856,10 @@
         }
 
         .group-stat-card .g-value {
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 800;
             color: var(--primary);
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         .reu-stats-grid {
@@ -871,13 +870,14 @@
         }
 
         .reu-stat-box {
-            background: #f8fafc;
+            background: white;
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .reu-stat-title {
@@ -907,11 +907,12 @@
         }
 
         .summary-box {
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
             border: 1px solid #e2e8f0;
             text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .summary-title {
@@ -923,8 +924,8 @@
         }
 
         .summary-val {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: #334155;
         }
 
@@ -937,24 +938,27 @@
         }
 
         .badge {
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 99px;
             font-size: 0.7rem;
-            font-weight: 600;
+            font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 4px;
             white-space: nowrap;
+            letter-spacing: 0.5px;
         }
 
         .badge-si {
             background: #dcfce7;
             color: #15803d;
+            border: 1px solid #bbf7d0;
         }
 
         .badge-no {
             background: #fee2e2;
             color: #b91c1c;
+            border: 1px solid #fecaca;
         }
 
         .badge-gray {
@@ -966,6 +970,72 @@
         .badge-grp {
             background: #e0e7ff;
             color: #4338ca;
+            border: 1px solid #c7d2fe;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: var(--success);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(18px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .row-inactivo {
+            background-color: #f8fafc !important;
+            color: #94a3b8;
+        }
+
+        .row-inactivo td {
+            color: #94a3b8;
+        }
+
+        .row-inactivo b {
+            color: #64748b !important;
         }
 
         @media (max-width: 768px) {
@@ -997,8 +1067,8 @@
             .btn-add-new {
                 width: 100%;
                 justify-content: center;
-                padding: 12px;
-                margin-bottom: 5px;
+                padding: 14px;
+                margin-bottom: 10px;
             }
 
             .nav-links a {
@@ -1007,6 +1077,21 @@
 
             .pub-total-card .value {
                 font-size: 3.5rem;
+            }
+
+            .card-header-flex {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .card-header-flex>* {
+                width: 100%;
+            }
+
+            .card-header-flex select,
+            .card-header-flex button {
+                width: 100%;
+                margin-top: 5px;
             }
         }
     </style>
@@ -1117,6 +1202,7 @@
                     <button class="btn-add-new" onclick="abrirModal('informe')"><i class="fa-solid fa-circle-plus"></i>
                         Nuevo Informe</button>
                 </div>
+
                 <div class="card">
                     <h3><i class="fa-solid fa-filter"></i> Buscar Informe</h3>
                     <div class="form-grid">
@@ -1131,6 +1217,7 @@
                             </div>
                             <input type="hidden" id="infFiltroMes">
                         </div>
+
                         <div class="global-view"><label>Grupo</label><select id="infFiltroGrupo">
                                 <option value="">(Todos)</option>
                                 <option value="1">1</option>
@@ -1149,6 +1236,7 @@
                                 <option value="PUB_COMBINED">PUB + PNB</option>
                             </select></div>
                         <div><label>Nombre</label><input id="infFiltroNombre" placeholder="Buscar..."></div>
+
                         <div style="align-self:end; display:flex; gap:10px;">
                             <button class="btn-primary" onclick="cargarTablaInformes()"><i
                                     class="fa-solid fa-magnifying-glass"></i> Buscar</button>
@@ -1157,10 +1245,11 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="card">
                     <div class="card-header-flex">
-                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3><button
-                            class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3>
+                        <button class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
                             onclick="cargarTablaInformes()"><i class="fa-solid fa-rotate"></i> Recargar</button>
                     </div>
                     <div class="table-container">
@@ -1265,7 +1354,8 @@
                     <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
                     <h3><i class="fa-solid fa-filter"></i> Buscar Publicador</h3>
                     <div class="form-grid">
-                        <div class="global-view"><label>Grupo</label><select id="pubFiltroGrupo">
+                        <div class="global-view"><label>Grupo</label>
+                            <select id="pubFiltroGrupo">
                                 <option value="">(Todos)</option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
@@ -1275,7 +1365,8 @@
                                 <option value="6">6</option>
                                 <option value="7">7</option>
                                 <option value="8">8</option>
-                            </select></div>
+                            </select>
+                        </div>
                         <div><label>Nombre</label><input id="pubFiltroNombre" placeholder="Buscar nombre..."></div>
                         <div><label>Privilegio</label><select id="pubFiltroPriv3">
                                 <option value="">(Todos)</option>
@@ -1305,6 +1396,7 @@
                                     <th>P3</th>
                                     <th>Info?</th>
                                     <th>Comentario</th>
+                                    <th class="global-view">Desde</th>
                                     <th class="admin-only">Estado</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -1322,7 +1414,8 @@
                         <div><label>Mes</label><select name="mes" id="repMesSelect">
                                 <option value="">(Todos)</option>
                             </select></div>
-                        <div><label>Grupo</label><select name="grupo">
+                        <div><label>Grupo</label>
+                            <select name="grupo">
                                 <option value="">(Todos)</option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
@@ -1332,7 +1425,8 @@
                                 <option value="6">6</option>
                                 <option value="7">7</option>
                                 <option value="8">8</option>
-                            </select></div>
+                            </select>
+                        </div>
                         <div><label>Privilegio 3</label><select name="priv3">
                                 <option value="">(Todos)</option>
                                 <option value="REG">REG</option>
@@ -1422,8 +1516,8 @@
     <div id="formsContainer" style="display:none;">
         <form id="formInforme" class="form-layout">
             <input type="hidden" name="id" id="informeId">
-            <div class="global-view col-span-1"><label>Grupo (Admin):</label><select id="infGrupoSelect"
-                    onchange="cargarPublicadoresSelect(this.value)">
+            <div class="global-view col-span-1"><label>Grupo (Admin):</label>
+                <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1432,7 +1526,8 @@
                     <option value="6">6</option>
                     <option value="7">7</option>
                     <option value="8">8</option>
-                </select></div>
+                </select>
+            </div>
             <div class="col-span-1"><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
             <div style="grid-column: 1/-1;"><label>Publicador</label><select id="selectPubInfo" name="publicador_id"
                     required onchange="cargarDatosPub()">
@@ -1447,18 +1542,31 @@
                 </select></div>
             <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
                     min="0"></div>
+
             <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
                     step="0.5" min="0"></div>
+
             <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0"></div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
                     rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveInfo">Guardar</button></div>
         </form>
-        <form id="formPublicador" class="form-layout">
+
+        <form id="formPublicador" class="form-layout" style="grid-template-columns: 1fr 1fr; gap: 15px;">
             <input type="hidden" name="id" id="pubId">
-            <div class="global-view" style="grid-column: 1/-1;"><label>Grupo</label><select id="pubGrupoSelect"
-                    name="grupo_manual">
+
+            <div style="grid-column: span 2;">
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                    Datos Personales</h4>
+            </div>
+
+            <div style="grid-column: span 2;"><label>Nombre Completo</label><input name="nombre" required
+                    placeholder="Ej: Juan Pérez"></div>
+
+            <div class="global-view" style="grid-column: span 1;"><label>Grupo</label>
+                <select id="pubGrupoSelect" name="grupo_manual">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1467,35 +1575,64 @@
                     <option value="6">6</option>
                     <option value="7">7</option>
                     <option value="8">8</option>
-                </select></div>
-            <div style="grid-column: 1/-1;"><label>Nombre Completo</label><input name="nombre" required></div>
-            <div class="col-span-1"><label>¿Informó?</label><select name="informo">
+                </select>
+            </div>
+
+            <div style="grid-column: span 1;"><label>Fecha Registro:</label><input type="date" name="fecha_ingreso"
+                    required></div>
+
+            <div style="grid-column: span 2; margin-top:10px;">
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                    Estado y Privilegios</h4>
+            </div>
+
+            <div style="grid-column: span 1;"><label>¿Informó este mes?</label>
+                <select name="informo" style="font-weight:bold;">
                     <option value="NO">NO</option>
                     <option value="SI">SÍ</option>
-                </select></div>
-            <div class="col-span-1"><label>Priv 1</label><select name="priv1">
-                    <option value="">-</option>
-                    <option value="SG">SG</option>
-                    <option value="AXG">AXG</option>
-                </select></div>
-            <div class="col-span-1"><label>Priv 2</label><select name="priv2">
-                    <option value="">-</option>
-                    <option value="A">A</option>
-                    <option value="SM">SM</option>
-                </select></div>
-            <div class="col-span-1"><label>Priv 3</label><select name="priv3">
+                </select>
+            </div>
+
+            <div style="grid-column: span 1;"><label>Privilegio Principal</label>
+                <select name="priv3">
                     <option>PUB</option>
                     <option>REG</option>
                     <option>AUX</option>
                     <option>AUX I</option>
                     <option>AUX M</option>
                     <option>PNB</option>
-                </select></div>
-            <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentario" rows="3"></textarea>
+                </select>
             </div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
-                    id="btnSavePub">Guardar</button></div>
+
+            <div style="grid-column: span 1;"><label>Cargo (Priv 1)</label>
+                <select name="priv1">
+                    <option value="">-</option>
+                    <option value="SG">SG</option>
+                    <option value="AXG">AXG</option>
+                </select>
+            </div>
+
+            <div style="grid-column: span 1;"><label>Nombramiento (Priv 2)</label>
+                <select name="priv2">
+                    <option value="">-</option>
+                    <option value="A">A</option>
+                    <option value="SM">SM</option>
+                </select>
+            </div>
+
+            <div style="grid-column: span 2; margin-top:10px;">
+                <label>Comentario / Observación</label>
+                <textarea name="comentario" rows="2" placeholder="Nota adicional..."></textarea>
+            </div>
+
+            <div style="grid-column: span 2; margin-top:10px;">
+                <button type="submit" class="btn-primary" style="width:100%" id="btnSavePub">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Publicador
+                </button>
+            </div>
         </form>
+
         <form id="formReunion" class="form-layout">
             <input type="hidden" name="id" id="reunionId">
             <div class="col-span-1"><label>Mes</label><select name="mes" id="reuMesSelect" required></select></div>
@@ -1520,7 +1657,8 @@
             <div style="grid-column: 1/-1;"><label>Nombre</label><input name="nombre" required></div>
             <div class="col-span-2"><label>Correo</label><input name="correo" type="email" required></div>
             <div class="col-span-1"><label>Contraseña</label><input name="password" required></div>
-            <div style="grid-column: 1/-1;"><label>Grupo</label><select name="grupo">
+            <div style="grid-column: 1/-1;"><label>Grupo</label>
+                <select name="grupo">
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1531,7 +1669,8 @@
                     <option value="8">8</option>
                     <option value="0">0 (Admin)</option>
                     <option value="9">9 (Supervisor)</option>
-                </select></div>
+                </select>
+            </div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveUser">Crear</button></div>
         </form>
@@ -1546,9 +1685,24 @@
         const sidebarTitle = document.getElementById('sidebarTitle'); if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; } else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; } else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
         document.getElementById('userName').textContent = session.nombre; document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
 
-        if (isAdmin) { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block'); document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block'); document.querySelectorAll('th.admin-only').forEach(el => el.style.display = 'table-cell'); document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell'); }
-        else if (isSupervisor) { document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block'); document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell'); document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); }
-        else { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); document.querySelectorAll('.global-view').forEach(el => el.style.display = 'none'); document.getElementById('nav-usuarios').parentElement.style.display = 'none'; document.getElementById('nav-reportes').parentElement.style.display = 'none'; document.getElementById('nav-reuniones').parentElement.style.display = 'none'; }
+        if (isAdmin) {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = 'table-cell');
+            document.querySelectorAll('th.global-view, td.global-view').forEach(el => el.style.display = 'table-cell');
+        }
+        else if (isSupervisor) {
+            document.querySelectorAll('#sidebar .global-view').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('th.global-view, td.global-view').forEach(el => el.style.display = 'table-cell');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        }
+        else {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'none');
+            document.getElementById('nav-usuarios').parentElement.style.display = 'none';
+            document.getElementById('nav-reportes').parentElement.style.display = 'none';
+            document.getElementById('nav-reuniones').parentElement.style.display = 'none';
+        }
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
         const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
@@ -1559,12 +1713,14 @@
         MESES.forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.textContent = m; formMesSelect.appendChild(opt); dashMesSelect.appendChild(opt.cloneNode(true)); repMesSelect.appendChild(opt.cloneNode(true)); reuMesSelect.appendChild(opt.cloneNode(true)); reuFilterMes.appendChild(opt.cloneNode(true)); infFiltroMes.appendChild(opt.cloneNode(true)); });
         dashMesSelect.value = MESES[mesIndexActual];
 
-        // --- INICIALIZAR ---
-        verificarInactivos();
+        // --- INICIALIZAR Y ASEGURAR CARGA ---
+        window.onload = function () {
+            verificarInactivos();
+        };
 
         function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesIndexInformes > 11) mesIndexInformes = 0; if (mesIndexInformes < 0) mesIndexInformes = 11; document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); }
 
-        // --- VERIFICAR INACTIVOS ---
+        // --- VERIFICAR INACTIVOS (LOGICA DEL CLIENTE) ---
         async function verificarInactivos() { try { const grp = isGlobal ? 0 : session.grupo; const res = await fetch(`/api/check-inactivos?grupo=${grp}`); const data = await res.json(); if (data.candidatos && data.candidatos.length > 0) { let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`; data.candidatos.forEach(c => { listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`; }); listaHtml += `</ul>`; Swal.fire({ title: '⚠️ Irregulares Detectados', html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> consecutivos sin informar:<br><br>${listaHtml}`, icon: 'warning', confirmButtonText: 'Entendido' }); } } catch (e) { console.error("Error checking inactives", e); } }
 
         function showView(viewName) {
@@ -1606,17 +1762,12 @@
         }
         function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
         function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
-
-        // --- VALIDACION DE HORAS (CORREGIDA) ---
         document.getElementById('formInforme').addEventListener('submit', async (e) => {
             e.preventDefault(); const f = e.target; const rawData = Object.fromEntries(new FormData(f)); rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0; rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0;
 
-            // --- LOGICA CORREGIDA ---
             let maxCredito = 55 - h;
             if (maxCredito < 0) maxCredito = 0;
-
             if (c > maxCredito) { Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` }); return; }
-            // ------------------------
 
             const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes'; rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; rawData.requester_group = session.grupo; if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } } if (id) rawData.mes = f.mes.value; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); const json = await res.json(); if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
         });
@@ -1630,320 +1781,229 @@
             for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
 
             if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
-
             cachePublicadores.forEach(d => {
-                // Solo contar estadísticas de activos
-                if (d.activo) {
-                    stats.total++;
-                    const p = (d.priv3 || '').toUpperCase();
-                    if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++;
-                    if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++;
-                }
+                if (d.activo) { stats.total++; const p = (d.priv3 || '').toUpperCase(); if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++; if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++; }
+                const rowClass = d.activo ? '' : 'row-inactivo'; const switchHtml = `<label class="switch admin-only"><input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)"><span class="slider round"></span></label><span class="${d.activo ? 'badge badge-si' : 'badge badge-no'} global-view" ${isAdmin ? 'style="display:none"' : ''}>${d.activo ? 'ACTIVO' : 'INACTIVO'}</span>`; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
 
-                // Estilo para fila inactiva
-                const rowClass = d.activo ? '' : 'row-inactivo';
-                // Switch HTML con lógica de reversión visual si cancela
-                const switchHtml = `
-                    <label class="switch admin-only">
-                      <input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)">
-                      <span class="slider round"></span>
-                    </label>
-                    <span class="${d.activo ? 'badge badge-si' : 'badge badge-no'} global-view" ${isAdmin ? 'style="display:none"' : ''}>${d.activo ? 'ACTIVO' : 'INACTIVO'}</span>
-                `;
-
-                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
-
-                // Mostrar siempre, pero si no es admin, ocultar el switch via CSS o JS (admin-only class lo maneja)
+                // Mostrar Info? con badge y Fecha con formato
                 const infoBadge = d.informo === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
 
-                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
-            });
-
-            document.getElementById('pub-stat-total').textContent = stats.total;
-            document.getElementById('pub-stat-reg').textContent = stats.reg;
-            document.getElementById('pub-stat-esp').textContent = stats.esp;
-            document.getElementById('pub-stat-aux').textContent = stats.aux;
-            document.getElementById('pub-stat-pub').textContent = stats.pub;
-            const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
-            Object.keys(stats.groups).forEach(g => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${g}</div><div class="g-value">${stats.groups[g]}</div></div>`; });
-
-            // Re-aplicar visibilidad admin
-            if (isAdmin) {
-                document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
-                // Asegurar que los badges de estado estáticos se oculten para admin si el switch es visible
-                document.querySelectorAll('.global-view.badge').forEach(e => e.style.display = 'none');
-            }
-        }
-
-        // --- NUEVA LÓGICA CON CONFIRMACIÓN ---
-        async function toggleEstado(id, nuevoEstado, checkbox) {
-            const estadoTexto = nuevoEstado ? 'ACTIVO' : 'INACTIVO';
-            const accionTexto = nuevoEstado ? 'activar' : 'desactivar';
-
-            const result = await Swal.fire({
-                title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} publicador?`,
-                text: `El publicador pasará a estado ${estadoTexto}.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, cambiar',
-                cancelButtonText: 'Cancelar'
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    const res = await fetch(`/api/publicadores/${id}/estado`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo })
-                    });
-                    const json = await res.json();
-                    if (json.ok) {
-                        Toast.fire({ icon: 'success', title: `Publicador ${nuevoEstado ? 'activado' : 'desactivado'}` });
-                        cargarTablaPublicadores(); // Recargar para ordenar
-                    } else {
-                        Swal.fire('Error', json.msg, 'error');
-                        checkbox.checked = !nuevoEstado; // Revertir visualmente si hay error
-                    }
-                } catch (e) {
-                    console.error(e);
-                    checkbox.checked = !nuevoEstado;
+                // Formatear fecha para tabla
+                let fechaTxt = '-';
+                if (d.fecha_ingreso) {
+                    const dateObj = new Date(d.fecha_ingreso);
+                    const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000;
+                    const adjustedDate = new Date(dateObj.getTime() + userTimezoneOffset);
+                    fechaTxt = adjustedDate.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
                 }
-            } else {
-                // Si cancela, revertir el checkbox visualmente al estado anterior
-                checkbox.checked = !nuevoEstado;
-            }
+
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td class="global-view" style="font-size:0.85em;">${fechaTxt}</td><td class="admin-only" style="white-space:nowrap;">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+            });
+            document.getElementById('pub-stat-total').textContent = stats.total; document.getElementById('pub-stat-reg').textContent = stats.reg; document.getElementById('pub-stat-esp').textContent = stats.esp; document.getElementById('pub-stat-aux').textContent = stats.aux; document.getElementById('pub-stat-pub').textContent = stats.pub; const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
+            Object.keys(stats.groups).forEach(gId => { groupContainer.innerHTML += `<div class="group-stat-card"><div class="g-label">G ${gId}</div><div class="g-value">${stats.groups[gId]}</div></div>`; });
+            if (isAdmin) { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'table-cell'); document.querySelectorAll('.global-view.badge').forEach(e => e.style.display = 'none'); }
+            if (isGlobal) { document.querySelectorAll('.global-view').forEach(e => e.style.display = 'table-cell'); }
         }
 
+        async function toggleEstado(id, nuevoEstado, checkbox) { const estadoTexto = nuevoEstado ? 'ACTIVO' : 'INACTIVO'; const accionTexto = nuevoEstado ? 'activar' : 'desactivar'; const result = await Swal.fire({ title: `¿${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} publicador?`, text: `El publicador pasará a estado ${estadoTexto}.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Sí, cambiar', cancelButtonText: 'Cancelar' }); if (result.isConfirmed) { try { const res = await fetch(`/api/publicadores/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: `Publicador ${nuevoEstado ? 'activado' : 'desactivado'}` }); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstado; } } catch (e) { console.error(e); checkbox.checked = !nuevoEstado; } } else { checkbox.checked = !nuevoEstado; } }
+
+        // --- EDITAR PUBLICADOR (CARGANDO FECHA) ---
         function editarPub(id) {
             if (!isAdmin) return;
-            const obj = cachePublicadores.find(p => p.id == id); if (!obj) return;
+            const obj = cachePublicadores.find(p => p.id == id);
+            if (!obj) return;
             const f = document.getElementById('formPublicador');
             document.getElementById('pubId').value = obj.id;
             document.getElementById('pubGrupoSelect').value = obj.grupo;
-            f.nombre.value = obj.nombre; f.priv1.value = obj.priv1; f.priv2.value = obj.priv2; f.priv3.value = obj.priv3; f.informo.value = obj.informo; f.comentario.value = obj.comentario;
+            f.nombre.value = obj.nombre;
+            f.priv1.value = obj.priv1;
+            f.priv2.value = obj.priv2;
+            f.priv3.value = obj.priv3;
+            f.informo.value = obj.informo;
+            f.comentario.value = obj.comentario;
+
+            // Cargar fecha en el input date (Formato YYYY-MM-DD)
+            if (obj.fecha_ingreso) {
+                const dateObj = new Date(obj.fecha_ingreso);
+                const isoString = dateObj.toISOString().split('T')[0];
+                f.fecha_ingreso.value = isoString;
+            } else {
+                f.fecha_ingreso.value = "";
+            }
+
             abrirModal('publicador', id);
         }
+        function resetFormPub() { document.getElementById('formPublicador').reset(); document.getElementById('pubId').value = ""; }
+        document.getElementById('formPublicador').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('pubId').value; if (!id) data.informo = 'NO'; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); } });
 
-        function resetFormPub() {
-            document.getElementById('formPublicador').reset();
-            document.getElementById('pubId').value = "";
+        // --- DASHBOARD (LOGICA SIMPLE) ---
+        async function cargarDashboard() {
+            const mes = document.getElementById('dashMesSelect').value;
+            const grp = isGlobal ? 0 : session.grupo;
+            try {
+                const res = await fetch(`/api/dashboard?mes=${mes}&grupo=${grp}`);
+                const data = await res.json();
+                document.getElementById('stat-pub-count').textContent = data.stats.pub.count;
+                document.getElementById('stat-pub-cursos').textContent = data.stats.pub.cursos || 0;
+                document.getElementById('stat-aux-count').textContent = data.stats.aux.count;
+                document.getElementById('stat-aux-horas').textContent = data.stats.aux.horas || 0;
+                document.getElementById('stat-aux-cursos').textContent = data.stats.aux.cursos || 0;
+                document.getElementById('stat-reg-count').textContent = data.stats.reg.count;
+                document.getElementById('stat-reg-horas').textContent = data.stats.reg.horas || 0;
+                document.getElementById('stat-reg-cursos').textContent = data.stats.reg.cursos || 0;
+                const container = document.getElementById('groups-progress-container'); container.innerHTML = '';
+
+                // Usamos la estructura antigua/simple 'data.groups.totals'
+                const gruposInfo = {};
+                data.groups.totals.forEach(g => gruposInfo[g.grupo] = { total: g.total, reported: 0 });
+                data.groups.reports.forEach(g => { if (gruposInfo[g.grupo]) gruposInfo[g.grupo].reported = g.count; });
+
+                Object.keys(gruposInfo).forEach(grpNum => {
+                    if (grpNum == 0) return;
+                    const g = gruposInfo[grpNum];
+                    const percent = Math.round((g.reported / g.total) * 100) || 0;
+                    let color = 'var(--primary)'; if (percent === 100) color = 'var(--success)'; if (percent < 50) color = 'var(--danger)';
+                    container.innerHTML += `<div class="group-item"><div class="group-info"><div class="group-name">Grupo ${grpNum} <span style="font-weight:400; font-size:0.85em; color:#64748b;">(${g.reported}/${g.total})</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%; background:${color}"></div></div></div><div class="group-perc" style="color:${color}">${percent}%</div></div>`;
+                });
+            } catch (error) { console.error("Error cargando dashboard:", error); }
         }
-
-        document.getElementById('formPublicador').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            const id = document.getElementById('pubId').value;
-            if (!id) data.informo = 'NO';
-            const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores';
-            data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo;
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            const json = await res.json();
-            if (json.ok) { Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); }
-        });
 
         // --- REUNIONES ---
-        async function cargarTablaReuniones() {
-            const filterMes = document.getElementById('reuFilterMes').value;
-            const url = filterMes ? `/api/reuniones?mes=${filterMes}` : '/api/reuniones';
-            const res = await fetch(url); cacheReuniones = await res.json();
-            const tbody = document.getElementById('tbodyReuniones'); tbody.innerHTML = '';
-            const summaryContainer = document.getElementById('resumenReunionesContainer'); summaryContainer.innerHTML = '';
-            let totalPromedioMensual = 0; let datosPorMes = {};
-            cacheReuniones.forEach(r => {
-                if (!datosPorMes[r.mes]) datosPorMes[r.mes] = { totalSemanal: 0, countMeetings: 0 };
-                const s1 = r.sem1 || 0; const s2 = r.sem2 || 0; const s3 = r.sem3 || 0; const s4 = r.sem4 || 0; const s5 = r.sem5 || 0;
-                const sumaSem = s1 + s2 + s3 + s4 + s5;
-                let weeksCount = 0; if (s1 > 0) weeksCount++; if (s2 > 0) weeksCount++; if (s3 > 0) weeksCount++; if (s4 > 0) weeksCount++; if (s5 > 0) weeksCount++;
-                const promedio = weeksCount > 0 ? Math.round(sumaSem / weeksCount) : 0;
-                const iconTipo = r.tipo === 'ENTRE SEMANA' ? '<i class="fa-solid fa-calendar-days" style="color:#64748b"></i>' : '<i class="fa-solid fa-calendar-week" style="color:#d97706"></i>';
-                const iconMod = r.modalidad === 'PRESENCIAL' ? '<span class="badge badge-grp">PRES</span>' : '<span class="badge badge-gray">ZOOM</span>';
-                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('reuniones', ${r.id})"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick='editarReunion(${JSON.stringify(r)})'><i class="fa-solid fa-pen"></i></button>` : '';
-                tbody.innerHTML += `<tr><td style="font-weight:bold">${r.mes}</td><td>${iconTipo} <span style="font-size:0.8em">${r.tipo}</span></td><td>${iconMod}</td><td style="text-align:center">${r.sem1 || '-'}</td><td style="text-align:center">${r.sem2 || '-'}</td><td style="text-align:center">${r.sem3 || '-'}</td><td style="text-align:center">${r.sem4 || '-'}</td><td style="text-align:center">${r.sem5 || '-'}</td><td style="text-align:center; font-weight:bold; color:var(--primary)">${promedio}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
-            });
-            const mathData = {};
-            cacheReuniones.forEach(r => {
-                const key = r.mes + '|' + r.tipo; if (!mathData[key]) mathData[key] = { mes: r.mes, tipo: r.tipo, total: 0, weeks: new Set() };
-                [r.sem1, r.sem2, r.sem3, r.sem4, r.sem5].forEach((val, idx) => { if (val > 0) { mathData[key].total += val; mathData[key].weeks.add(idx); } });
-            });
-            Object.values(mathData).forEach(d => {
-                const semanasCount = d.weeks.size; const promedio = semanasCount > 0 ? Math.round(d.total / semanasCount) : 0;
-                totalPromedioMensual += promedio;
-                const cardHtml = `<div class="reu-stat-box" style="margin-bottom:10px;"><div><div class="reu-stat-title" style="color:var(--primary)">${d.mes} - ${d.tipo}</div><div class="reu-stat-sub">Asist: ${d.total} | Semanas: ${semanasCount}</div></div><div class="reu-stat-val">${promedio}</div></div>`;
-                summaryContainer.innerHTML += cardHtml;
-            });
-            const promedioFinalAnual = Math.round(totalPromedioMensual / 12);
-            document.getElementById('reuTotalAnual').textContent = promedioFinalAnual;
-        }
-
-        function editarReunion(r) {
-            if (!isAdmin) return;
-            const f = document.getElementById('formReunion');
-            document.getElementById('reunionId').value = r.id;
-            f.mes.value = r.mes; f.tipo.value = r.tipo; f.modalidad.value = r.modalidad;
-            f.sem1.value = r.sem1 || 0; f.sem2.value = r.sem2 || 0; f.sem3.value = r.sem3 || 0; f.sem4.value = r.sem4 || 0; f.sem5.value = r.sem5 || 0;
-            abrirModal('reunion', r.id);
-        }
-
+        async function cargarTablaReuniones() { const filterMes = document.getElementById('reuFilterMes').value; const url = filterMes ? `/api/reuniones?mes=${filterMes}` : '/api/reuniones'; const res = await fetch(url); cacheReuniones = await res.json(); const tbody = document.getElementById('tbodyReuniones'); tbody.innerHTML = ''; const summaryContainer = document.getElementById('resumenReunionesContainer'); summaryContainer.innerHTML = ''; let totalPromedioMensual = 0; let datosPorMes = {}; cacheReuniones.forEach(r => { if (!datosPorMes[r.mes]) datosPorMes[r.mes] = { totalSemanal: 0, countMeetings: 0 }; const s1 = r.sem1 || 0; const s2 = r.sem2 || 0; const s3 = r.sem3 || 0; const s4 = r.sem4 || 0; const s5 = r.sem5 || 0; const sumaSem = s1 + s2 + s3 + s4 + s5; let weeksCount = 0; if (s1 > 0) weeksCount++; if (s2 > 0) weeksCount++; if (s3 > 0) weeksCount++; if (s4 > 0) weeksCount++; if (s5 > 0) weeksCount++; const promedio = weeksCount > 0 ? Math.round(sumaSem / weeksCount) : 0; const iconTipo = r.tipo === 'ENTRE SEMANA' ? '<i class="fa-solid fa-calendar-days" style="color:#64748b"></i>' : '<i class="fa-solid fa-calendar-week" style="color:#d97706"></i>'; const iconMod = r.modalidad === 'PRESENCIAL' ? '<span class="badge badge-grp">PRES</span>' : '<span class="badge badge-gray">ZOOM</span>'; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('reuniones', ${r.id})"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick='editarReunion(${JSON.stringify(r)})'><i class="fa-solid fa-pen"></i></button>` : ''; tbody.innerHTML += `<tr><td style="font-weight:bold">${r.mes}</td><td>${iconTipo} <span style="font-size:0.8em">${r.tipo}</span></td><td>${iconMod}</td><td style="text-align:center">${r.sem1 || '-'}</td><td style="text-align:center">${r.sem2 || '-'}</td><td style="text-align:center">${r.sem3 || '-'}</td><td style="text-align:center">${r.sem4 || '-'}</td><td style="text-align:center">${r.sem5 || '-'}</td><td style="text-align:center; font-weight:bold; color:var(--primary)">${promedio}</td><td>${editBtn} ${deleteBtn}</td></tr>`; }); const mathData = {}; cacheReuniones.forEach(r => { const key = r.mes + '|' + r.tipo; if (!mathData[key]) mathData[key] = { mes: r.mes, tipo: r.tipo, total: 0, weeks: new Set() };[r.sem1, r.sem2, r.sem3, r.sem4, r.sem5].forEach((val, idx) => { if (val > 0) { mathData[key].total += val; mathData[key].weeks.add(idx); } }); }); Object.values(mathData).forEach(d => { const semanasCount = d.weeks.size; const promedio = semanasCount > 0 ? Math.round(d.total / semanasCount) : 0; totalPromedioMensual += promedio; const cardHtml = `<div class="reu-stat-box" style="margin-bottom:10px;"><div><div class="reu-stat-title" style="color:var(--primary)">${d.mes} - ${d.tipo}</div><div class="reu-stat-sub">Asist: ${d.total} | Semanas: ${semanasCount}</div></div><div class="reu-stat-val">${promedio}</div></div>`; summaryContainer.innerHTML += cardHtml; }); const promedioFinalAnual = Math.round(totalPromedioMensual / 12); document.getElementById('reuTotalAnual').textContent = promedioFinalAnual; }
+        function editarReunion(r) { if (!isAdmin) return; const f = document.getElementById('formReunion'); document.getElementById('reunionId').value = r.id; f.mes.value = r.mes; f.tipo.value = r.tipo; f.modalidad.value = r.modalidad; f.sem1.value = r.sem1 || 0; f.sem2.value = r.sem2 || 0; f.sem3.value = r.sem3 || 0; f.sem4.value = r.sem4 || 0; f.sem5.value = r.sem5 || 0; abrirModal('reunion', r.id); }
         function resetFormReu() { document.getElementById('formReunion').reset(); document.getElementById('reunionId').value = ""; }
-        document.getElementById('formReunion').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            data.requester_group = session.grupo;
-            const id = document.getElementById('reunionId').value;
-            const method = id ? 'PUT' : 'POST';
-            const url = id ? `/api/reuniones/${id}` : '/api/reuniones';
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); }
-            else { Swal.fire('Error', 'No se pudo guardar', 'error'); }
-        });
+        document.getElementById('formReunion').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); data.requester_group = session.grupo; const id = document.getElementById('reunionId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/reuniones/${id}` : '/api/reuniones'; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); } else { Swal.fire('Error', 'No se pudo guardar', 'error'); } });
 
         // --- LÓGICA CIERRE ---
-        let mesesCerrados = [];
-        async function verificarCierres() {
-            try {
-                const res = await fetch('/api/cierres'); mesesCerrados = await res.json();
-                Array.from(formMesSelect.options).forEach(opt => { if (mesesCerrados.includes(opt.value)) { opt.disabled = true; opt.textContent += " (Cerrado)"; } });
-            } catch (e) { console.error(e); }
-        }
-
-        async function cerrarMes() {
-            const mes = document.getElementById('dashMesSelect').value;
-            const confirm = await Swal.fire({ title: `¿Cerrar ${mes}?`, html: "Esta acción validará 'SI' y reseteará a 'NO'.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, Cerrar' });
-            if (confirm.isConfirmed) {
-                const res = await fetch('/api/cerrar-mes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, requester_group: session.grupo }) });
-                const json = await res.json();
-                if (json.ok) { Swal.fire('Cerrado', `Mes ${mes} cerrado.`, 'success'); verificarCierres(); } else { Swal.fire('Error', json.msg, 'error'); }
-            }
-        }
-
-        /* --- LOGICA LIMPIAR --- */
+        async function verificarCierres() { try { const res = await fetch('/api/cierres'); mesesCerrados = await res.json(); Array.from(formMesSelect.options).forEach(opt => { if (mesesCerrados.includes(opt.value)) { opt.disabled = true; opt.textContent += " (Cerrado)"; } }); } catch (e) { console.error(e); } }
+        async function cerrarMes() { const mes = document.getElementById('dashMesSelect').value; const confirm = await Swal.fire({ title: `¿Cerrar ${mes}?`, html: "Esta acción validará 'SI' y reseteará a 'NO'.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, Cerrar' }); if (confirm.isConfirmed) { const res = await fetch('/api/cerrar-mes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Swal.fire('Cerrado', `Mes ${mes} cerrado.`, 'success'); verificarCierres(); } else { Swal.fire('Error', json.msg, 'error'); } } }
         function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
         function limpiarFiltrosPub() { document.getElementById('pubFiltroNombre').value = ''; document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
 
         /* --- REPORTES --- */
-        let currentReportData = [];
-        async function generarReporte() {
-            const form = document.getElementById('formReporte');
-            const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, nombre: form.nombre.value };
-            const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            currentReportData = await res.json();
-            document.getElementById('reporteResultados').style.display = 'block';
-            document.getElementById('repTotalRows').textContent = currentReportData.length;
-            const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = '';
-            let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {};
-            currentReportData.forEach(r => {
-                sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0);
-                const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1;
-                tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td></tr>`;
-            });
-            document.getElementById('repSumHoras').textContent = sumHoras;
-            document.getElementById('repSumCursos').textContent = sumCursos;
-            document.getElementById('repSumCredito').textContent = sumCredito;
-            let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; }
-            document.getElementById('repCats').innerHTML = catsHtml;
-        }
-        function descargarPDF() {
-            if (currentReportData.length === 0) { Swal.fire('Vacío', 'Genera un reporte primero', 'info'); return; }
-            const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            doc.setFontSize(18); doc.text("Reporte de Actividad", 14, 20); doc.setFontSize(10); doc.text(`Generado: ${new Date().toLocaleDateString()}`, 14, 28);
-            let y = 35; doc.text("Resumen:", 14, y);
-            const sumHoras = document.getElementById('repSumHoras').textContent; const sumCursos = document.getElementById('repSumCursos').textContent; const sumCredito = document.getElementById('repSumCredito').textContent;
-            doc.text(`Total Horas: ${sumHoras} | Total Crédito: ${sumCredito} | Total Cursos: ${sumCursos}`, 14, y + 6);
-            const body = currentReportData.map(r => [r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre, r.priv3, r.horas, r.cursos, r.credito_hrs, r.predico, r.comentarios]);
-            doc.autoTable({ startY: y + 15, head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']], body: body, theme: 'grid', styles: { fontSize: 8 }, headStyles: { fillColor: [37, 99, 235] } });
-            doc.save('reporte_congregacion.pdf');
-        }
+        async function generarReporte() { const form = document.getElementById('formReporte'); const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, nombre: form.nombre.value }; const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); currentReportData = await res.json(); document.getElementById('reporteResultados').style.display = 'block'; document.getElementById('repTotalRows').textContent = currentReportData.length; const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = ''; let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {}; currentReportData.forEach(r => { sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0); const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1; tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td></tr>`; }); document.getElementById('repSumHoras').textContent = sumHoras; document.getElementById('repSumCursos').textContent = sumCursos; document.getElementById('repSumCredito').textContent = sumCredito; let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; } document.getElementById('repCats').innerHTML = catsHtml; }
 
-        /* --- DASHBOARD --- */
-        async function cargarDashboard() {
-            const mes = document.getElementById('dashMesSelect').value;
-            const grp = isGlobal ? 0 : session.grupo;
-            const res = await fetch(`/api/dashboard?mes=${mes}&grupo=${grp}`);
-            const data = await res.json();
-            document.getElementById('stat-pub-count').textContent = data.stats.pub.count;
-            document.getElementById('stat-pub-cursos').textContent = data.stats.pub.cursos || 0;
-            document.getElementById('stat-aux-count').textContent = data.stats.aux.count;
-            document.getElementById('stat-aux-horas').textContent = data.stats.aux.horas || 0;
-            document.getElementById('stat-aux-cursos').textContent = data.stats.aux.cursos || 0;
-            document.getElementById('stat-reg-count').textContent = data.stats.reg.count;
-            document.getElementById('stat-reg-horas').textContent = data.stats.reg.horas || 0;
-            document.getElementById('stat-reg-cursos').textContent = data.stats.reg.cursos || 0;
-            const container = document.getElementById('groups-progress-container'); container.innerHTML = '';
+        async function descargarPDF() {
+            const mes = document.getElementById('repMesSelect').value;
+            const grupo = document.getElementById('formReporte').grupo.value;
 
-            // Usamos la estructura antigua/simple 'data.groups.totals'
-            const gruposInfo = {};
-            data.groups.totals.forEach(g => gruposInfo[g.grupo] = { total: g.total, reported: 0 });
-            data.groups.reports.forEach(g => { if (gruposInfo[g.grupo]) gruposInfo[g.grupo].reported = g.count; });
+            if (!mes) { Swal.fire('Atención', 'Selecciona un mes.', 'warning'); return; }
+            if (currentReportData.length === 0) { Swal.fire('Vacío', 'No hay datos para exportar.', 'info'); return; }
 
-            Object.keys(gruposInfo).forEach(grpNum => {
-                if (grpNum == 0) return;
-                const g = gruposInfo[grpNum];
-                const percent = Math.round((g.reported / g.total) * 100) || 0;
-                let color = 'var(--primary)'; if (percent === 100) color = 'var(--success)'; if (percent < 50) color = 'var(--danger)';
-                container.innerHTML += `<div class="group-item"><div class="group-info"><div class="group-name">Grupo ${grpNum} <span style="font-weight:400; font-size:0.85em; color:#64748b;">(${g.reported}/${g.total})</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%; background:${color}"></div></div></div><div class="group-perc" style="color:${color}">${percent}%</div></div>`;
-            });
-        }
+            try {
+                // 1. Obtener datos externos
+                const res = await fetch(`/api/reportes/datos-extra?mes=${mes}&grupo=${grupo}`);
+                const extra = await res.json();
 
-        /* --- USUARIOS --- */
-        function editarUser(id) {
-            const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return;
-            const f = document.getElementById('formUsuario');
-            document.getElementById('userId').value = obj.id;
-            f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo;
-            abrirModal('usuario', id);
-        }
-        function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
-        document.getElementById('formUsuario').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
-            const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
-            data.requester_group = session.grupo;
-            await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios();
-        });
-        async function cargarTablaUsuarios() {
-            if (!isAdmin) return;
-            const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json();
-            const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = '';
-            cacheUsuarios.forEach(d => {
-                const editBtn = `<button class="btn-action btn-edit" onclick="editarUser(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
-                tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>${d.password}</td><td>${editBtn} <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td></tr>`;
-            });
-        }
+                // 2. Calcular totales DESDE LA TABLA (Para coincidencia exacta)
+                let stats = {
+                    pub: { cant: 0, horas: 0, cursos: 0 },
+                    aux: { cant: 0, horas: 0, cursos: 0 },
+                    reg: { cant: 0, horas: 0, cursos: 0 }
+                };
 
-        async function eliminar(entidad, id) {
-            const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' });
-            if (result.isConfirmed) {
-                // PARAMETROS EN URL
-                const params = new URLSearchParams();
-                params.append('requester_group', session.grupo);
-                if (entidad === 'informes') {
-                    const inf = cacheInformes.find(i => i.id == id);
-                    if (inf) params.append('mes', inf.mes);
-                }
+                currentReportData.forEach(r => {
+                    const p = (r.priv3 || '').toUpperCase();
+                    const h = parseFloat(r.horas) || 0;
+                    const c = parseInt(r.cursos) || 0;
 
-                const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' });
-                const json = await res.json();
-                if (json.ok) {
-                    Toast.fire({ icon: 'success', title: 'Eliminado correctamente' });
-                    if (entidad === 'informes') cargarTablaInformes();
-                    if (entidad === 'publicadores') cargarTablaPublicadores();
-                    if (entidad === 'usuarios') cargarTablaUsuarios();
-                    if (entidad === 'reuniones') cargarTablaReuniones();
-                    if (entidad === 'publicadores' && document.getElementById('view-publicadores').classList.contains('active')) cargarTablaPublicadores();
-                } else {
-                    Swal.fire('Error', json.msg, 'error');
-                }
+                    if (p === 'REG' || p === 'ESP') {
+                        stats.reg.cant++;
+                        stats.reg.horas += h;
+                        stats.reg.cursos += c;
+                    } else if (p.includes('AUX')) {
+                        stats.aux.cant++;
+                        stats.aux.horas += h;
+                        stats.aux.cursos += c;
+                    } else { // PUB, PNB
+                        stats.pub.cant++;
+                        // stats.pub.horas += h; // (Opcional: Si quieres sumar horas de pubs, descomenta)
+                        stats.pub.cursos += c;
+                    }
+                });
+
+                // 3. Generar PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Encabezado
+                doc.setFontSize(16); doc.setFont("helvetica", "bold");
+                doc.text(`Reporte Congregación - ${mes}`, 105, 20, null, null, "center");
+                doc.setFontSize(10); doc.setFont("helvetica", "normal");
+                doc.text(`Generado: ${new Date().toLocaleDateString()}`, 105, 26, null, null, "center");
+
+                // --- RESUMEN (S-21) ---
+                let y = 35;
+                const xL = 14;
+
+                doc.setFillColor(245, 247, 250);
+                doc.rect(xL, y - 5, 182, 16, 'F'); // Fondo
+                doc.setFont("helvetica", "bold");
+                doc.text(`Publicadores Activos: ${extra.activos}`, xL + 5, y + 2);
+                doc.text(`Promedio Asistencia (Fin Sem): ${extra.asistencia}`, xL + 80, y + 2);
+
+                y += 20;
+
+                // Columnas
+                const col1 = xL;
+                const col2 = xL + 60;
+                const col3 = xL + 120;
+
+                doc.setFontSize(11); doc.setTextColor(37, 99, 235);
+                doc.text("PUBLICADORES", col1, y);
+                doc.text("AUXILIARES", col2, y);
+                doc.text("REGULARES", col3, y);
+                y += 7;
+                doc.setTextColor(0, 0, 0); doc.setFontSize(10);
+
+                // Filas de datos
+                doc.text(`Cantidad: ${stats.pub.cant}`, col1, y);
+                doc.text(`Cantidad: ${stats.aux.cant}`, col2, y);
+                doc.text(`Cantidad: ${stats.reg.cant}`, col3, y);
+                y += 6;
+
+                doc.text(`Cursos: ${stats.pub.cursos}`, col1, y);
+                doc.text(`Horas: ${stats.aux.horas}`, col2, y);
+                doc.text(`Horas: ${stats.reg.horas}`, col3, y);
+                y += 6;
+
+                doc.text(``, col1, y); // Espacio vacío
+                doc.text(`Cursos: ${stats.aux.cursos}`, col2, y);
+                doc.text(`Cursos: ${stats.reg.cursos}`, col3, y);
+
+                y += 12;
+
+                // Tabla
+                const body = currentReportData.map(r => [
+                    r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre,
+                    r.priv3, r.horas, r.cursos, r.credito_hrs, r.predico, r.comentarios
+                ]);
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']],
+                    body: body,
+                    theme: 'grid',
+                    styles: { fontSize: 8, cellPadding: 2 },
+                    headStyles: { fillColor: [37, 99, 235] }
+                });
+
+                doc.save(`Reporte_${mes}.pdf`);
+
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'No se pudo generar el reporte.', 'error');
             }
         }
 
+        /* --- USUARIOS --- */
+        function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo; abrirModal('usuario', id); }
+        function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
+        document.getElementById('formUsuario').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios'; data.requester_group = session.grupo; await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); Toast.fire({ icon: 'success', title: id ? 'Usuario actualizado' : 'Usuario creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios(); });
+        async function cargarTablaUsuarios() { if (!isAdmin) return; const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json(); const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = ''; cacheUsuarios.forEach(d => { const editBtn = `<button class="btn-action btn-edit" onclick="editarUser(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`; tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>${d.password}</td><td>${editBtn} <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }); }
+        async function eliminar(entidad, id) { const result = await Swal.fire({ title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' }); if (result.isConfirmed) { const params = new URLSearchParams(); params.append('requester_group', session.grupo); if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); } const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: 'Eliminado correctamente' }); if (entidad === 'informes') cargarTablaInformes(); if (entidad === 'publicadores') cargarTablaPublicadores(); if (entidad === 'usuarios') cargarTablaUsuarios(); if (entidad === 'reuniones') cargarTablaReuniones(); if (entidad === 'publicadores' && document.getElementById('view-publicadores').classList.contains('active')) cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); } } }
         showView('dashboard');
     </script>
-
 </body>
 
 </html>
