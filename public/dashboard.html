@@ -1074,7 +1074,7 @@
                         <div style="display:flex; gap:10px; align-items:center;">
                             <select id="dashMesSelect" onchange="cargarDashboard()"
                                 style="padding:8px; font-weight:600; color:var(--primary); border-color:var(--primary); cursor:pointer; background-image:none;"></select>
-                            <button class="btn-close-month admin-only admin-only" onclick="cerrarMes()"><i
+                            <button class="btn-close-month admin-only" onclick="cerrarMes()"><i
                                     class="fa-solid fa-lock"></i> Cerrar Mes</button>
                         </div>
                     </div>
@@ -1117,7 +1117,6 @@
                     <button class="btn-add-new" onclick="abrirModal('informe')"><i class="fa-solid fa-circle-plus"></i>
                         Nuevo Informe</button>
                 </div>
-
                 <div class="card">
                     <h3><i class="fa-solid fa-filter"></i> Buscar Informe</h3>
                     <div class="form-grid">
@@ -1132,7 +1131,6 @@
                             </div>
                             <input type="hidden" id="infFiltroMes">
                         </div>
-
                         <div class="global-view"><label>Grupo</label><select id="infFiltroGrupo">
                                 <option value="">(Todos)</option>
                                 <option value="1">1</option>
@@ -1151,7 +1149,6 @@
                                 <option value="PUB_COMBINED">PUB + PNB</option>
                             </select></div>
                         <div><label>Nombre</label><input id="infFiltroNombre" placeholder="Buscar..."></div>
-
                         <div style="align-self:end; display:flex; gap:10px;">
                             <button class="btn-primary" onclick="cargarTablaInformes()"><i
                                     class="fa-solid fa-magnifying-glass"></i> Buscar</button>
@@ -1160,11 +1157,10 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="card">
                     <div class="card-header-flex">
-                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3>
-                        <button class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3><button
+                            class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
                             onclick="cargarTablaInformes()"><i class="fa-solid fa-rotate"></i> Recargar</button>
                     </div>
                     <div class="table-container">
@@ -1307,6 +1303,7 @@
                                     <th>P1</th>
                                     <th>P2</th>
                                     <th>P3</th>
+                                    <th>Info?</th>
                                     <th>Comentario</th>
                                     <th class="admin-only">Estado</th>
                                     <th>Acciones</th>
@@ -1450,10 +1447,8 @@
                 </select></div>
             <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
                     min="0"></div>
-
             <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
                     step="0.5" min="0"></div>
-
             <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0"></div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
                     rows="3"></textarea></div>
@@ -1462,7 +1457,6 @@
         </form>
         <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
-            <input type="hidden" name="informo" value="NO">
             <div class="global-view" style="grid-column: 1/-1;"><label>Grupo</label><select id="pubGrupoSelect"
                     name="grupo_manual">
                     <option value="1">1</option>
@@ -1475,6 +1469,10 @@
                     <option value="8">8</option>
                 </select></div>
             <div style="grid-column: 1/-1;"><label>Nombre Completo</label><input name="nombre" required></div>
+            <div class="col-span-1"><label>¿Informó?</label><select name="informo">
+                    <option value="NO">NO</option>
+                    <option value="SI">SÍ</option>
+                </select></div>
             <div class="col-span-1"><label>Priv 1</label><select name="priv1">
                     <option value="">-</option>
                     <option value="SG">SG</option>
@@ -1541,367 +1539,97 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function toggleSidebar(force) {
-            const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay');
-            if (force === false) { sb.classList.remove('active'); ov.classList.remove('active'); } else { sb.classList.toggle('active'); ov.classList.toggle('active'); }
-        }
+        function toggleSidebar(force) { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if (force === false) { sb.classList.remove('active'); ov.classList.remove('active'); } else { sb.classList.toggle('active'); ov.classList.toggle('active'); } }
+        const session = JSON.parse(localStorage.getItem('user_session')); if (!session) window.location.href = '/index.html';
+        function logout() { localStorage.removeItem('user_session'); window.location.href = '/index.html'; } document.getElementById('btnLogoutSide').addEventListener('click', logout);
+        const isAdmin = session.grupo == 0; const isSupervisor = session.grupo == 9; const isGlobal = (isAdmin || isSupervisor);
+        const sidebarTitle = document.getElementById('sidebarTitle'); if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; } else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; } else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
+        document.getElementById('userName').textContent = session.nombre; document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
 
-        const session = JSON.parse(localStorage.getItem('user_session'));
-        if (!session) window.location.href = '/index.html';
-        function logout() { localStorage.removeItem('user_session'); window.location.href = '/index.html'; }
-        document.getElementById('btnLogoutSide').addEventListener('click', logout);
-
-        const isAdmin = session.grupo == 0;
-        const isSupervisor = session.grupo == 9;
-        const isGlobal = (isAdmin || isSupervisor);
-
-        const sidebarTitle = document.getElementById('sidebarTitle');
-        if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; }
-        else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; }
-        else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
-
-        document.getElementById('userName').textContent = session.nombre;
-        document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
-
-        if (isAdmin) {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('th.admin-only').forEach(el => el.style.display = 'table-cell');
-            document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell');
-        } else if (isSupervisor) {
-            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
-            document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell');
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-        } else {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.global-view').forEach(el => el.style.display = 'none');
-            document.getElementById('nav-usuarios').parentElement.style.display = 'none';
-            document.getElementById('nav-reportes').parentElement.style.display = 'none';
-            document.getElementById('nav-reuniones').parentElement.style.display = 'none';
-        }
+        if (isAdmin) { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block'); document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block'); document.querySelectorAll('th.admin-only').forEach(el => el.style.display = 'table-cell'); document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell'); }
+        else if (isSupervisor) { document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block'); document.querySelectorAll('th.global-view').forEach(el => el.style.display = 'table-cell'); document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); }
+        else { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); document.querySelectorAll('.global-view').forEach(el => el.style.display = 'none'); document.getElementById('nav-usuarios').parentElement.style.display = 'none'; document.getElementById('nav-reportes').parentElement.style.display = 'none'; document.getElementById('nav-reuniones').parentElement.style.display = 'none'; }
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
         const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        let mesActual = new Date().getMonth(); let mesIndexActual = (mesActual === 0) ? 11 : mesActual - 1; let mesIndexInformes = mesIndexActual;
 
-        // --- MES ANTERIOR POR DEFECTO ---
-        let mesActual = new Date().getMonth();
-        let mesIndexActual = (mesActual === 0) ? 11 : mesActual - 1;
-        let mesIndexInformes = mesIndexActual; // INDEPENDIENTE PARA INFORMES
-        let mesIndexReporte = mesIndexActual;
-
-        const formMesSelect = document.getElementById('formMesSelect');
-        const dashMesSelect = document.getElementById('dashMesSelect');
-        const repMesSelect = document.getElementById('repMesSelect');
-        const reuMesSelect = document.getElementById('reuMesSelect');
-        const reuFilterMes = document.getElementById('reuFilterMes');
-        const infFiltroMes = document.getElementById('infFiltroMes');
-
+        const formMesSelect = document.getElementById('formMesSelect'); const dashMesSelect = document.getElementById('dashMesSelect'); const repMesSelect = document.getElementById('repMesSelect'); const reuMesSelect = document.getElementById('reuMesSelect'); const reuFilterMes = document.getElementById('reuFilterMes'); const infFiltroMes = document.getElementById('infFiltroMes');
         formMesSelect.innerHTML = '<option value="">-- Seleccione --</option>';
-        MESES.forEach(m => {
-            const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
-            formMesSelect.appendChild(opt);
-            dashMesSelect.appendChild(opt.cloneNode(true));
-            repMesSelect.appendChild(opt.cloneNode(true));
-            reuMesSelect.appendChild(opt.cloneNode(true));
-            reuFilterMes.appendChild(opt.cloneNode(true));
-            infFiltroMes.appendChild(opt.cloneNode(true));
-        });
+        MESES.forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.textContent = m; formMesSelect.appendChild(opt); dashMesSelect.appendChild(opt.cloneNode(true)); repMesSelect.appendChild(opt.cloneNode(true)); reuMesSelect.appendChild(opt.cloneNode(true)); reuFilterMes.appendChild(opt.cloneNode(true)); infFiltroMes.appendChild(opt.cloneNode(true)); });
         dashMesSelect.value = MESES[mesIndexActual];
 
-        // --- NAVEGACIÓN INFORMES ---
-        function cambiarMesInformes(direccion) {
-            mesIndexInformes += direccion;
-            if (mesIndexInformes > 11) mesIndexInformes = 0;
-            if (mesIndexInformes < 0) mesIndexInformes = 11;
-            document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes];
-            cargarTablaInformes();
-        }
-
-        // --- VERIFICAR INACTIVOS (6 MESES) ---
-        async function verificarInactivos() {
-            try {
-                // Solo ejecutar para Admin, Supervisor o Encargado (muestra inactivos de SU grupo)
-                const grp = isGlobal ? 0 : session.grupo;
-                const res = await fetch(`/api/check-inactivos?grupo=${grp}`);
-                const data = await res.json();
-
-                if (data.candidatos && data.candidatos.length > 0) {
-                    let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`;
-                    data.candidatos.forEach(c => {
-                        listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`;
-                    });
-                    listaHtml += `</ul>`;
-
-                    Swal.fire({
-                        title: '⚠️ Irregulares Detectados',
-                        html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> consecutivos sin informar:<br><br>${listaHtml}`,
-                        icon: 'warning',
-                        confirmButtonText: 'Entendido'
-                    });
-                }
-            } catch (e) { console.error("Error checking inactives", e); }
-        }
-
-        // Ejecutar verificación al inicio
+        // --- INICIALIZAR ---
         verificarInactivos();
+
+        function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesIndexInformes > 11) mesIndexInformes = 0; if (mesIndexInformes < 0) mesIndexInformes = 11; document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); }
+
+        // --- VERIFICAR INACTIVOS ---
+        async function verificarInactivos() { try { const grp = isGlobal ? 0 : session.grupo; const res = await fetch(`/api/check-inactivos?grupo=${grp}`); const data = await res.json(); if (data.candidatos && data.candidatos.length > 0) { let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`; data.candidatos.forEach(c => { listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`; }); listaHtml += `</ul>`; Swal.fire({ title: '⚠️ Irregulares Detectados', html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> consecutivos sin informar:<br><br>${listaHtml}`, icon: 'warning', confirmButtonText: 'Entendido' }); } } catch (e) { console.error("Error checking inactives", e); } }
 
         function showView(viewName) {
             document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
             document.getElementById(`view-${viewName}`).classList.add('active');
             document.getElementById(`nav-${viewName}`).classList.add('active');
-
             const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones' };
             const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle' };
             document.getElementById('pageTitle').innerHTML = `<i class="fa-solid fa-${icons[viewName]}" style="color:var(--primary)"></i> ${titles[viewName]}`;
-
-            if (viewName === 'informes') {
-                // Inicializar etiqueta mes
-                document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes];
-                cargarTablaInformes();
-                cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending');
-                verificarCierres();
-            }
-            if (viewName === 'publicadores') cargarTablaPublicadores();
-            if (viewName === 'usuarios') cargarTablaUsuarios();
-            if (viewName === 'dashboard') cargarDashboard();
-            if (viewName === 'reuniones') cargarTablaReuniones();
-
-            // Inicializar etiqueta de mes en reportes
-            if (viewName === 'reportes') document.getElementById('labelMesReporte') // En reportes usamos select por ahora
+            if (viewName === 'informes') { document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending'); verificarCierres(); }
+            if (viewName === 'publicadores') cargarTablaPublicadores(); if (viewName === 'usuarios') cargarTablaUsuarios(); if (viewName === 'dashboard') cargarDashboard(); if (viewName === 'reuniones') cargarTablaReuniones(); if (viewName === 'reportes') document.getElementById('labelMesReporte');
         }
 
         /* --- LOGICA MODAL --- */
         function abrirModal(tipo, id = null) {
-            const modalWrapper = document.getElementById('mainModal');
-            const modalBody = document.getElementById('modalBody');
-            const modalTitle = document.getElementById('modalTitle');
-            modalBody.innerHTML = '';
-
-            let formId = '';
-            if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); }
-            else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); }
-            else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); }
-            else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); }
-
-            const form = document.getElementById(formId);
-            if (form) { form.style.display = 'grid'; modalBody.appendChild(form); }
-            modalWrapper.classList.add('active');
+            const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const modalTitle = document.getElementById('modalTitle'); modalBody.innerHTML = ''; let formId = '';
+            if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); } else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); } else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); } else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); }
+            const form = document.getElementById(formId); if (form) { form.style.display = 'grid'; modalBody.appendChild(form); } modalWrapper.classList.add('active');
         }
+        function cerrarModal() { const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const formsContainer = document.getElementById('formsContainer'); modalWrapper.classList.remove('active'); while (modalBody.firstChild) { formsContainer.appendChild(modalBody.firstChild); } }
 
-        function cerrarModal() {
-            const modalWrapper = document.getElementById('mainModal');
-            const modalBody = document.getElementById('modalBody');
-            const formsContainer = document.getElementById('formsContainer');
-            modalWrapper.classList.remove('active');
-            while (modalBody.firstChild) { formsContainer.appendChild(modalBody.firstChild); }
-        }
-
-        /* --- FUNCIONES CRUD Y LOGICA --- */
+        /* --- CRUD Y LOGICA --- */
         let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let cacheReuniones = [];
-
-        async function cargarPublicadoresSelect(grupoId, mode = 'pending') {
-            try {
-                let url = `/api/publicadores?grupo=${grupoId}`;
-                if (mode === 'pending') url += `&pendientes=true`;
-                const res = await fetch(url); cachePublicadores = await res.json();
-                const sel = document.getElementById('selectPubInfo');
-                const currentVal = sel.value;
-                sel.innerHTML = '<option value="">-- Seleccione --</option>';
-                cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
-                if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal;
-            } catch (e) { console.error(e); }
-        }
-
-        function cargarDatosPub() {
-            const id = document.getElementById('selectPubInfo').value;
-            const pub = cachePublicadores.find(p => p.id == id);
-            if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); }
-            else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; }
-        }
-
-        function actualizarEstadoHoras(privilegio) {
-            const inputHoras = document.getElementById('inputHoras');
-            const inputCredito = document.getElementById('inputCredito'); // NUEVO
-            const p = (privilegio || "").trim().toUpperCase();
-            const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX'];
-            const reportanCredito = ['REG', 'ESP']; // Solo estos tienen crédito
-
-            if (reportan.includes(p)) {
-                inputHoras.disabled = false;
-            } else {
-                inputHoras.disabled = true; inputHoras.value = "";
-            }
-
-            // Lógica para Crédito
-            if (reportanCredito.includes(p)) {
-                inputCredito.disabled = false;
-            } else {
-                inputCredito.disabled = true; inputCredito.value = "";
-            }
-        }
-
-        /* --- LOGICA LIMPIAR --- */
-        function limpiarFiltrosInformes() {
-            if (isGlobal) document.getElementById('infFiltroGrupo').value = '';
-            document.getElementById('infFiltroPriv3').value = '';
-            document.getElementById('infFiltroNombre').value = '';
-            // No reseteamos mes, mantenemos el del navegador
-            cargarTablaInformes();
-        }
+        async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') url += `&pendientes=true`; const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; } catch (e) { console.error(e); } }
+        function cargarDatosPub() { const id = document.getElementById('selectPubInfo').value; const pub = cachePublicadores.find(p => p.id == id); if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); } else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; } }
+        function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } }
+        function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; document.getElementById('infFiltroNombre').value = ''; cargarTablaInformes(); }
 
         // --- INFORMES ---
         async function cargarTablaInformes() {
-            // USAR MES DE FLECHAS
-            let mes = MESES[mesIndexInformes];
-
-            let grp = isGlobal ? 0 : session.grupo;
-            const fGrupo = document.getElementById('infFiltroGrupo') ? document.getElementById('infFiltroGrupo').value : null;
-            if (isGlobal && fGrupo) grp = fGrupo;
-
-            const fPriv3 = document.getElementById('infFiltroPriv3').value;
-            const fNombre = document.getElementById('infFiltroNombre').value;
-
-            const params = new URLSearchParams({ grupo: grp });
-            if (mes) params.append('mes', mes);
-            if (fPriv3) params.append('priv3', fPriv3);
-            if (fNombre) params.append('nombre', fNombre);
-
-            const res = await fetch(`/api/informes?${params.toString()}`);
-            cacheInformes = await res.json();
-            const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
-
+            let mes = MESES[mesIndexInformes]; let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('infFiltroGrupo') ? document.getElementById('infFiltroGrupo').value : null; if (isGlobal && fGrupo) grp = fGrupo; const fPriv3 = document.getElementById('infFiltroPriv3').value; const fNombre = document.getElementById('infFiltroNombre').value; const params = new URLSearchParams({ grupo: grp }); if (mes) params.append('mes', mes); if (fPriv3) params.append('priv3', fPriv3); if (fNombre) params.append('nombre', fNombre);
+            const res = await fetch(`/api/informes?${params.toString()}`); cacheInformes = await res.json(); const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
             if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron resultados para ${mes}.</td></tr>`; return; }
-
             cacheInformes.forEach(d => {
-                const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
-                const grpCell = isGlobal ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : '';
-
-                const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : '';
-                const canEdit = (isGlobal || d.grupo == session.grupo);
-                const editBtn = canEdit ? `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
-
-                // Mostrar crédito si existe
-                const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
-
-                tbody.innerHTML += `
-                <tr>
-                    ${grpCell}
-                    <td>${d.nombre_publicador || d.publicador_nombre}</td>
-                    <td><span class="badge badge-gray">${d.priv3}</span></td>
-                    <td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td>
-                    <td style="text-align:center">${d.cursos}</td>
-                    <td style="text-align:center">${d.credito_hrs || '-'}</td>
-                    <td style="text-align:center">${badge}</td>
-                    <td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td>
-                    <td>${editBtn} ${deleteBtn}</td>
-                </tr>`;
-            });
-            if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
+                const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>'; const grpCell = isGlobal ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : ''; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const canEdit = (isGlobal || d.grupo == session.grupo); const editBtn = canEdit ? `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : ''; const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
+                tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${d.credito_hrs || '-'}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+            }); if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
         }
+        function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
+        function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
 
-        function editarInforme(id) {
-            const obj = cacheInformes.find(i => i.id == id); if (!obj) return;
-            const f = document.getElementById('formInforme');
-            document.getElementById('informeId').value = obj.id;
-            f.mes.value = obj.mes;
-            const processEdit = () => {
-                f.publicador_id.value = obj.publicador_id;
-                cargarDatosPub();
-                f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios;
-                f.credito_hrs.value = obj.credito_hrs; // Cargar crédito
-            };
-            const grupoTarget = isGlobal ? obj.grupo : session.grupo;
-            if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget;
-
-            cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit);
-            abrirModal('informe', id);
-        }
-
-        function resetFormInforme(manualClean = false) {
-            document.getElementById('formInforme').reset();
-            document.getElementById('informeId').value = "";
-            document.getElementById('inputHoras').disabled = true;
-            document.getElementById('inputCredito').disabled = true; // Reset crédito
-            if (manualClean) {
-                document.getElementById('readPriv3').value = "";
-                const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
-                cargarPublicadoresSelect(grp, 'pending');
-            }
-        }
-
+        // --- VALIDACION DE HORAS (CORREGIDA) ---
         document.getElementById('formInforme').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const f = e.target;
-            const rawData = Object.fromEntries(new FormData(f));
+            e.preventDefault(); const f = e.target; const rawData = Object.fromEntries(new FormData(f)); rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0; rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0;
 
-            // Forzar valores disabled
-            rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
-            rawData.cursos = f.cursos.value || 0;
-            rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
+            // --- LOGICA CORREGIDA ---
+            let maxCredito = 55 - h;
+            if (maxCredito < 0) maxCredito = 0;
 
-            const h = parseFloat(rawData.horas) || 0;
-            const c = parseFloat(rawData.credito_hrs) || 0;
+            if (c > maxCredito) { Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` }); return; }
+            // ------------------------
 
-            // --- NUEVA LÓGICA DE VALIDACIÓN ---
-            let creditoMaximo = 55 - h;
-            if (creditoMaximo < 0) creditoMaximo = 0;
-
-            if (c > creditoMaximo) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Crédito Incorrecto',
-                    text: `Con ${h} horas realizadas, el crédito máximo que puedes anotar es ${creditoMaximo}.\n\n(Si las horas reales ya cubren la meta de 55, el crédito debe ser 0).`
-                });
-                return; // Detener envío
-            }
-            // -----------------------------
-
-            const id = document.getElementById('informeId').value;
-            const method = id ? 'PUT' : 'POST';
-            const url = id ? `/api/informes/${id}` : '/api/informes';
-
-            // Datos extra
-            rawData.requester_group = session.grupo;
-            const grpVal = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
-            rawData.grupo = grpVal;
-
-            if (!id) {
-                const pubId = rawData.publicador_id;
-                const pub = cachePublicadores.find(p => p.id == pubId);
-                if (pub) {
-                    rawData.publicador_nombre = pub.nombre;
-                    rawData.priv1 = pub.priv1;
-                    rawData.priv2 = pub.priv2;
-                    rawData.priv3 = pub.priv3;
-                }
-            }
-            if (id) rawData.mes = f.mes.value;
-
-            const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
-            const json = await res.json();
-            if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); }
-            else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
+            const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes'; rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; rawData.requester_group = session.grupo; if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } } if (id) rawData.mes = f.mes.value; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); const json = await res.json(); if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
         });
 
         // --- PUBLICADORES ---
         async function cargarTablaPublicadores() {
-            let grp = isGlobal ? 0 : session.grupo;
-            const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null;
-            const fNombre = document.getElementById('pubFiltroNombre').value;
-            const fPriv3 = document.getElementById('pubFiltroPriv3').value;
-            if (isGlobal && fGrupo) grp = fGrupo;
-            const params = new URLSearchParams({ grupo: grp });
-            if (fNombre) params.append('nombre', fNombre);
-            if (fPriv3) params.append('priv3', fPriv3);
-            const res = await fetch(`/api/publicadores?${params.toString()}`);
-            cachePublicadores = await res.json();
-            const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
+            let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null; const fNombre = document.getElementById('pubFiltroNombre').value; const fPriv3 = document.getElementById('pubFiltroPriv3').value; if (isGlobal && fGrupo) grp = fGrupo; const params = new URLSearchParams({ grupo: grp }); if (fNombre) params.append('nombre', fNombre); if (fPriv3) params.append('priv3', fPriv3); const res = await fetch(`/api/publicadores?${params.toString()}`); cachePublicadores = await res.json(); const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
 
+            // Iniciar contadores (Asumimos 8 grupos fijos como pediste)
             let stats = { total: 0, reg: 0, esp: 0, aux: 0, pub: 0, groups: {} };
             for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
 
-            if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
+            if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
 
             cachePublicadores.forEach(d => {
                 // Solo contar estadísticas de activos
@@ -1927,7 +1655,9 @@
                 const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
 
                 // Mostrar siempre, pero si no es admin, ocultar el switch via CSS o JS (admin-only class lo maneja)
-                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+                const infoBadge = d.informo === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
+
+                tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; color:#64748b; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${d.comentario || ''}">${d.comentario || ''}</td><td>${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
             });
 
             document.getElementById('pub-stat-total').textContent = stats.total;
