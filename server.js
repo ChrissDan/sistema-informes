@@ -423,57 +423,60 @@ app.get('/api/reportes/resumen', async (req, res) => {
     }
 });
 
-// >>> NUEVO ENDPOINT LIGERO PARA DATOS EXTRA DEL PDF (CORREGIDO: SUMA PRESENCIAL + ZOOM) <<<
+// >>> NUEVO ENDPOINT LIGERO PARA DATOS EXTRA DEL PDF (SOPORTA 'TODOS' LOS MESES) <<<
 app.get('/api/reportes/datos-extra', async (req, res) => {
     const { mes, grupo } = req.query;
     try {
-        let params = [];
+        let paramsPubs = [];
         let whereGrp = "";
+        
+        // Filtro de Grupo para Publicadores
         if (grupo && grupo != '0' && grupo != '9') {
             whereGrp = " AND grupo = ?";
-            params.push(grupo);
+            paramsPubs.push(grupo);
         }
 
-        // 1. Total Publicadores Activos
-        const [rowsPubs] = await pool.query(`SELECT COUNT(*) as total FROM publicadores WHERE activo = 1 ${whereGrp}`, params);
+        // 1. Total Publicadores Activos (Siempre es el total actual)
+        const [rowsPubs] = await pool.query(`SELECT COUNT(*) as total FROM publicadores WHERE activo = 1 ${whereGrp}`, paramsPubs);
         
-        // 2. Promedio Asistencia (Fin de Semana - COMBINADO)
-        // Quitamos el LIMIT 1 para traer AMBAS (Presencial y Zoom)
-        const [rowsReu] = await pool.query(
-            `SELECT * FROM reuniones WHERE mes = ? AND tipo = 'FIN DE SEMANA'`, 
-            [mes]
-        );
+        // 2. Promedio Asistencia (Dinámico: Mes específico o Todo el año)
+        let sqlReu = "SELECT * FROM reuniones WHERE tipo = 'FIN DE SEMANA'";
+        let paramsReu = [];
+
+        // Solo filtramos por mes si el usuario seleccionó uno específico
+        if (mes && mes !== '' && mes !== 'TODOS') {
+            sqlReu += " AND mes = ?";
+            paramsReu.push(mes);
+        }
+
+        const [rowsReu] = await pool.query(sqlReu, paramsReu);
         
         let promedioAsis = 0;
         
         if (rowsReu.length > 0) {
-            // Inicializamos contadores para las 5 semanas
-            let t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0;
+            let sumTotal = 0;
+            let weeksTotal = 0;
 
-            // Recorremos todas las filas (Presencial y Zoom) y sumamos verticalmente
+            // Sumamos TODO lo que encuentre (sea 1 mes o 12 meses)
             rowsReu.forEach(r => {
-                t1 += parseInt(r.sem1) || 0;
-                t2 += parseInt(r.sem2) || 0;
-                t3 += parseInt(r.sem3) || 0;
-                t4 += parseInt(r.sem4) || 0;
-                t5 += parseInt(r.sem5) || 0;
-            });
+                const s1 = parseInt(r.sem1) || 0;
+                const s2 = parseInt(r.sem2) || 0;
+                const s3 = parseInt(r.sem3) || 0;
+                const s4 = parseInt(r.sem4) || 0;
+                const s5 = parseInt(r.sem5) || 0;
+                
+                sumTotal += (s1 + s2 + s3 + s4 + s5);
 
-            const sumTotal = t1 + t2 + t3 + t4 + t5;
+                if(s1 > 0) weeksTotal++;
+                if(s2 > 0) weeksTotal++;
+                if(s3 > 0) weeksTotal++;
+                if(s4 > 0) weeksTotal++;
+                if(s5 > 0) weeksTotal++;
+            });
             
-            // Contamos cuántas semanas tuvieron reunión (sumando ambas modalidades > 0)
-            let weeks = 0;
-            if (t1 > 0) weeks++;
-            if (t2 > 0) weeks++;
-            if (t3 > 0) weeks++;
-            if (t4 > 0) weeks++;
-            if (t5 > 0) weeks++;
-            
-            if (weeks > 0) {
-                promedioAsis = Math.round(sumTotal / weeks);
+            if (weeksTotal > 0) {
+                promedioAsis = Math.round(sumTotal / weeksTotal);
             }
-            
-            console.log(`PDF ASISTENCIA [${mes}]: Total Asistentes=${sumTotal} / Semanas Activas=${weeks} = Promedio ${promedioAsis}`);
         }
 
         res.json({
@@ -482,6 +485,62 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
         });
 
     } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// >>> REPORTE ESPECIAL: PROGRESO PRECURSORES (CORREGIDO) <<<
+app.get('/api/reportes/precursores', async (req, res) => {
+    const { tipo } = req.query; // 'REG' o 'AUX'
+    try {
+        let wherePriv = "";
+        // Definimos los privilegios a buscar
+        if (tipo === 'REG') {
+            wherePriv = "priv3 IN ('REG', 'ESP', 'MISIONERO')"; 
+        } else {
+            wherePriv = "priv3 IN ('AUX', 'AUX I', 'AUX M')";
+        }
+
+        // 1. Obtener Publicadores Activos de ese tipo (HOY)
+        const [pubs] = await pool.query(`
+            SELECT id, nombre, grupo, priv3 
+            FROM publicadores 
+            WHERE activo = 1 AND (${wherePriv}) 
+            ORDER BY grupo ASC, nombre ASC
+        `);
+
+        if (pubs.length === 0) return res.json([]);
+
+        // 2. Obtener sus informes FILTRADOS POR EL PRIVILEGIO
+        // (Solo trae informes donde actuaron como REG o AUX según corresponda)
+        const [informes] = await pool.query(`
+            SELECT publicador_id, mes, horas 
+            FROM informes 
+            WHERE publicador_id IN (SELECT id FROM publicadores WHERE activo=1 AND (${wherePriv}))
+            AND (${wherePriv}) 
+            ORDER BY FIELD(mes, 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO')
+        `);
+
+        // 3. Cruzar datos
+        const data = pubs.map(p => {
+            const misInformes = informes.filter(r => r.publicador_id === p.id);
+            
+            // Calcular Total
+            const totalHoras = misInformes.reduce((sum, r) => sum + (parseFloat(r.horas) || 0), 0);
+            
+            return {
+                nombre: p.nombre,
+                grupo: p.grupo,
+                priv: p.priv3,
+                informes: misInformes.map(i => ({ mes: i.mes.substring(0,3), horas: i.horas })), // Mes abreviado
+                total: totalHoras
+            };
+        });
+
+        res.json(data);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // --- REPORTES y OTROS ---
