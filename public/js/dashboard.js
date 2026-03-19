@@ -593,8 +593,15 @@ function descargarPDFPrecursores() {
         // Preparar cuerpo de la tabla para el PDF
         const body = currentPrecData.map(p => {
             // Convertir el array de informes en un texto legible
-            // Ejemplo: "SEP: 50, OCT: 60"
-            const detalleTexto = p.informes.map(i => `${i.mes}: ${i.horas}`).join(',  ');
+            // Ejemplo: "SEP: 50 (+15), OCT: 60"
+            const detalleTexto = p.informes.map(i => {
+                let txt = `${i.mes}: ${i.horas}`;
+                // Si tiene crédito de horas, lo agregamos entre paréntesis
+                if (parseFloat(i.credito_hrs) > 0) {
+                    txt += ` (+${i.credito_hrs})`;
+                }
+                return txt;
+            }).join(',  ');
             
             return [
                 p.grupo,
