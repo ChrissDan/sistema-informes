@@ -533,11 +533,19 @@ async function cargarDatosPrecursores(tipo) {
             } else {
                 mesesHtml = '<div style="display:flex; flex-wrap:wrap; gap:4px;">';
                 p.informes.forEach(inf => {
+                    
+                    // ---> INICIO DEL CAMBIO: Lógica del crédito de horas <---
+                    const credTxt = parseFloat(inf.credito_hrs) > 0 
+                        ? ` <span style="color:#d97706; font-weight:bold;">(+${inf.credito_hrs})</span>` 
+                        : '';
+                    
                     mesesHtml += `
                         <span style="background:#eff6ff; color:#1e40af; border:1px solid #dbeafe; padding:2px 6px; border-radius:4px; font-size:0.75em; white-space:nowrap;">
-                            <b>${inf.mes}</b>: ${inf.horas}
+                            <b>${inf.mes}</b>: ${inf.horas}${credTxt}
                         </span>
                     `;
+                    // ---> FIN DEL CAMBIO <---
+
                 });
                 mesesHtml += '</div>';
             }

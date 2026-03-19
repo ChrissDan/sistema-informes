@@ -487,7 +487,7 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// >>> REPORTE ESPECIAL: PROGRESO PRECURSORES (CORREGIDO) <<<
+// >>> REPORTE ESPECIAL: PROGRESO PRECURSORES (CON CRÉDITO DE HORAS) <<<
 app.get('/api/reportes/precursores', async (req, res) => {
     const { tipo } = req.query; // 'REG' o 'AUX'
     try {
@@ -510,9 +510,9 @@ app.get('/api/reportes/precursores', async (req, res) => {
         if (pubs.length === 0) return res.json([]);
 
         // 2. Obtener sus informes FILTRADOS POR EL PRIVILEGIO
-        // (Solo trae informes donde actuaron como REG o AUX según corresponda)
+        // AHORA TRAEMOS TAMBIÉN "credito_hrs"
         const [informes] = await pool.query(`
-            SELECT publicador_id, mes, horas 
+            SELECT publicador_id, mes, horas, credito_hrs 
             FROM informes 
             WHERE publicador_id IN (SELECT id FROM publicadores WHERE activo=1 AND (${wherePriv}))
             AND (${wherePriv}) 
@@ -523,14 +523,18 @@ app.get('/api/reportes/precursores', async (req, res) => {
         const data = pubs.map(p => {
             const misInformes = informes.filter(r => r.publicador_id === p.id);
             
-            // Calcular Total
-            const totalHoras = misInformes.reduce((sum, r) => sum + (parseFloat(r.horas) || 0), 0);
+            // Calcular Total: Suma Horas normales + Crédito de horas
+            const totalHoras = misInformes.reduce((sum, r) => sum + (parseFloat(r.horas) || 0) + (parseFloat(r.credito_hrs) || 0), 0);
             
             return {
                 nombre: p.nombre,
                 grupo: p.grupo,
                 priv: p.priv3,
-                informes: misInformes.map(i => ({ mes: i.mes.substring(0,3), horas: i.horas })), // Mes abreviado
+                informes: misInformes.map(i => ({ 
+                    mes: i.mes.substring(0,3), 
+                    horas: i.horas,
+                    credito_hrs: i.credito_hrs // Enviamos el crédito al frontend
+                })),
                 total: totalHoras
             };
         });
