@@ -4,20 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Iniciar Sesión</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     
-    <<div class="login-wrapper">
+    <div class="login-wrapper">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+
         <div class="login-card">
             <div class="login-header">
                 <div class="login-logo-circle">
                     <i class="fa-solid fa-layer-group"></i>
                 </div>
-                <h2>Bienvenido</h2>
+                <h2>Informes Umachiri</h2>
                 <p>Ingresa tus credenciales para continuar</p>
             </div>
             
@@ -30,11 +34,30 @@
                     </div>
                 </div>
                 
-                <div class="input-wrapper">
+                <div class="input-wrapper" style="position: relative;">
                     <label>Contraseña</label>
                     <div class="input-icon-group">
                         <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="password" placeholder="••••••••" required>
+                        
+                        <input type="password" id="password" placeholder="••••••••" required readonly style="cursor: pointer; background-color: rgba(255, 255, 255, 0.6);">
+                        
+                        <i class="fa-solid fa-eye toggle-password" id="togglePassword" title="Mostrar contraseña"></i>
+                    </div>
+
+                    <div id="virtual-keypad" class="virtual-keypad">
+                        <button type="button" class="key-btn" data-val="1">1</button>
+                        <button type="button" class="key-btn" data-val="2">2</button>
+                        <button type="button" class="key-btn" data-val="3">3</button>
+                        <button type="button" class="key-btn" data-val="4">4</button>
+                        <button type="button" class="key-btn" data-val="5">5</button>
+                        <button type="button" class="key-btn" data-val="6">6</button>
+                        <button type="button" class="key-btn" data-val="7">7</button>
+                        <button type="button" class="key-btn" data-val="8">8</button>
+                        <button type="button" class="key-btn" data-val="9">9</button>
+                        
+                        <button type="button" class="key-btn action-btn" id="keypad-clear"><i class="fa-solid fa-trash-can"></i></button>
+                        <button type="button" class="key-btn" data-val="0">0</button>
+                        <button type="button" class="key-btn action-btn" id="keypad-del"><i class="fa-solid fa-delete-left"></i></button>
                     </div>
                 </div>
 

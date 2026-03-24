@@ -84,3 +84,71 @@ form.addEventListener('submit', async (e) => {
         btn.innerHTML = originalText;
     }
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const passwordInput = document.getElementById('password');
+    const keypad = document.getElementById('virtual-keypad');
+    const keyBtns = document.querySelectorAll('.key-btn[data-val]');
+    const btnDel = document.getElementById('keypad-del');
+    const btnClear = document.getElementById('keypad-clear');
+
+    // 1. Mostrar teclado al hacer click en el input
+    passwordInput.addEventListener('click', (e) => {
+        keypad.classList.add('active');
+        e.stopPropagation(); // Evitar que el clic cierre el teclado
+    });
+
+    // 2. Lógica para cada número (AHORA CON AUTO-CIERRE)
+    keyBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            
+            // Si ya tiene 6 dígitos, no hacemos nada (evita ingresar de más)
+            if (passwordInput.value.length >= 6) return;
+
+            // Agregamos el número al input
+            passwordInput.value += btn.getAttribute('data-val');
+            
+            // Si al agregar este número llegamos exactamente a 6, cerramos el teclado
+            if (passwordInput.value.length === 6) {
+                keypad.classList.remove('active');
+            }
+        });
+    });
+
+    // 3. Botón para borrar el último número
+    btnDel.addEventListener('click', (e) => {
+        e.preventDefault();
+        passwordInput.value = passwordInput.value.slice(0, -1);
+    });
+
+    // 4. Botón para borrar toda la contraseña
+    btnClear.addEventListener('click', (e) => {
+        e.preventDefault();
+        passwordInput.value = '';
+    });
+
+    // 5. Ocultar teclado al hacer clic en cualquier otro lado de la pantalla
+    document.addEventListener('click', (e) => {
+        // Si no hizo clic dentro del teclado ni en el input, se cierra
+        if (!keypad.contains(e.target) && e.target !== passwordInput) {
+            keypad.classList.remove('active');
+        }
+    });
+
+    const togglePassword = document.getElementById('togglePassword');
+    
+    togglePassword.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation(); // Evita que se cierre el teclado
+        
+        // Cambiar entre password (oculto) y text (visible)
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Cambiar el icono
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+});
+
