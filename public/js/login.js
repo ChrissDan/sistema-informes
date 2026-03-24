@@ -95,7 +95,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1. Mostrar teclado al hacer click en el input
     passwordInput.addEventListener('click', (e) => {
         keypad.classList.add('active');
-        e.stopPropagation(); // Evitar que el clic cierre el teclado
+        e.stopPropagation(); 
+        
+        // Novedad: Hace un pequeño deslizamiento automático para que el teclado se vea perfecto
+        setTimeout(() => {
+            keypad.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 150);
     });
 
     // 2. Lógica para cada número (AHORA CON AUTO-CIERRE)
@@ -122,10 +127,15 @@ document.addEventListener("DOMContentLoaded", () => {
         passwordInput.value = passwordInput.value.slice(0, -1);
     });
 
-    // 4. Botón para borrar toda la contraseña
+    // 4. Botón para borrar toda la contraseña (Basurero)
     btnClear.addEventListener('click', (e) => {
         e.preventDefault();
-        passwordInput.value = '';
+        
+        // 1. Borra todo el texto
+        passwordInput.value = ''; 
+        
+        // 2. Cierra el teclado automáticamente
+        keypad.classList.remove('active'); 
     });
 
     // 5. Ocultar teclado al hacer clic en cualquier otro lado de la pantalla

@@ -729,17 +729,44 @@ input:checked ~ .switch-label {
 }
 
 /* =========================================
-   RESPONSIVE PARA CELULARES
+   RESPONSIVE PARA CELULARES (CUADRO ELÁSTICO)
    ========================================= */
-@media (max-width: 400px) {
-    .virtual-keypad {
-        max-width: 95%; 
-        padding: 10px;
-        gap: 6px !important; 
+@media (max-width: 768px) {
+    /* 1. Permitimos que toda la página pueda deslizarse (scroll) */
+    body { 
+        overflow-y: auto !important; 
     }
+    
+    .login-wrapper {
+        overflow-y: auto !important; 
+        align-items: flex-start !important; /* Alinea arriba para que no se corte al crecer */
+        padding: 20px !important;
+    }
+
+    /* 2. EL TRUCO CLAVE: Dejamos que el cuadro blanco crezca libremente */
+    .login-card {
+        height: auto !important; /* <--- Esto obliga al cuadro a estirarse */
+        min-height: auto !important;
+        margin: 20px auto 40px auto !important; /* Espacio extra abajo para hacer scroll cómodo */
+        padding: 30px 20px !important; 
+        border-radius: 24px !important; /* Mantenemos el estilo curvo en el celular */
+    }
+
+    /* 3. El teclado se acomoda adentro del cuadro y lo empuja */
+    .virtual-keypad.active {
+        position: relative !important; 
+        top: auto !important; 
+        left: auto !important;
+        transform: none !important;
+        width: 100% !important;
+        max-width: 100% !important; 
+        margin-top: 15px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+    }
+
     .key-btn {
-        height: 40px !important; 
-        font-size: 1.15rem;
+        height: 55px !important; 
+        font-size: 1.3rem !important;
     }
 }
 
