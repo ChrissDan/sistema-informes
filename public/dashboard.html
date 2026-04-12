@@ -111,7 +111,31 @@
                     <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-chart-bar"></i> Progreso
                         Informes</h3>
                     <div id="groups-progress-container" class="groups-grid"></div>
+
+                    <div class="card" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h3><i class="fa-solid fa-book-open-reader" style="color: var(--primary);"></i> Cursos
+                                Activos (Año de Servicio)</h3>
+                        </div>
+
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="graficaCursos"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 25px;">
+                        <div class="card-header-flex">
+                            <h3><i class="fa-solid fa-chart-line" style="color: #f97316;"></i> Comparativa: Tienen vs.
+                                No Tienen Cursos</h3>
+                        </div>
+
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="graficaComparativa"></canvas>
+                        </div>
+                    </div>
+
                 </div>
+
             </div>
 
             <div id="view-informes" class="section-view">
@@ -357,11 +381,15 @@
                             <button type="button" class="btn-cancel btn-reset" onclick="limpiarFiltrosReporte()"><i
                                     class="fa-solid fa-eraser"></i> Limpiar</button>
                             <button type="button" class="btn-primary" onclick="abrirModalPrecursores()"
-                                style="background:#0f766e;"><i 
-                                    class="fa-solid fa-stopwatch"></i> Precursores</button>
+                                style="background:#0f766e;"><i class="fa-solid fa-stopwatch"></i> Precursores</button>
                             <button type="button" class="btn-cancel" onclick="descargarPDF()"
                                 style="background:#475569; color:white; margin-left:auto;"><i
                                     class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button type="button" class="btn-primary" onclick="abrirModalCursos()"
+                                style="background:#f97316;">
+                                <i class="fa-solid fa-book-open-reader"></i> Cursos
+                            </button>
+
                         </div>
                     </form>
                 </div>
@@ -461,12 +489,12 @@
                     <option value="NO">NO</option>
                 </select></div>
             <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
-                    min="0"></div>
+                    min="0" inputmode="numeric"></div>
 
             <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
-                    step="0.5" min="0"></div>
+                    step="0.5" min="0" inputmode="numeric"></div>
 
-            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0"></div>
+            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0" inputmode="numeric"></div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
                     rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
@@ -564,11 +592,11 @@
                     <option value="PRESENCIAL">PRESENCIAL</option>
                     <option value="ZOOM">ZOOM</option>
                 </select></div>
-            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0"></div>
-            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0"></div>
-            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0"></div>
-            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0"></div>
-            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0"></div>
+            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0" inputmode="numeric"></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveReu">Guardar</button></div>
         </form>
@@ -597,6 +625,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/dashboard.js" defer></script>
 </body>
 

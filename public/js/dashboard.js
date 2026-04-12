@@ -632,6 +632,444 @@ function descargarPDFPrecursores() {
     }
 }
 
+/* =========================================
+   REPORTE ESPECIAL: CURSOS BÍBLICOS (PANTALLA + PDF)
+   ========================================= */
+
+// Guardamos los datos temporalmente para no volver a consultar a la base de datos al generar el PDF
+let currentCursosData = null;
+let currentCursosGrupo = '';
+
+async function abrirModalCursos() {
+    const grupo = document.getElementById('formReporte').grupo.value;
+    currentCursosGrupo = grupo; // Guardamos el grupo actual
+
+    const modalWrapper = document.getElementById('mainModal');
+    const modalBody = document.getElementById('modalBody');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    // 1. Configuramos la ventana emergente
+    modalTitle.innerHTML = '<i class="fa-solid fa-book-open-reader" style="color:#f97316;"></i> Reporte Detallado de Cursos';
+    
+    modalBody.innerHTML = `
+        <div id="loadingCursos" style="text-align:center; padding:20px; color:var(--text-muted);">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando datos...
+        </div>
+    `;
+    modalWrapper.classList.add('active');
+
+    try {
+        // 2. Pedimos los datos al servidor
+        const res = await fetch(`/api/reportes/detalle-cursos?grupo=${grupo}`);
+        const data = await res.json();
+        
+        if (data.error) throw new Error(data.error);
+        
+        currentCursosData = data; // Guardamos los datos para el PDF
+
+        // 3. Dibujamos las tablas en la pantalla
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:15px;">
+                    <span style="background:#eff6ff; color:#1d4ed8; padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.9rem;">
+                        Conducen: ${data.totales.conducen}
+                    </span>
+                    <span style="background:#fff7ed; color:#c2410c; padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.9rem;">
+                        Sin Cursos: ${data.totales.no_conducen}
+                    </span>
+                </div>
+                
+                <button class="btn-cancel" onclick="generarPDFCursos()" style="background:#475569; color:white; width:auto; padding:8px 16px; font-size:0.85rem;">
+                    <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                </button>
+            </div>
+
+            <div style="max-height:60vh; overflow-y:auto; padding-right:5px;">
+                <h4 style="color:#1d4ed8; border-bottom:2px solid #bfdbfe; padding-bottom:5px; margin-bottom:10px;">1. Publicadores que conducen cursos</h4>
+                <table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:20px;">
+                    <thead>
+                        <tr style="background:#f1f5f9; text-align:left;">
+                            <th style="padding:8px; border-bottom:1px solid #cbd5e1; width:50px;">Grp</th>
+                            <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Nombre</th>
+                            <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Meses con Actividad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.conducen.length === 0 ? '<tr><td colspan="3" style="padding:8px; text-align:center; color:#64748b;">No hay publicadores en esta lista</td></tr>' : ''}
+                        ${data.conducen.map(p => `
+                            <tr style="border-bottom:1px solid #e2e8f0;">
+                                <td style="padding:8px;"><b>${p.grupo}</b></td>
+                                <td style="padding:8px; font-weight:600; color:#334155;">${p.nombre}</td>
+                                <td style="padding:8px; color:#64748b;">${p.meses}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h4 style="color:#c2410c; border-bottom:2px solid #fed7aa; padding-bottom:5px; margin-bottom:10px;">2. Publicadores sin cursos reportados</h4>
+                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                    <thead>
+                        <tr style="background:#f1f5f9; text-align:left;">
+                            <th style="padding:8px; border-bottom:1px solid #cbd5e1; width:50px;">Grp</th>
+                            <th style="padding:8px; border-bottom:1px solid #cbd5e1;">Nombre</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.no_conducen.length === 0 ? '<tr><td colspan="2" style="padding:8px; text-align:center; color:#64748b;">No hay publicadores en esta lista</td></tr>' : ''}
+                        ${data.no_conducen.map(p => `
+                            <tr style="border-bottom:1px solid #e2e8f0;">
+                                <td style="padding:8px;"><b>${p.grupo}</b></td>
+                                <td style="padding:8px; font-weight:600; color:#334155;">${p.nombre}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        modalBody.innerHTML = html;
+
+    } catch (e) {
+        console.error(e);
+        modalBody.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;"><b>Error:</b> No se pudieron cargar los datos.</div>`;
+    }
+}
+
+// 4. FUNCIÓN PARA DESCARGAR EL PDF (Se activa desde el botón dentro del Modal)
+function generarPDFCursos() {
+    if (!currentCursosData) return;
+    
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const data = currentCursosData;
+        const grupo = currentCursosGrupo;
+        let y = 20;
+
+        // --- ENCABEZADO ---
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("REPORTE DE CURSOS BÍBLICOS (Año de Servicio)", 105, y, null, null, "center");
+        
+        y += 8;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Generado: ${new Date().toLocaleDateString()} | Grupo: ${grupo || 'TODOS'}`, 105, y, null, null, "center");
+        
+        y += 15;
+
+        // --- CAJA DE RESUMEN ---
+        const xL = 14; 
+        doc.setFillColor(245, 247, 250); 
+        doc.rect(xL, y-5, 182, 16, 'F'); 
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(37, 99, 235); // Azul
+        doc.text(`Publicadores QUE CONDUCEN: ${data.totales.conducen}`, xL + 5, y + 2);
+        doc.setTextColor(249, 115, 22); // Naranja
+        doc.text(`Publicadores SIN CURSOS: ${data.totales.no_conducen}`, xL + 100, y + 2);
+        
+        y += 20;
+
+        // --- TABLA 1: LOS QUE CONDUCEN ---
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.text("1. Publicadores que conducen cursos", xL, y);
+        y += 5;
+
+        const bodyConducen = data.conducen.map(p => [ p.grupo, p.nombre, p.meses ]);
+
+        doc.autoTable({ 
+            startY: y, 
+            head: [['Grp', 'Nombre', 'Meses con Actividad de Cursos']], 
+            body: bodyConducen, 
+            theme: 'grid', 
+            styles: { fontSize: 9, cellPadding: 3 }, 
+            headStyles: { fillColor: [37, 99, 235] }, 
+            columnStyles: { 0: { halign: 'center', width: 15 }, 1: { width: 60 } }
+        });
+
+        y = doc.lastAutoTable.finalY + 15;
+
+        if (y > 250) {
+            doc.addPage();
+            y = 20;
+        }
+
+        // --- TABLA 2: LOS QUE NO CONDUCEN ---
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("2. Publicadores sin cursos reportados", xL, y);
+        y += 5;
+
+        const bodyNoConducen = data.no_conducen.map(p => [ p.grupo, p.nombre ]);
+
+        doc.autoTable({ 
+            startY: y, 
+            head: [['Grp', 'Nombre']], 
+            body: bodyNoConducen, 
+            theme: 'grid', 
+            styles: { fontSize: 9, cellPadding: 3 }, 
+            headStyles: { fillColor: [249, 115, 22] }, 
+            columnStyles: { 0: { halign: 'center', width: 15 } }
+        });
+
+        doc.save(`Reporte_Cursos_${grupo || 'Global'}.pdf`);
+
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo generar el reporte PDF.', 'error');
+    }
+}
+
+/* =========================================================
+   LÓGICA DE LA GRÁFICA DE CURSOS (SOLO AÑO COMPLETO)
+   ========================================================= */
+let chartCursosInstance = null; 
+
+async function cargarGraficaCursos() {
+    // 1. Verificación básica
+    if (typeof Chart === 'undefined') {
+        console.error("Falta la librería Chart.js en el HTML");
+        return;
+    }
+
+    const ctx = document.getElementById('graficaCursos');
+    if (!ctx) return;
+
+    const grp = isGlobal ? 0 : session.grupo;
+
+    try {
+        if (chartCursosInstance) {
+            chartCursosInstance.destroy();
+            chartCursosInstance = null; 
+        }
+
+        // 2. Pedir directamente los datos de todo el año
+        const res = await fetch('/api/reportes/advanced', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mes: "", grupo: grp === 0 ? "" : grp, priv3: "", nombre: "" })
+        });
+        
+        const data = await res.json();
+        
+        if (!Array.isArray(data)) throw new Error("Error al obtener los datos.");
+        
+        // 3. Orden del Año de Servicio
+        const ORDEN_AÑO = [
+            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 
+            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
+        ];
+
+        const datosPorMes = {};
+        ORDEN_AÑO.forEach(m => datosPorMes[m] = { pub: 0, aux: 0, reg: 0, hasData: false });
+
+        // 4. Sumatoria de cursos
+        data.forEach(r => {
+            const m = (r.mes || '').toUpperCase().trim();
+            if(datosPorMes[m]) {
+                datosPorMes[m].hasData = true; 
+                const p = (r.priv3 || '').toUpperCase();
+                const c = parseInt(r.cursos) || 0;
+                
+                if (p === 'REG' || p === 'ESP' || p === 'MISIONERO') datosPorMes[m].reg += c;
+                else if (p.includes('AUX')) datosPorMes[m].aux += c;
+                else datosPorMes[m].pub += c;
+            }
+        });
+
+        const labelsMeses = [];
+        const dataPub = [];
+        const dataAux = [];
+        const dataReg = [];
+
+        ORDEN_AÑO.forEach(m => {
+            if (datosPorMes[m].hasData) {
+                labelsMeses.push(m.substring(0, 3)); // SEP, OCT, NOV...
+                dataPub.push(datosPorMes[m].pub);
+                dataAux.push(datosPorMes[m].aux);
+                dataReg.push(datosPorMes[m].reg);
+            }
+        });
+
+        if (labelsMeses.length === 0) {
+            labelsMeses.push("Sin Datos");
+            dataPub.push(0); dataAux.push(0); dataReg.push(0);
+        }
+
+        // 5. Dibujar la Gráfica
+        chartCursosInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsMeses,
+                datasets: [
+                    { label: 'PUB+PNB', data: dataPub, backgroundColor: '#3b82f6', borderRadius: 4 },
+                    { label: 'AUX I+M', data: dataAux, backgroundColor: '#8b5cf6', borderRadius: 4 },
+                    { label: 'REGULARES', data: dataReg, backgroundColor: '#10b981', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: { 
+                        mode: 'index', 
+                        intersect: false,
+                        callbacks: {
+                            footer: function(tooltipItems) {
+                                let total = 0;
+                                tooltipItems.forEach(function(item) { total += item.raw; });
+                                return '\nTotal del Mes: ' + total; 
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error en gráfica:", error);
+    }
+}
+
+/* =========================================================
+   LÓGICA DE LA GRÁFICA COMPARATIVA (LÍNEAS)
+   ========================================================= */
+let chartComparativaInstance = null;
+
+async function cargarGraficaComparativa() {
+    const ctx = document.getElementById('graficaComparativa');
+    if (!ctx) return;
+
+    const grp = isGlobal ? 0 : session.grupo;
+
+    try {
+        if (chartComparativaInstance) {
+            chartComparativaInstance.destroy();
+        }
+
+        // Consultar el nuevo endpoint
+        const res = await fetch(`/api/dashboard/cursos-comparativa?grupo=${grp}`);
+        const data = await res.json();
+
+        // 1. ORDEN ESTRICTO (Año de Servicio)
+        const ORDEN_AÑO = [
+            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 
+            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
+        ];
+
+        const datosPorMes = {};
+        ORDEN_AÑO.forEach(m => datosPorMes[m] = { con: 0, sin: 0, hasData: false });
+
+        // 2. Extraemos los conteos enviados por MySQL
+        data.forEach(r => {
+            const m = (r.mes || '').toUpperCase().trim();
+            if(datosPorMes[m]) {
+                datosPorMes[m].hasData = true;
+                datosPorMes[m].con = parseInt(r.con_cursos) || 0;
+                datosPorMes[m].sin = parseInt(r.sin_cursos) || 0;
+            }
+        });
+
+        const labelsMeses = [];
+        const dataConCursos = [];
+        const dataSinCursos = [];
+
+        ORDEN_AÑO.forEach(m => {
+            if (datosPorMes[m].hasData) {
+                labelsMeses.push(m.substring(0, 3)); // SEP, OCT...
+                dataConCursos.push(datosPorMes[m].con);
+                dataSinCursos.push(datosPorMes[m].sin);
+            }
+        });
+
+        if (labelsMeses.length === 0) {
+            labelsMeses.push("Sin Datos");
+            dataConCursos.push(0); dataSinCursos.push(0);
+        }
+
+        // 3. DIBUJAR GRÁFICA DE LÍNEAS
+        chartComparativaInstance = new Chart(ctx, {
+            type: 'line', // Cambiamos a gráfico de líneas
+            data: {
+                labels: labelsMeses,
+                datasets: [
+                    {
+                        label: 'INFORMAN CURSOS',
+                        data: dataConCursos,
+                        borderColor: '#3b82f6', // Azul
+                        backgroundColor: '#3b82f6',
+                        tension: 0.3, // Hace la curva un poco redondeada y elegante
+                        pointRadius: 5, // Tamaño de los puntitos
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'NO INFORMAN CURSOS',
+                        data: dataSinCursos,
+                        borderColor: '#f97316', // Naranja
+                        backgroundColor: '#f97316',
+                        tension: 0.3,
+                        pointRadius: 5,
+                        borderWidth: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: { 
+                        mode: 'index', 
+                        intersect: false,
+                        callbacks: {
+                            // Modificamos cómo se dibuja cada línea de texto dentro del cuadro negro
+                            label: function(context) {
+                                // 1. Obtenemos el valor de la línea que estamos leyendo
+                                let valorActual = context.raw;
+                                
+                                // 2. Sumamos los valores de AMBAS líneas para ese mes exacto
+                                let totalMes = 0;
+                                context.chart.data.datasets.forEach(dataset => {
+                                    totalMes += dataset.data[context.dataIndex];
+                                });
+
+                                // 3. Calculamos el porcentaje
+                                let porcentaje = 0;
+                                if (totalMes > 0) {
+                                    porcentaje = Math.round((valorActual / totalMes) * 100);
+                                }
+
+                                // 4. Retornamos el texto con el formato: "ETIQUETA: Valor (Porcentaje%)"
+                                return ` ${context.dataset.label}: ${valorActual} (${porcentaje}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error en gráfica comparativa:", error);
+    }
+}
+
+// ARRANQUE AUTOMÁTICO
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(cargarGraficaCursos, 500); 
+    // Agrega esta nueva línea 👇
+    setTimeout(cargarGraficaComparativa, 600); 
+});
+
 /* --- USUARIOS --- */
 function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo; abrirModal('usuario', id); }
 function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }

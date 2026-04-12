@@ -100,6 +100,80 @@ app.get('/api/dashboard', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// >>> NUEVO ENDPOINT: GRÁFICA DE CURSOS <<<
+app.get('/api/dashboard/cursos', async (req, res) => {
+    const { mes, grupo } = req.query;
+    try {
+        // Hacemos que SQL sume las columnas dividiéndolas por categoría
+        let sql = `
+            SELECT 
+                SUM(CASE WHEN priv3 IN ('PUB', 'PNB') THEN cursos ELSE 0 END) as pub,
+                SUM(CASE WHEN priv3 IN ('AUX', 'AUX I', 'AUX M') THEN cursos ELSE 0 END) as aux,
+                SUM(CASE WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN cursos ELSE 0 END) as reg
+            FROM informes 
+            WHERE 1=1
+        `;
+        let params = [];
+
+        // Si envían un mes, filtramos. Si no (TODOS), suma el año completo
+        if (mes && mes !== '' && mes !== 'TODOS') {
+            sql += " AND mes = ?";
+            params.push(mes);
+        }
+
+        // Filtro de seguridad por grupo (0 o 9 son administradores)
+        if (grupo && grupo != '0' && grupo != '9') {
+            sql += " AND grupo = ?";
+            params.push(grupo);
+        }
+
+        const [rows] = await pool.query(sql, params);
+        
+        // Devolvemos exactamente los 3 números que necesita la gráfica
+        res.json({
+            pub: parseInt(rows[0].pub) || 0,
+            aux: parseInt(rows[0].aux) || 0,
+            reg: parseInt(rows[0].reg) || 0
+        });
+
+    } catch (error) { 
+        console.error("Error en /api/dashboard/cursos:", error);
+        res.status(500).json({ error: error.message }); 
+    }
+});
+
+// >>> NUEVO ENDPOINT: COMPARATIVA DE CURSOS (TIENEN VS NO TIENEN) <<<
+app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
+    const { grupo } = req.query;
+    try {
+        // Agrupamos por mes y usamos CASE para contar 1 si cumple la condición, y 0 si no.
+        let sql = `
+            SELECT 
+                mes,
+                SUM(CASE WHEN cursos > 0 THEN 1 ELSE 0 END) as con_cursos,
+                SUM(CASE WHEN cursos = 0 OR cursos IS NULL THEN 1 ELSE 0 END) as sin_cursos
+            FROM informes 
+            WHERE 1=1
+        `;
+        let params = [];
+
+        // Filtro de seguridad por grupo (0 o 9 son administradores globales)
+        if (grupo && grupo != '0' && grupo != '9') {
+            sql += " AND grupo = ?";
+            params.push(grupo);
+        }
+
+        sql += " GROUP BY mes";
+
+        const [rows] = await pool.query(sql, params);
+        res.json(rows); // Devolvemos el conteo directo a la gráfica
+
+    } catch (error) { 
+        console.error("Error en /api/dashboard/cursos-comparativa:", error);
+        res.status(500).json({ error: error.message }); 
+    }
+});
+
 // --- PUBLICADORES ---
 app.get('/api/publicadores', async (req, res) => {
     const { grupo, pendientes, nombre, priv3 } = req.query;
@@ -540,6 +614,61 @@ app.get('/api/reportes/precursores', async (req, res) => {
         });
 
         res.json(data);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// >>> NUEVO ENDPOINT: REPORTE DETALLADO DE CURSOS (TIENEN VS NO TIENEN) <<<
+app.get('/api/reportes/detalle-cursos', async (req, res) => {
+    const { grupo } = req.query;
+    try {
+        let whereGrp = "";
+        let params = [];
+        
+        if (grupo && grupo != '0' && grupo != '9') {
+            whereGrp = " AND p.grupo = ?";
+            params.push(grupo);
+        }
+
+        const query = `
+            SELECT 
+                p.id, 
+                p.nombre, 
+                p.grupo,
+                GROUP_CONCAT(CASE WHEN i.cursos > 0 THEN i.mes ELSE NULL END SEPARATOR ', ') as meses_con_cursos,
+                SUM(CASE WHEN i.cursos > 0 THEN 1 ELSE 0 END) as total_meses
+            FROM publicadores p
+            LEFT JOIN informes i ON p.id = i.publicador_id
+            WHERE p.activo = 1 ${whereGrp}
+            GROUP BY p.id
+            ORDER BY p.grupo ASC, p.nombre ASC
+        `;
+
+        const [rows] = await pool.query(query, params);
+
+        // 👇 CORRECCIÓN: Usamos Number() para forzar la conversión, sin importar si MySQL lo manda como texto o número
+        const conducen = rows.filter(r => Number(r.total_meses) > 0).map(r => ({
+            grupo: r.grupo,
+            nombre: r.nombre,
+            meses: r.meses_con_cursos 
+        }));
+
+        const noConducen = rows.filter(r => Number(r.total_meses) === 0 || !r.total_meses).map(r => ({
+            grupo: r.grupo,
+            nombre: r.nombre
+        }));
+
+        res.json({
+            totales: {
+                conducen: conducen.length,
+                no_conducen: noConducen.length
+            },
+            conducen: conducen,
+            no_conducen: noConducen
+        });
 
     } catch (error) {
         console.error(error);
