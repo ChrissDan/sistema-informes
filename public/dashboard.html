@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
 </head>
 
@@ -44,6 +45,8 @@
                         class="fa-solid fa-print"></i> Reportes</a></li>
             <li class="admin-only"><a onclick="showView('usuarios'); toggleSidebar(false)" id="nav-usuarios"><i
                         class="fa-solid fa-user-shield"></i> Usuarios</a></li>
+            <li class="admin-only"><a onclick="showView('cierres'); toggleSidebar(false)" id="nav-cierres"><i
+                        class="fa-solid fa-lock-open"></i> Gestión de Cierres</a></li>
         </ul>
         <div class="user-panel">
             <div class="user-info">
@@ -401,14 +404,15 @@
                             <thead>
                                 <tr>
                                     <th>Mes</th>
-                                    <th>Grp</th>
+                                    <th>Grupo</th>
                                     <th>Nombre</th>
                                     <th>Priv</th>
-                                    <th>Hrs</th>
-                                    <th>Cur</th>
-                                    <th>Cred</th>
-                                    <th>Pred</th>
-                                    <th>Comentario</th>
+                                    <th>Horas</th>
+                                    <th>Cursos</th>
+                                    <th>Crédito</th>
+                                    <th>Predicó</th>
+                                    <th>Comentarios</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tbodyReporte"></tbody>
@@ -458,6 +462,33 @@
                     </div>
                 </div>
             </div>
+
+            <div id="view-cierres" class="section-view">
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <h3 style="color: #1e293b; margin-bottom: 5px;">
+                        <i class="fa-solid fa-lock-open" style="color: #f59e0b;"></i> Meses Cerrados
+                    </h3>
+                    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">
+                        Solo el Administrador puede reabrir meses. Al hacerlo, el estado de todos los publicadores
+                        volverá a ser <b>"Informó: SÍ"</b> para permitir la edición.
+                    </p>
+
+                    <div style="width: 100%; overflow-x: auto; border-radius: 8px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 400px;">
+                            <thead>
+                                <tr style="background:#f1f5f9; text-align:left;">
+                                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Mes</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: right; width: 130px; white-space: nowrap;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyCierres">
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -494,7 +525,8 @@
             <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
                     step="0.5" min="0" inputmode="numeric"></div>
 
-            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0" inputmode="numeric">
+            </div>
             <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
                     rows="3"></textarea></div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
@@ -592,11 +624,16 @@
                     <option value="PRESENCIAL">PRESENCIAL</option>
                     <option value="ZOOM">ZOOM</option>
                 </select></div>
-            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0" inputmode="numeric">
+            </div>
             <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
                     id="btnSaveReu">Guardar</button></div>
         </form>

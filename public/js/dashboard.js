@@ -48,11 +48,28 @@ function showView(viewName) {
     document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
     document.getElementById(`view-${viewName}`).classList.add('active');
     document.getElementById(`nav-${viewName}`).classList.add('active');
-    const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones' };
-    const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle' };
+
+    // Diccionarios de títulos e íconos (Ya incluye 'cierres')
+    const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones', 'cierres': 'Gestión de Cierres' };
+    const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle', 'cierres': 'lock-open' };
+
     document.getElementById('pageTitle').innerHTML = `<i class="fa-solid fa-${icons[viewName]}" style="color:var(--primary)"></i> ${titles[viewName]}`;
-    if (viewName === 'informes') { document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending'); verificarCierres(); }
-    if (viewName === 'publicadores') cargarTablaPublicadores(); if (viewName === 'usuarios') cargarTablaUsuarios(); if (viewName === 'dashboard') cargarDashboard(); if (viewName === 'reuniones') cargarTablaReuniones(); if (viewName === 'reportes') document.getElementById('labelMesReporte');
+
+    // Aquí es donde se disparan las funciones dependiendo de la pantalla que abras
+    if (viewName === 'informes') {
+        document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes];
+        cargarTablaInformes();
+        cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending');
+        verificarCierres();
+    }
+    if (viewName === 'publicadores') cargarTablaPublicadores();
+    if (viewName === 'usuarios') cargarTablaUsuarios();
+    if (viewName === 'dashboard') cargarDashboard();
+    if (viewName === 'reuniones') cargarTablaReuniones();
+    if (viewName === 'reportes') document.getElementById('labelMesReporte');
+
+    // 👇 ESTA ES LA LÍNEA MÁGICA QUE FALTABA 👇
+    if (viewName === 'cierres') cargarTablaCierres();
 }
 
 /* --- LOGICA MODAL --- */
@@ -82,14 +99,74 @@ async function cargarTablaInformes() {
 }
 function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
 function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
+
 document.getElementById('formInforme').addEventListener('submit', async (e) => {
-    e.preventDefault(); const f = e.target; const rawData = Object.fromEntries(new FormData(f)); rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); rawData.cursos = f.cursos.value || 0; rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0;
+    e.preventDefault(); 
+    const f = e.target; 
+
+    // ---> 1. BLOQUEAR EL BOTÓN PARA EVITAR DOBLE CLIC <---
+    const btnSubmit = f.querySelector('button[type="submit"]');
+    const textoOriginal = btnSubmit.innerHTML;
+    if(btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+    }
+
+    const rawData = Object.fromEntries(new FormData(f)); 
+    rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); 
+    rawData.cursos = f.cursos.value || 0; 
+    rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); 
+    const h = parseFloat(rawData.horas) || 0; 
+    const c = parseFloat(rawData.credito_hrs) || 0;
 
     let maxCredito = 55 - h;
     if (maxCredito < 0) maxCredito = 0;
-    if (c > maxCredito) { Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` }); return; }
+    if (c > maxCredito) { 
+        Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` }); 
+        // Restaurar botón si hay error
+        if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
+        return; 
+    }
 
-    const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes'; rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; rawData.requester_group = session.grupo; if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } } if (id) rawData.mes = f.mes.value; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); const json = await res.json(); if (res.ok) { Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); }
+    const id = document.getElementById('informeId').value; 
+    const method = id ? 'PUT' : 'POST'; 
+    const url = id ? `/api/informes/${id}` : '/api/informes'; 
+    rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; 
+    rawData.requester_group = session.grupo; 
+    
+    if (!id) { 
+        const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); 
+        if (pub) { 
+            rawData.publicador_nombre = pub.nombre; 
+            rawData.priv1 = pub.priv1; 
+            rawData.priv2 = pub.priv2; 
+            rawData.priv3 = pub.priv3; 
+        } 
+    } 
+    
+    if (id) rawData.mes = f.mes.value; 
+
+    try {
+        const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); 
+        const json = await res.json(); 
+        
+        if (res.ok) { 
+            Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); 
+            cerrarModal(); 
+            resetFormInforme(true); 
+            cargarTablaInformes(); 
+        } else { 
+            Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); 
+        }
+    } catch (error) {
+        Swal.fire('Error', 'Hubo un problema de conexión.', 'error');
+    } finally {
+        // ---> 2. RESTAURAR EL BOTÓN SIEMPRE AL FINAL <---
+        if(btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = textoOriginal;
+        }
+    }
 });
 
 // --- PUBLICADORES ---
@@ -274,25 +351,205 @@ function editarReunion(r) { if (!isAdmin) return; const f = document.getElementB
 function resetFormReu() { document.getElementById('formReunion').reset(); document.getElementById('reunionId').value = ""; }
 document.getElementById('formReunion').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); data.requester_group = session.grupo; const id = document.getElementById('reunionId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/reuniones/${id}` : '/api/reuniones'; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado correctamente' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); } else { Swal.fire('Error', 'No se pudo guardar', 'error'); } });
 
-// --- LÓGICA CIERRE ---
-async function verificarCierres() { try { const res = await fetch('/api/cierres'); mesesCerrados = await res.json(); Array.from(formMesSelect.options).forEach(opt => { if (mesesCerrados.includes(opt.value)) { opt.disabled = true; opt.textContent += " (Cerrado)"; } }); } catch (e) { console.error(e); } }
-async function cerrarMes() { const mes = document.getElementById('dashMesSelect').value; const confirm = await Swal.fire({ title: `¿Cerrar ${mes}?`, html: "Esta acción validará 'SI' y reseteará a 'NO'.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, Cerrar' }); if (confirm.isConfirmed) { const res = await fetch('/api/cerrar-mes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Swal.fire('Cerrado', `Mes ${mes} cerrado.`, 'success'); verificarCierres(); } else { Swal.fire('Error', json.msg, 'error'); } } }
+// --- LÓGICA CIERRE Y REAPERTURA ---
+
+// 1. Verificar Cierres (ACTUALIZADO PARA LIMPIAR EL SELECTOR)
+async function verificarCierres() {
+    try {
+        const res = await fetch('/api/cierres');
+        mesesCerrados = await res.json();
+
+        Array.from(formMesSelect.options).forEach(opt => {
+            // Novedad: Primero limpiamos el selector por si se reabrió un mes
+            if (opt.value !== "") {
+                opt.disabled = false;
+                opt.textContent = opt.value; // Volvemos a poner solo "ENERO", "FEBRERO", etc.
+            }
+
+            // Luego aplicamos el bloqueo a los que sí estén cerrados
+            if (mesesCerrados.includes(opt.value)) {
+                opt.disabled = true;
+                opt.textContent += " (Cerrado)";
+            }
+        });
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 2. Cerrar Mes (Se mantiene igual)
+async function cerrarMes() {
+    const mes = document.getElementById('dashMesSelect').value;
+    const confirm = await Swal.fire({ title: `¿Cerrar ${mes}?`, html: "Esta acción validará 'SI' y reseteará a 'NO'.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, Cerrar' });
+    if (confirm.isConfirmed) {
+        const res = await fetch('/api/cerrar-mes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, requester_group: session.grupo }) });
+        const json = await res.json();
+        if (json.ok) {
+            Swal.fire('Cerrado', `Mes ${mes} cerrado.`, 'success');
+            verificarCierres();
+        } else {
+            Swal.fire('Error', json.msg, 'error');
+        }
+    }
+}
+
+// 3. Cargar la nueva tabla de meses cerrados (NUEVO)
+async function cargarTablaCierres() {
+    try {
+        const res = await fetch('/api/cierres');
+        let meses = await res.json(); // Cambiamos const por let para poder ordenarlos
+        const tbody = document.getElementById('tbodyCierres');
+
+        // Si el tbody no existe aún en el HTML, evitamos error
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (meses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:30px; color:#94a3b8;">No hay meses cerrados actualmente.</td></tr>';
+            return;
+        }
+
+        // ---> ¡NUEVO! LÓGICA DE ORDENAMIENTO (AÑO DE SERVICIO) <---
+        const ORDEN_AÑO = [
+            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 
+            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
+        ];
+
+        // Ordenamos para que los últimos meses del año queden arriba y Septiembre al fondo
+        meses.sort((a, b) => {
+            return ORDEN_AÑO.indexOf(b) - ORDEN_AÑO.indexOf(a);
+        });
+        // -------------------------------------------------------------
+
+        meses.forEach(mes => {
+            tbody.innerHTML += `
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; font-weight: bold; color: #334155; width: 100%;">${mes}</td>
+            <td style="padding: 12px; text-align: right; width: 1%; white-space: nowrap;">
+                <button type="button" class="btn-action" onclick="reabrirMes('${mes}')" style="background:#f59e0b; color:white; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 110px;" title="Reabrir Mes">
+                    <i class="fa-solid fa-unlock-keyhole"></i> Reabrir
+                </button>
+            </td>
+        </tr>`;
+        });
+    } catch (error) {
+        console.error("Error al cargar cierres:", error);
+    }
+}
+
+// 4. Función para Reabrir el mes (NUEVO)
+async function reabrirMes(mes) {
+    const confirm = await Swal.fire({
+        title: `¿Reabrir ${mes}?`,
+        html: `Esta acción permitirá editar los informes nuevamente.<br><br><b style="color:#f59e0b;">Atención:</b> El estado de todos los publicadores cambiará automáticamente a <b>"Informó: SÍ"</b>.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        confirmButtonText: 'Sí, Reabrir'
+    });
+
+    if (confirm.isConfirmed) {
+        try {
+            const res = await fetch('/api/reabrir-mes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mes: mes, requester_group: session.grupo })
+            });
+            const json = await res.json();
+
+            if (json.ok) {
+                Swal.fire('Reabierto', `El mes de ${mes} vuelve a estar disponible.`, 'success');
+                cargarTablaCierres(); // Recargamos la tablita visual
+                verificarCierres();   // Actualizamos los selectores (combos)
+            } else {
+                Swal.fire('Error', json.msg, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Hubo un problema de conexión al reabrir el mes.', 'error');
+        }
+    }
+}
+
+// Limpiar Filtros (Se mantienen igual)
 function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
 function limpiarFiltrosPub() { document.getElementById('pubFiltroNombre').value = ''; document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
 
 /* --- REPORTES --- */
-async function generarReporte() { const form = document.getElementById('formReporte'); const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, nombre: form.nombre.value }; const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); currentReportData = await res.json(); document.getElementById('reporteResultados').style.display = 'block'; document.getElementById('repTotalRows').textContent = currentReportData.length; const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = ''; let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {}; currentReportData.forEach(r => { sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0); const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1; tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td></tr>`; }); document.getElementById('repSumHoras').textContent = sumHoras; document.getElementById('repSumCursos').textContent = sumCursos; document.getElementById('repSumCredito').textContent = sumCredito; let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; } document.getElementById('repCats').innerHTML = catsHtml; }
+async function generarReporte() {
+    const form = document.getElementById('formReporte');
+    const data = {
+        mes: form.mes.value,
+        grupo: form.grupo.value,
+        priv3: form.priv3.value,
+        nombre: form.nombre.value
+    };
+
+    const res = await fetch('/api/reportes/advanced', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    currentReportData = await res.json();
+    document.getElementById('reporteResultados').style.display = 'block';
+    document.getElementById('repTotalRows').textContent = currentReportData.length;
+
+    const tbody = document.getElementById('tbodyReporte');
+    tbody.innerHTML = '';
+    let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {};
+
+    currentReportData.forEach(r => {
+        sumHoras += parseFloat(r.horas || 0);
+        sumCursos += parseInt(r.cursos || 0);
+        sumCredito += parseFloat(r.credito_hrs || 0);
+        const cat = r.priv3 || 'OTROS';
+        counts[cat] = (counts[cat] || 0) + 1;
+
+        // Capturamos el ID real del publicador de esta fila
+        const idPublicador = r.publicador_id || r.id;
+
+        // Agregamos el botón dinámico al final de la fila (en una nueva celda <td>)
+        tbody.innerHTML += `
+            <tr>
+                <td>${r.mes}</td>
+                <td>${r.grupo}</td>
+                <td>${r.nombre_publicador || r.publicador_nombre}</td>
+                <td><span class="badge badge-gray">${r.priv3}</span></td>
+                <td>${r.horas}</td>
+                <td>${r.cursos}</td>
+                <td>${r.credito_hrs || '-'}</td>
+                <td>${r.predico}</td>
+                <td>${r.comentarios || ''}</td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn-action" onclick="iniciarRellenadoTarjeta(${idPublicador})" title="Rellenar S-21" style="background: none; border: none; cursor: pointer;">
+                        <i class="fa-solid fa-file-signature" style="color: #059669; font-size: 1.2rem;"></i>
+                    </button>
+                </td>
+            </tr>`;
+    });
+
+    document.getElementById('repSumHoras').textContent = sumHoras;
+    document.getElementById('repSumCursos').textContent = sumCursos;
+    document.getElementById('repSumCredito').textContent = sumCredito;
+
+    let catsHtml = '';
+    for (const [key, value] of Object.entries(counts)) {
+        catsHtml += `<div>${key}: <b>${value}</b></div>`;
+    }
+    document.getElementById('repCats').innerHTML = catsHtml;
+}
 
 async function descargarPDF() {
     const mesSelect = document.getElementById('repMesSelect');
     // Si no hay valor, usamos '' (vacío) para la API
-    const mes = mesSelect.value || ''; 
+    const mes = mesSelect.value || '';
     const grupo = document.getElementById('formReporte').grupo.value;
-    
+
     // Validamos solo que haya datos en la tabla, NO obligamos a seleccionar mes
-    if (currentReportData.length === 0) { 
-        Swal.fire('Vacío', 'Primero presiona "Buscar" para cargar los datos.', 'info'); 
-        return; 
+    if (currentReportData.length === 0) {
+        Swal.fire('Vacío', 'Primero presiona "Buscar" para cargar los datos.', 'info');
+        return;
     }
 
     try {
@@ -316,11 +573,11 @@ async function descargarPDF() {
                 stats.reg.cant++;
                 stats.reg.horas += h;
                 stats.reg.cursos += c;
-            } else if (p.includes('AUX')) { 
+            } else if (p.includes('AUX')) {
                 stats.aux.cant++;
                 stats.aux.horas += h;
                 stats.aux.cursos += c;
-            } else { 
+            } else {
                 stats.pub.cant++;
                 stats.pub.cursos += c;
             }
@@ -336,29 +593,29 @@ async function descargarPDF() {
         // Encabezado
         doc.setFontSize(16); doc.setFont("helvetica", "bold");
         doc.text(tituloReporte, 105, 20, null, null, "center");
-        
+
         doc.setFontSize(10); doc.setFont("helvetica", "normal");
         doc.text(`Generado: ${new Date().toLocaleDateString()}`, 105, 26, null, null, "center");
 
         // --- RESUMEN (S-21) ---
         let y = 35;
-        const xL = 14; 
-        
-        doc.setFillColor(245, 247, 250); 
-        doc.rect(xL, y-5, 182, 16, 'F'); 
+        const xL = 14;
+
+        doc.setFillColor(245, 247, 250);
+        doc.rect(xL, y - 5, 182, 16, 'F');
         doc.setFont("helvetica", "bold");
-        
+
         // Ajustamos etiqueta si es reporte anual
         const labelAsistencia = mes === '' ? 'Promedio Asistencia (Anual):' : 'Promedio Asistencia (Fin Sem):';
-        
+
         doc.text(`Publicadores Activos: ${extra.activos}`, xL + 5, y + 2);
         doc.text(`${labelAsistencia} ${extra.asistencia}`, xL + 80, y + 2);
-        
+
         y += 20;
 
         // Columnas
-        const col1 = xL; 
-        const col2 = xL + 60; 
+        const col1 = xL;
+        const col2 = xL + 60;
         const col3 = xL + 120;
 
         doc.setFontSize(11); doc.setTextColor(37, 99, 235);
@@ -366,7 +623,7 @@ async function descargarPDF() {
         doc.text("AUXILIARES", col2, y);
         doc.text("REGULARES", col3, y);
         y += 7;
-        doc.setTextColor(0,0,0); doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10);
 
         // Filas de datos
         doc.text(`Cantidad: ${stats.pub.cant}`, col1, y);
@@ -379,25 +636,25 @@ async function descargarPDF() {
         doc.text(`Horas: ${stats.reg.horas}`, col3, y);
         y += 6;
 
-        doc.text(``, col1, y); 
+        doc.text(``, col1, y);
         doc.text(`Cursos: ${stats.aux.cursos}`, col2, y);
         doc.text(`Cursos: ${stats.reg.cursos}`, col3, y);
-        
+
         y += 12;
 
         // Tabla
         const body = currentReportData.map(r => [
-            r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre, 
+            r.mes, r.grupo, r.nombre_publicador || r.publicador_nombre,
             r.priv3, r.horas, r.cursos, r.credito_hrs, r.predico, r.comentarios
         ]);
 
-        doc.autoTable({ 
-            startY: y, 
-            head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']], 
-            body: body, 
-            theme: 'grid', 
-            styles: { fontSize: 8, cellPadding: 2 }, 
-            headStyles: { fillColor: [37, 99, 235] } 
+        doc.autoTable({
+            startY: y,
+            head: [['Mes', 'Grp', 'Nombre', 'Priv', 'Hrs', 'Cur', 'Cred', 'Pred', 'Com']],
+            body: body,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [37, 99, 235] }
         });
 
         const nombreArchivo = mes === '' ? 'Reporte_Anual.pdf' : `Reporte_${mes}.pdf`;
@@ -417,9 +674,9 @@ function abrirModalPrecursores() {
     const modalWrapper = document.getElementById('mainModal');
     const modalBody = document.getElementById('modalBody');
     const modalTitle = document.getElementById('modalTitle');
-    
+
     modalTitle.innerHTML = '<i class="fa-solid fa-stopwatch"></i> Progreso de Precursores';
-    
+
     // HTML del Selector de Tipo dentro del Modal
     modalBody.innerHTML = `
         <div style="display:flex; gap:10px; justify-content:center; margin-bottom:20px;">
@@ -437,7 +694,7 @@ function abrirModalPrecursores() {
             <p style="text-align:center; color:#64748b; margin-top:20px;">Selecciona una categoría arriba para ver el reporte.</p>
         </div>
     `;
-    
+
     modalWrapper.classList.add('active');
 }
 
@@ -453,9 +710,9 @@ function abrirModalPrecursores() {
     const modalWrapper = document.getElementById('mainModal');
     const modalBody = document.getElementById('modalBody');
     const modalTitle = document.getElementById('modalTitle');
-    
+
     modalTitle.innerHTML = '<i class="fa-solid fa-stopwatch"></i> Progreso de Precursores';
-    
+
     // HTML del Modal con el botón PDF añadido (oculto por defecto)
     modalBody.innerHTML = `
         <div style="display:flex; gap:10px; justify-content:center; margin-bottom:15px;">
@@ -481,7 +738,7 @@ function abrirModalPrecursores() {
             <p style="text-align:center; color:#64748b; margin-top:20px;">Selecciona una categoría arriba.</p>
         </div>
     `;
-    
+
     modalWrapper.classList.add('active');
 }
 
@@ -489,21 +746,21 @@ async function cargarDatosPrecursores(tipo) {
     const container = document.getElementById('tablaPrecContainer');
     const loading = document.getElementById('loadingPrec');
     const pdfBtn = document.getElementById('precPdfContainer');
-    
+
     container.innerHTML = '';
     loading.style.display = 'block';
     pdfBtn.style.display = 'none'; // Ocultar botón mientras carga
-    
+
     try {
         const res = await fetch(`/api/reportes/precursores?tipo=${tipo}`);
         const data = await res.json();
-        
+
         // Guardamos en variables globales para el PDF
         currentPrecData = data;
         currentPrecTipo = tipo;
 
         loading.style.display = 'none';
-        
+
         if (data.length === 0) {
             container.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b;">No hay precursores ${tipo} con datos.</div>`;
             return;
@@ -528,17 +785,17 @@ async function cargarDatosPrecursores(tipo) {
 
         data.forEach(p => {
             let mesesHtml = '';
-            if(p.informes.length === 0) {
+            if (p.informes.length === 0) {
                 mesesHtml = '<span style="color:#cbd5e1; font-size:0.8em;">-</span>';
             } else {
                 mesesHtml = '<div style="display:flex; flex-wrap:wrap; gap:4px;">';
                 p.informes.forEach(inf => {
-                    
+
                     // ---> INICIO DEL CAMBIO: Lógica del crédito de horas <---
-                    const credTxt = parseFloat(inf.credito_hrs) > 0 
-                        ? ` <span style="color:#d97706; font-weight:bold;">(+${inf.credito_hrs})</span>` 
+                    const credTxt = parseFloat(inf.credito_hrs) > 0
+                        ? ` <span style="color:#d97706; font-weight:bold;">(+${inf.credito_hrs})</span>`
                         : '';
-                    
+
                     mesesHtml += `
                         <span style="background:#eff6ff; color:#1e40af; border:1px solid #dbeafe; padding:2px 6px; border-radius:4px; font-size:0.75em; white-space:nowrap;">
                             <b>${inf.mes}</b>: ${inf.horas}${credTxt}
@@ -578,14 +835,14 @@ function descargarPDFPrecursores() {
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
+
         // Título del PDF
         const titulo = currentPrecTipo === 'REG' ? 'PRECURSORES REGULARES' : 'PRECURSORES AUXILIARES';
-        
+
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text(`Reporte de Progreso - ${titulo}`, 105, 20, null, null, "center");
-        
+
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.text(`Generado: ${new Date().toLocaleDateString()}`, 105, 26, null, null, "center");
@@ -602,7 +859,7 @@ function descargarPDFPrecursores() {
                 }
                 return txt;
             }).join(',  ');
-            
+
             return [
                 p.grupo,
                 p.nombre,
@@ -611,12 +868,12 @@ function descargarPDFPrecursores() {
             ];
         });
 
-        doc.autoTable({ 
-            startY: 35, 
-            head: [['Grp', 'Nombre', 'Detalle de Horas (Meses)', 'Total']], 
-            body: body, 
-            theme: 'grid', 
-            styles: { fontSize: 9, cellPadding: 3, valign: 'middle' }, 
+        doc.autoTable({
+            startY: 35,
+            head: [['Grp', 'Nombre', 'Detalle de Horas (Meses)', 'Total']],
+            body: body,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 3, valign: 'middle' },
             headStyles: { fillColor: currentPrecTipo === 'REG' ? [37, 99, 235] : [5, 150, 105] }, // Azul o Verde según tipo
             columnStyles: {
                 0: { halign: 'center', width: 15 }, // Grupo
@@ -647,10 +904,10 @@ async function abrirModalCursos() {
     const modalWrapper = document.getElementById('mainModal');
     const modalBody = document.getElementById('modalBody');
     const modalTitle = document.getElementById('modalTitle');
-    
+
     // 1. Configuramos la ventana emergente
     modalTitle.innerHTML = '<i class="fa-solid fa-book-open-reader" style="color:#f97316;"></i> Reporte Detallado de Cursos';
-    
+
     modalBody.innerHTML = `
         <div id="loadingCursos" style="text-align:center; padding:20px; color:var(--text-muted);">
             <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando datos...
@@ -662,9 +919,9 @@ async function abrirModalCursos() {
         // 2. Pedimos los datos al servidor
         const res = await fetch(`/api/reportes/detalle-cursos?grupo=${grupo}`);
         const data = await res.json();
-        
+
         if (data.error) throw new Error(data.error);
-        
+
         currentCursosData = data; // Guardamos los datos para el PDF
 
         // 3. Dibujamos las tablas en la pantalla
@@ -738,7 +995,7 @@ async function abrirModalCursos() {
 // 4. FUNCIÓN PARA DESCARGAR EL PDF (Se activa desde el botón dentro del Modal)
 function generarPDFCursos() {
     if (!currentCursosData) return;
-    
+
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -750,24 +1007,24 @@ function generarPDFCursos() {
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text("REPORTE DE CURSOS BÍBLICOS (Año de Servicio)", 105, y, null, null, "center");
-        
+
         y += 8;
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.text(`Generado: ${new Date().toLocaleDateString()} | Grupo: ${grupo || 'TODOS'}`, 105, y, null, null, "center");
-        
+
         y += 15;
 
         // --- CAJA DE RESUMEN ---
-        const xL = 14; 
-        doc.setFillColor(245, 247, 250); 
-        doc.rect(xL, y-5, 182, 16, 'F'); 
+        const xL = 14;
+        doc.setFillColor(245, 247, 250);
+        doc.rect(xL, y - 5, 182, 16, 'F');
         doc.setFont("helvetica", "bold");
         doc.setTextColor(37, 99, 235); // Azul
         doc.text(`Publicadores QUE CONDUCEN: ${data.totales.conducen}`, xL + 5, y + 2);
         doc.setTextColor(249, 115, 22); // Naranja
         doc.text(`Publicadores SIN CURSOS: ${data.totales.no_conducen}`, xL + 100, y + 2);
-        
+
         y += 20;
 
         // --- TABLA 1: LOS QUE CONDUCEN ---
@@ -776,15 +1033,15 @@ function generarPDFCursos() {
         doc.text("1. Publicadores que conducen cursos", xL, y);
         y += 5;
 
-        const bodyConducen = data.conducen.map(p => [ p.grupo, p.nombre, p.meses ]);
+        const bodyConducen = data.conducen.map(p => [p.grupo, p.nombre, p.meses]);
 
-        doc.autoTable({ 
-            startY: y, 
-            head: [['Grp', 'Nombre', 'Meses con Actividad de Cursos']], 
-            body: bodyConducen, 
-            theme: 'grid', 
-            styles: { fontSize: 9, cellPadding: 3 }, 
-            headStyles: { fillColor: [37, 99, 235] }, 
+        doc.autoTable({
+            startY: y,
+            head: [['Grp', 'Nombre', 'Meses con Actividad de Cursos']],
+            body: bodyConducen,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [37, 99, 235] },
             columnStyles: { 0: { halign: 'center', width: 15 }, 1: { width: 60 } }
         });
 
@@ -801,15 +1058,15 @@ function generarPDFCursos() {
         doc.text("2. Publicadores sin cursos reportados", xL, y);
         y += 5;
 
-        const bodyNoConducen = data.no_conducen.map(p => [ p.grupo, p.nombre ]);
+        const bodyNoConducen = data.no_conducen.map(p => [p.grupo, p.nombre]);
 
-        doc.autoTable({ 
-            startY: y, 
-            head: [['Grp', 'Nombre']], 
-            body: bodyNoConducen, 
-            theme: 'grid', 
-            styles: { fontSize: 9, cellPadding: 3 }, 
-            headStyles: { fillColor: [249, 115, 22] }, 
+        doc.autoTable({
+            startY: y,
+            head: [['Grp', 'Nombre']],
+            body: bodyNoConducen,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [249, 115, 22] },
             columnStyles: { 0: { halign: 'center', width: 15 } }
         });
 
@@ -821,10 +1078,201 @@ function generarPDFCursos() {
     }
 }
 
+/* =======================================================
+   NUEVO MÓDULO: MODIFICACIÓN DIRECTA DE TARJETAS S-21
+======================================================= */
+
+let publicadorIdSeleccionado = null;
+let fileHandleS21 = null;
+
+async function iniciarRellenadoTarjeta(id) {
+    publicadorIdSeleccionado = id;
+
+    try {
+        // Abrimos el selector de archivos moderno
+        [fileHandleS21] = await window.showOpenFilePicker({
+            types: [{
+                description: 'Documentos PDF (Tarjeta S-21)',
+                accept: { 'application/pdf': ['.pdf'] },
+            }],
+            multiple: false
+        });
+
+        // Una vez seleccionado, disparamos el proceso automáticamente
+        ejecutarProcesoModificacion();
+
+    } catch (error) {
+        // Si el usuario cancela o su navegador no soporta la API
+        if (error.name !== 'AbortError') {
+            console.error("Error al acceder al archivo:", error);
+            Swal.fire('Error', 'Tu navegador no soporta la edición directa de archivos. Se recomienda usar Chrome o Edge.', 'error');
+        }
+    }
+}
+
+async function ejecutarProcesoModificacion() {
+    if (!fileHandleS21 || !publicadorIdSeleccionado) return;
+
+    Swal.fire({ title: 'Modificando archivo original...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        // 1. Obtener datos de la base de datos
+        const res = await fetch(`/api/publicador/${publicadorIdSeleccionado}/tarjeta`);
+        const data = await res.json();
+
+        // 2. Obtener el archivo real desde el handle
+        const file = await fileHandleS21.getFile();
+
+        // 3. Procesar y rellenar con pdf-lib
+        const pdfBytes = await motorRellenadoS21(file, data);
+
+        // 4. GUARDAR CAMBIOS: Sobrescribir el archivo original
+        const writable = await fileHandleS21.createWritable();
+        await writable.write(pdfBytes);
+        await writable.close();
+
+        Swal.close();
+        Toast.fire({ icon: 'success', title: 'Archivo original actualizado correctamente' });
+
+    } catch (error) {
+        console.error(error);
+        Swal.fire('Error de Permisos', 'No se pudo guardar. Asegúrate de que el PDF no esté abierto en otro programa.', 'error');
+    }
+}
+
+async function motorRellenadoS21(file, data) {
+    const arrayBuffer = await file.arrayBuffer();
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    const form = pdfDoc.getForm();
+
+    const safeSetText = (fieldName, text) => {
+        try { const f = form.getTextField(fieldName); if (f) f.setText(text ? text.toString() : ''); } catch (e) { }
+    };
+    const safeCheck = (fieldName, condition) => {
+        try { const f = form.getCheckBox(fieldName); if (f && condition) f.check(); } catch (e) { }
+    };
+
+    const mapaMeses = {
+        'septiembre': 20, 'octubre': 21, 'noviembre': 22, 'diciembre': 23,
+        'enero': 24, 'febrero': 25, 'marzo': 26, 'abril': 27,
+        'mayo': 28, 'junio': 29, 'julio': 30, 'agosto': 31
+    };
+
+    data.informes.forEach(inf => {
+        const index = mapaMeses[inf.mes.toLowerCase().trim()];
+        if (index) {
+            // Participación (Check)
+            safeCheck(`901_${index}_CheckBox`, (inf.horas > 0 || inf.cursos > 0 || inf.predico === 'SI' || inf.predico === 1));
+
+            // Cursos
+            if (inf.cursos > 0) safeSetText(`902_${index}_Text_C_SanSerif`, inf.cursos.toString());
+
+            // Precursor Auxiliar (Check)
+            const privilegioMes = (inf.priv3 || '').toUpperCase();
+            safeCheck(`903_${index}_CheckBox`, privilegioMes.includes('AUX'));
+
+            // Horas
+            if (inf.horas > 0) safeSetText(`904_${index}_S21_Value`, inf.horas.toString());
+
+            // Notas/Comentarios
+            if (inf.comentarios) safeSetText(`905_${index}_Text_SanSerif`, inf.comentarios);
+        }
+    });
+
+    return await pdfDoc.save();
+}
+
+// Escuchamos cuando el usuario seleccione el archivo PDF
+/*document.getElementById('pdfTemplateInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file || !publicadorIdSeleccionado) return;
+
+    Swal.fire({ title: 'Rellenando tarjeta...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        // 1. Obtener los datos del servidor
+        const res = await fetch(`/api/publicador/${publicadorIdSeleccionado}/tarjeta`);
+        const data = await res.json();
+
+        // 2. Leer el archivo PDF que seleccionaste
+        const arrayBuffer = await file.arrayBuffer();
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const form = pdfDoc.getForm();
+
+        // --- FUNCIONES SEGURAS ---
+        const safeSetText = (fieldName, text) => {
+            try { const f = form.getTextField(fieldName); if (f) f.setText(text ? text.toString() : ''); } catch(e) {}
+        };
+        const safeCheck = (fieldName, condition) => {
+            try { const f = form.getCheckBox(fieldName); if (f && condition) f.check(); } catch(e) {}
+        };
+
+        // --- LOS DATOS PERSONALES FUERON ELIMINADOS DE AQUÍ ---
+        // El sistema ya no tocará el nombre, año, ni casillas superiores.
+
+        // 3. DICCIONARIO DE MESES
+        const mapaMeses = {
+            'septiembre': 20, 'octubre': 21, 'noviembre': 22, 'diciembre': 23,
+            'enero': 24, 'febrero': 25, 'marzo': 26, 'abril': 27,
+            'mayo': 28, 'junio': 29, 'julio': 30, 'agosto': 31
+        };
+
+        // 4. RELLENAR SOLO LA TABLA DE INFORMES (De abajo)
+        data.informes.forEach(inf => {
+            const mesStr = inf.mes.toLowerCase().trim();
+            const index = mapaMeses[mesStr]; 
+            
+            if (index) {
+                // Participación (Check) - Incluye validación de si marcó 'SI' en predicó sin reportar horas
+                safeCheck(`901_${index}_CheckBox`, (inf.horas > 0 || inf.cursos > 0 || inf.predico === 'SI' || inf.predico === 1));
+                
+                // Cursos
+                if (inf.cursos > 0) safeSetText(`902_${index}_Text_C_SanSerif`, inf.cursos.toString());
+                
+                // ---> ¡NUEVO! PRECURSOR AUXILIAR (Check) <---
+                // Verificamos si en ESE mes específico sirvió como AUX (incluye AUX I y AUX M)
+                const privilegioMes = (inf.priv3 || '').toUpperCase();
+                const fueAuxiliar = privilegioMes.includes('AUX');
+                safeCheck(`903_${index}_CheckBox`, fueAuxiliar);
+                
+                // Horas 
+                if (inf.horas > 0) safeSetText(`904_${index}_S21_Value`, inf.horas.toString());
+                
+                // Notas/Comentarios
+                if (inf.comentarios) safeSetText(`905_${index}_Text_SanSerif`, inf.comentarios);
+            }
+        });
+
+        // 5. Generar el nuevo PDF modificado
+        const pdfBytes = await pdfDoc.save();
+
+        // 6. Descargar el archivo
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        // Le cambiamos un poco el nombre para que sepas que solo se llenaron informes
+        link.download = `S-21_Informes_${data.publicador.nombre.replace(/ /g, '_')}.pdf`;
+        link.click();
+
+        Swal.close();
+        Toast.fire({ icon: 'success', title: 'Informes insertados correctamente' });
+
+    } catch (error) {
+        console.error(error);
+        Swal.fire('Error', 'Hubo un problema al procesar el PDF. Asegúrate de que es un formulario S-21 válido.', 'error');
+    } finally {
+        // Limpiar el input para que permita volver a seleccionar el mismo archivo
+        e.target.value = ''; 
+    }
+});*/
+
 /* =========================================================
    LÓGICA DE LA GRÁFICA DE CURSOS (SOLO AÑO COMPLETO)
    ========================================================= */
-let chartCursosInstance = null; 
+let chartCursosInstance = null;
 
 async function cargarGraficaCursos() {
     // 1. Verificación básica
@@ -841,7 +1289,7 @@ async function cargarGraficaCursos() {
     try {
         if (chartCursosInstance) {
             chartCursosInstance.destroy();
-            chartCursosInstance = null; 
+            chartCursosInstance = null;
         }
 
         // 2. Pedir directamente los datos de todo el año
@@ -850,14 +1298,14 @@ async function cargarGraficaCursos() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mes: "", grupo: grp === 0 ? "" : grp, priv3: "", nombre: "" })
         });
-        
+
         const data = await res.json();
-        
+
         if (!Array.isArray(data)) throw new Error("Error al obtener los datos.");
-        
+
         // 3. Orden del Año de Servicio
         const ORDEN_AÑO = [
-            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 
+            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
             'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
         ];
 
@@ -867,11 +1315,11 @@ async function cargarGraficaCursos() {
         // 4. Sumatoria de cursos
         data.forEach(r => {
             const m = (r.mes || '').toUpperCase().trim();
-            if(datosPorMes[m]) {
-                datosPorMes[m].hasData = true; 
+            if (datosPorMes[m]) {
+                datosPorMes[m].hasData = true;
                 const p = (r.priv3 || '').toUpperCase();
                 const c = parseInt(r.cursos) || 0;
-                
+
                 if (p === 'REG' || p === 'ESP' || p === 'MISIONERO') datosPorMes[m].reg += c;
                 else if (p.includes('AUX')) datosPorMes[m].aux += c;
                 else datosPorMes[m].pub += c;
@@ -911,16 +1359,16 @@ async function cargarGraficaCursos() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { 
+                plugins: {
                     legend: { display: true, position: 'bottom' },
-                    tooltip: { 
-                        mode: 'index', 
+                    tooltip: {
+                        mode: 'index',
                         intersect: false,
                         callbacks: {
-                            footer: function(tooltipItems) {
+                            footer: function (tooltipItems) {
                                 let total = 0;
-                                tooltipItems.forEach(function(item) { total += item.raw; });
-                                return '\nTotal del Mes: ' + total; 
+                                tooltipItems.forEach(function (item) { total += item.raw; });
+                                return '\nTotal del Mes: ' + total;
                             }
                         }
                     }
@@ -959,7 +1407,7 @@ async function cargarGraficaComparativa() {
 
         // 1. ORDEN ESTRICTO (Año de Servicio)
         const ORDEN_AÑO = [
-            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 
+            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
             'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
         ];
 
@@ -969,7 +1417,7 @@ async function cargarGraficaComparativa() {
         // 2. Extraemos los conteos enviados por MySQL
         data.forEach(r => {
             const m = (r.mes || '').toUpperCase().trim();
-            if(datosPorMes[m]) {
+            if (datosPorMes[m]) {
                 datosPorMes[m].hasData = true;
                 datosPorMes[m].con = parseInt(r.con_cursos) || 0;
                 datosPorMes[m].sin = parseInt(r.sin_cursos) || 0;
@@ -1024,15 +1472,15 @@ async function cargarGraficaComparativa() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: true, position: 'bottom' },
-                    tooltip: { 
-                        mode: 'index', 
+                    tooltip: {
+                        mode: 'index',
                         intersect: false,
                         callbacks: {
                             // Modificamos cómo se dibuja cada línea de texto dentro del cuadro negro
-                            label: function(context) {
+                            label: function (context) {
                                 // 1. Obtenemos el valor de la línea que estamos leyendo
                                 let valorActual = context.raw;
-                                
+
                                 // 2. Sumamos los valores de AMBAS líneas para ese mes exacto
                                 let totalMes = 0;
                                 context.chart.data.datasets.forEach(dataset => {
@@ -1065,9 +1513,9 @@ async function cargarGraficaComparativa() {
 
 // ARRANQUE AUTOMÁTICO
 document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(cargarGraficaCursos, 500); 
+    setTimeout(cargarGraficaCursos, 500);
     // Agrega esta nueva línea 👇
-    setTimeout(cargarGraficaComparativa, 600); 
+    setTimeout(cargarGraficaComparativa, 600);
 });
 
 /* --- USUARIOS --- */

@@ -360,11 +360,23 @@ app.post('/api/informes', async (req, res) => {
         return res.status(400).json({ ok: false, msg: `Con ${horasFinal}h, el crédito máximo es ${creditoPermitido}h.` });
     }
 
-    const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
-    if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
-    
     const conn = await pool.getConnection();
     try {
+        // Verificamos si el mes está cerrado
+        const [cierre] = await conn.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
+        if (cierre.length > 0) {
+            conn.release();
+            return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
+        }
+
+        // ---> ¡LA NUEVA BARRERA ANTI-DUPLICADOS! <---
+        // Verificamos si este publicador YA tiene un informe registrado en este mes
+        const [existente] = await conn.query("SELECT id FROM informes WHERE publicador_id = ? AND mes = ?", [publicador_id, mes]);
+        if (existente.length > 0) {
+            conn.release();
+            return res.status(400).json({ ok: false, msg: `Este publicador ya tiene un informe registrado en ${mes}.` });
+        }
+
         await conn.beginTransaction();
         await conn.query(
             `INSERT INTO informes (mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios, credito_hrs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
@@ -374,7 +386,15 @@ app.post('/api/informes', async (req, res) => {
         
         await conn.commit(); 
         res.json({ ok: true });
-    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: 'Error: ' + error.message }); } finally { conn.release(); }
+    } catch (error) { 
+        await conn.rollback(); 
+        res.status(500).json({ ok: false, msg: 'Error: ' + error.message }); 
+    } finally { 
+        // Asegurarse de que la conexión SIEMPRE se libere
+        if (conn && !conn.connection._fatalError) {
+            conn.release();
+        }
+    }
 });
 
 app.put('/api/informes/:id', async (req, res) => {
@@ -406,13 +426,37 @@ app.put('/api/informes/:id', async (req, res) => {
 app.delete('/api/informes/:id', async (req, res) => {
     const requester_group = req.query.requester_group;
     const mes = req.query.mes;
+    
+    // 1. Verificamos permisos
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
+    
+    // 2. Verificamos que el mes no esté cerrado
     if(mes) {
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
     }
-    try { await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]); res.json({ ok: true }); } 
-    catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    
+    try { 
+        // 3. Averiguamos de quién es este informe ANTES de borrarlo
+        const [informe] = await pool.query("SELECT publicador_id FROM informes WHERE id = ?", [req.params.id]);
+        
+        if (informe.length === 0) {
+            return res.status(404).json({ ok: false, msg: "Informe no encontrado." });
+        }
+        
+        const publicadorId = informe[0].publicador_id;
+
+        // 4. Borramos el informe de la base de datos
+        await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]); 
+        
+        // 5. ¡LA MAGIA! Restablecemos el estado del publicador a 'NO'
+        await pool.query("UPDATE publicadores SET informo = 'NO' WHERE id = ?", [publicadorId]);
+
+        res.json({ ok: true, msg: "Informe eliminado y estado de INFO restablecido a NO." }); 
+        
+    } catch (error) { 
+        res.status(500).json({ ok: false, msg: error.message }); 
+    }
 });
 
 // >>> NUEVO: API PARA RESUMEN DEL REPORTE (DATOS S-21) <<<
@@ -673,6 +717,50 @@ app.get('/api/reportes/detalle-cursos', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// >>> ENDPOINT: OBTENER DATOS ANUALES PARA TARJETA S-21 <<<
+app.get('/api/publicador/:id/tarjeta', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // 1. Obtener datos del publicador
+        const [pub] = await pool.query("SELECT * FROM publicadores WHERE id = ?", [id]);
+        if (pub.length === 0) return res.status(404).json({ error: "Publicador no encontrado" });
+
+        // 2. Obtener sus informes (Agregamos "priv3" y "predico" a la consulta)
+        const [informes] = await pool.query("SELECT mes, horas, cursos, comentarios, priv3, predico FROM informes WHERE publicador_id = ?", [id]);
+
+        res.json({
+            publicador: pub[0],
+            informes: informes
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// >>> ENDPOINT PARA REABRIR MES <<<
+app.post('/api/reabrir-mes', async (req, res) => {
+    const { mes, requester_group } = req.body;
+
+    // Medida de seguridad: Solo el Admin (Grupo 0) puede hacer esto
+    if (requester_group != 0) {
+        return res.status(403).json({ ok: false, msg: "No tienes permiso para reabrir meses." });
+    }
+
+    try {
+        // 1. Borramos el registro del mes cerrado 
+        // (⚠️ Cambia "cierres" por el nombre real de tu tabla si es distinto, ej: meses_cerrados)
+        await pool.query("DELETE FROM cierres WHERE mes = ?", [mes]);
+
+        // 2. Como pediste: Se marca "SI" en la columna informo de TODOS los publicadores
+        await pool.query("UPDATE publicadores SET informo = 'SI'");
+
+        res.json({ ok: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, msg: "Error al reabrir el mes." });
     }
 });
 
