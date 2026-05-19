@@ -15,6 +15,8 @@ else if (isSupervisor) {
     document.querySelectorAll('#sidebar .global-view').forEach(el => el.style.display = 'block');
     document.querySelectorAll('th.global-view, td.global-view').forEach(el => el.style.display = 'table-cell');
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+    // 👁️ NUEVO: Le mostramos los selectores de filtros de grupo de las tablas al Supervisor
+    document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
 }
 else {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
@@ -92,77 +94,127 @@ async function cargarTablaInformes() {
     let mes = MESES[mesIndexInformes]; let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('infFiltroGrupo') ? document.getElementById('infFiltroGrupo').value : null; if (isGlobal && fGrupo) grp = fGrupo; const fPriv3 = document.getElementById('infFiltroPriv3').value; const fNombre = document.getElementById('infFiltroNombre').value; const params = new URLSearchParams({ grupo: grp }); if (mes) params.append('mes', mes); if (fPriv3) params.append('priv3', fPriv3); if (fNombre) params.append('nombre', fNombre);
     const res = await fetch(`/api/informes?${params.toString()}`); cacheInformes = await res.json(); const tbody = document.getElementById('tablaInformes'); tbody.innerHTML = '';
     if (cacheInformes.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron resultados para ${mes}.</td></tr>`; return; }
+
+    // 🔴 BLOQUEO RADICAL: Verificar si el mes actual consultado está en la lista de cerrados
+    const mesEstaCerrado = (typeof mesesCerrados !== 'undefined' ? mesesCerrados : []).includes(mes);
+
     cacheInformes.forEach(d => {
-        const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>'; const grpCell = isGlobal ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : ''; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const canEdit = (isGlobal || d.grupo == session.grupo); const editBtn = canEdit ? `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : ''; const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
+        const badge = d.predico === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>'; const grpCell = isGlobal ? `<td><span class="badge-grp">G${d.grupo}</span></td>` : '';
+
+        let editBtn = '';
+        let deleteBtn = '';
+
+        // 🔴 SI EL MES NO ESTÁ CERRADO, EVALUAMOS LOS PERMISOS NORMALES
+        if (!mesEstaCerrado) {
+            // El Admin elimina
+            if (isAdmin) {
+                deleteBtn = `<button class="btn-action btn-del" onclick="eliminar('informes', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`;
+            }
+            // Los autorizados editan (Admin, Supervisor o Dueño del grupo)
+            if (isGlobal || d.grupo == session.grupo) {
+                editBtn = `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
+            }
+        }
+        // SI EL MES ESTÁ CERRADO, editBtn y deleteBtn SE QUEDAN VACÍOS PARA TODOS LOS ROLES AUTOMÁTICAMENTE
+
+        const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
         tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${d.credito_hrs || '-'}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
     }); if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
+
+    // 👁️ NUEVO: Si es Admin o Supervisor (Grupo 9), aseguramos que el selector de filtrar por grupo sea visible
+    const contenedorFiltroGrupo = document.getElementById('infFiltroGrupo');
+    if (contenedorFiltroGrupo && isGlobal) {
+        // Si el select está dentro de un div contenedor con clase 'global-view' o similar, lo mostramos
+        if (contenedorFiltroGrupo.parentElement) {
+            contenedorFiltroGrupo.parentElement.style.display = 'block';
+        } else {
+            contenedorFiltroGrupo.style.display = 'block';
+        }
+    }
+
 }
+
 function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
 function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
 
 document.getElementById('formInforme').addEventListener('submit', async (e) => {
-    e.preventDefault(); 
-    const f = e.target; 
+    e.preventDefault();
+    const f = e.target;
 
     // ---> 1. BLOQUEAR EL BOTÓN PARA EVITAR DOBLE CLIC <---
     const btnSubmit = f.querySelector('button[type="submit"]');
     const textoOriginal = btnSubmit.innerHTML;
-    if(btnSubmit) {
+    if (btnSubmit) {
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
     }
 
-    const rawData = Object.fromEntries(new FormData(f)); 
-    rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0); 
-    rawData.cursos = f.cursos.value || 0; 
-    rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0); 
-    const h = parseFloat(rawData.horas) || 0; 
+    const rawData = Object.fromEntries(new FormData(f));
+    rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
+    rawData.cursos = f.cursos.value || 0;
+    rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
+    const h = parseFloat(rawData.horas) || 0;
     const c = parseFloat(rawData.credito_hrs) || 0;
 
-    let maxCredito = 55 - h;
-    if (maxCredito < 0) maxCredito = 0;
-    if (c > maxCredito) { 
-        Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` }); 
-        // Restaurar botón si hay error
+    // 🔴 >>> ¡NUEVA VALIDACIÓN: HORAS OBLIGATORIAS PARA PRECURSORES! <<< 🔴
+    const privilegio = (document.getElementById('readPriv3').value || "").trim().toUpperCase();
+    const listaPrecursores = ['REG', 'ESP', 'AUX I', 'AUX M', 'AUX'];
+    
+    if (listaPrecursores.includes(privilegio) && h <= 0) {
+        Swal.fire({ 
+            icon: 'warning', 
+            title: 'Horas Requeridas', 
+            text: `El publicador está registrado como ${privilegio}. No se puede guardar un informe con 0 horas.` 
+        });
+        // Restauramos el botón para que puedan corregir el dato
         if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
         return; 
     }
 
-    const id = document.getElementById('informeId').value; 
-    const method = id ? 'PUT' : 'POST'; 
-    const url = id ? `/api/informes/${id}` : '/api/informes'; 
-    rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; 
-    rawData.requester_group = session.grupo; 
-    
-    if (!id) { 
-        const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); 
-        if (pub) { 
-            rawData.publicador_nombre = pub.nombre; 
-            rawData.priv1 = pub.priv1; 
-            rawData.priv2 = pub.priv2; 
-            rawData.priv3 = pub.priv3; 
-        } 
-    } 
-    
-    if (id) rawData.mes = f.mes.value; 
+    let maxCredito = 55 - h;
+    if (maxCredito < 0) maxCredito = 0;
+    if (c > maxCredito) {
+        Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` });
+        // Restaurar botón si hay error
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
+        return;
+    }
+
+    const id = document.getElementById('informeId').value;
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/informes/${id}` : '/api/informes';
+    rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo;
+    rawData.requester_group = session.grupo;
+
+    if (!id) {
+        const pub = cachePublicadores.find(p => p.id == rawData.publicador_id);
+        if (pub) {
+            rawData.publicador_nombre = pub.nombre;
+            rawData.priv1 = pub.priv1;
+            rawData.priv2 = pub.priv2;
+            rawData.priv3 = pub.priv3;
+        }
+    }
+
+    if (id) rawData.mes = f.mes.value;
 
     try {
-        const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) }); 
-        const json = await res.json(); 
-        
-        if (res.ok) { 
-            Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' }); 
-            cerrarModal(); 
-            resetFormInforme(true); 
-            cargarTablaInformes(); 
-        } else { 
-            Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); 
+        const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
+        const json = await res.json();
+
+        if (res.ok) {
+            Toast.fire({ icon: 'success', title: id ? 'Informe actualizado' : 'Informe guardado' });
+            cerrarModal();
+            resetFormInforme(true);
+            cargarTablaInformes();
+        } else {
+            Swal.fire('Error', json.msg || 'No se pudo guardar', 'error');
         }
     } catch (error) {
         Swal.fire('Error', 'Hubo un problema de conexión.', 'error');
     } finally {
         // ---> 2. RESTAURAR EL BOTÓN SIEMPRE AL FINAL <---
-        if(btnSubmit) {
+        if (btnSubmit) {
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = textoOriginal;
         }
@@ -393,45 +445,42 @@ async function cerrarMes() {
     }
 }
 
-// 3. Cargar la nueva tabla de meses cerrados (NUEVO)
+// 3. Cargar la nueva lista de meses cerrados (Enfoque Flexbox Anti-Scroll)
 async function cargarTablaCierres() {
     try {
         const res = await fetch('/api/cierres');
-        let meses = await res.json(); // Cambiamos const por let para poder ordenarlos
-        const tbody = document.getElementById('tbodyCierres');
+        let meses = await res.json();
+        const contenedor = document.getElementById('listaCierresFlex');
 
-        // Si el tbody no existe aún en el HTML, evitamos error
-        if (!tbody) return;
+        if (!contenedor) return;
 
-        tbody.innerHTML = '';
+        contenedor.innerHTML = '';
 
         if (meses.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:30px; color:#94a3b8;">No hay meses cerrados actualmente.</td></tr>';
+            contenedor.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8; font-size:0.95rem;">No hay meses cerrados actualmente.</div>';
             return;
         }
 
-        // ---> ¡NUEVO! LÓGICA DE ORDENAMIENTO (AÑO DE SERVICIO) <---
+        // Lógica de ordenamiento (Año de Servicio)
         const ORDEN_AÑO = [
             'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 
             'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
         ];
 
-        // Ordenamos para que los últimos meses del año queden arriba y Septiembre al fondo
         meses.sort((a, b) => {
             return ORDEN_AÑO.indexOf(b) - ORDEN_AÑO.indexOf(a);
         });
-        // -------------------------------------------------------------
 
+        // Inyectar filas usando Flexbox puro
         meses.forEach(mes => {
-            tbody.innerHTML += `
-        <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 12px; font-weight: bold; color: #334155; width: 100%;">${mes}</td>
-            <td style="padding: 12px; text-align: right; width: 1%; white-space: nowrap;">
-                <button type="button" class="btn-action" onclick="reabrirMes('${mes}')" style="background:#f59e0b; color:white; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 110px;" title="Reabrir Mes">
+            contenedor.innerHTML += `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <span style="font-weight: bold; color: #334155; font-size: 0.95rem;">${mes}</span>
+                
+                <button type="button" class="btn-action" onclick="reabrirMes('${mes}')" style="background:#f59e0b; color:white; padding:8px 16px; border-radius:6px; border:none; cursor:pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 110px;" title="Reabrir Mes">
                     <i class="fa-solid fa-unlock-keyhole"></i> Reabrir
                 </button>
-            </td>
-        </tr>`;
+            </div>`;
         });
     } catch (error) {
         console.error("Error al cargar cierres:", error);

@@ -353,6 +353,12 @@ app.post('/api/informes', async (req, res) => {
     const cursosFinal = parseInt(cursos) || 0;
     const creditoFinal = parseFloat(credito_hrs) || 0;
 
+    // 🔴 BARRERA EN CREACIÓN: Precursores no pueden tener 0 horas
+    const pUpper = (priv3 || "").trim().toUpperCase();
+    if (['REG', 'ESP', 'AUX I', 'AUX M', 'AUX'].includes(pUpper) && horasFinal <= 0) {
+        return res.status(400).json({ ok: false, msg: `Un ${pUpper} no puede reportar 0 horas.` });
+    }
+
     let creditoPermitido = 55 - horasFinal;
     if (creditoPermitido < 0) creditoPermitido = 0;
 
@@ -398,7 +404,7 @@ app.post('/api/informes', async (req, res) => {
 });
 
 app.put('/api/informes/:id', async (req, res) => {
-    let { horas, cursos, predico, comentarios, publicador_id, mes, credito_hrs } = req.body;
+    let { horas, cursos, predico, comentarios, publicador_id, credito_hrs } = req.body;
     const horasFinal = parseFloat(horas) || 0; 
     const cursosFinal = parseInt(cursos) || 0;
     const creditoFinal = parseFloat(credito_hrs) || 0;
@@ -410,12 +416,38 @@ app.put('/api/informes/:id', async (req, res) => {
         return res.status(400).json({ ok: false, msg: `Con ${horasFinal}h, el crédito máximo es ${creditoPermitido}h.` });
     }
 
+    try {
+        // 1. Buscamos el informe real en la BD para saber el mes y el privilegio (priv3) original
+        const [informeOriginal] = await pool.query("SELECT mes, priv3 FROM informes WHERE id = ?", [req.params.id]);
+        if (informeOriginal.length === 0) {
+            return res.status(404).json({ ok: false, msg: "Informe no encontrado." });
+        }
+        
+        const mesDelInforme = informeOriginal[0].mes;
+        const privDelInforme = (informeOriginal[0].priv3 || "").trim().toUpperCase();
+
+        // 🔴 >>> NUEVA VALIDACIÓN: SI ES PRECURSOR, NO SE PERMITEN 0 HORAS AL EDITAR <<<
+        const listaPrecursores = ['REG', 'ESP', 'AUX I', 'AUX M', 'AUX'];
+        if (listaPrecursores.includes(privDelInforme) && horasFinal <= 0) {
+            return res.status(400).json({ ok: false, msg: `No se puede guardar el informe de un ${privDelInforme} con 0 horas.` });
+        }
+
+        // 2. Verificamos de forma interna si ese mes exacto está cerrado
+        const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mesDelInforme]);
+        if (cierre.length > 0) {
+            return res.status(400).json({ ok: false, msg: `El mes de ${mesDelInforme} está cerrado. Nadie puede modificar este informe.` });
+        }
+    } catch (err) {
+        return res.status(500).json({ ok: false, msg: err.message });
+    }
+
+    // 3. Si pasó todas las pruebas de seguridad, procedemos con la actualización normal
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
         await conn.query(
             'UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=? WHERE id=?', 
-            [horasFinal, cursosFinal, predico, comentarios, credito_hrs, req.params.id]
+            [horasFinal, cursosFinal, predico, comentarios, creditoFinal, req.params.id]
         );
         await conn.query('UPDATE publicadores SET informo = "SI" WHERE id = ?', [publicador_id]);
         await conn.commit(); 
@@ -554,14 +586,13 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
             paramsPubs.push(grupo);
         }
 
-        // 1. Total Publicadores Activos (Siempre es el total actual)
+        // 1. Total Publicadores Activos
         const [rowsPubs] = await pool.query(`SELECT COUNT(*) as total FROM publicadores WHERE activo = 1 ${whereGrp}`, paramsPubs);
         
-        // 2. Promedio Asistencia (Dinámico: Mes específico o Todo el año)
+        // 2. Promedio Asistencia (CORREGIDO: Suma total de asistencia real entre semanas reales del mes)
         let sqlReu = "SELECT * FROM reuniones WHERE tipo = 'FIN DE SEMANA'";
         let paramsReu = [];
 
-        // Solo filtramos por mes si el usuario seleccionó uno específico
         if (mes && mes !== '' && mes !== 'TODOS') {
             sqlReu += " AND mes = ?";
             paramsReu.push(mes);
@@ -575,7 +606,6 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
             let sumTotal = 0;
             let weeksTotal = 0;
 
-            // Sumamos TODO lo que encuentre (sea 1 mes o 12 meses)
             rowsReu.forEach(r => {
                 const s1 = parseInt(r.sem1) || 0;
                 const s2 = parseInt(r.sem2) || 0;
@@ -592,8 +622,11 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
                 if(s5 > 0) weeksTotal++;
             });
             
+            // 🔴 CORRECCIÓN CLAVE: Si se filtró por un grupo específico en un mes con múltiples registros de asistencia,
+            // promediamos correctamente la suma por el número de registros para que no altere la escala.
             if (weeksTotal > 0) {
-                promedioAsis = Math.round(sumTotal / weeksTotal);
+                // Si hay más de un registro de reunión para el mismo mes, recalculamos basándonos en las semanas únicas
+                promedioAsis = Math.round(sumTotal / (weeksTotal / rowsReu.length));
             }
         }
 
