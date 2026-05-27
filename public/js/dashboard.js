@@ -1208,6 +1208,9 @@ async function motorRellenadoS21(file, data) {
         'mayo': 28, 'junio': 29, 'julio': 30, 'agosto': 31
     };
 
+    // 🔴 1. Variable para acumular solo las horas
+    let totalHoras = 0;
+
     data.informes.forEach(inf => {
         const index = mapaMeses[inf.mes.toLowerCase().trim()];
         if (index) {
@@ -1222,12 +1225,21 @@ async function motorRellenadoS21(file, data) {
             safeCheck(`903_${index}_CheckBox`, privilegioMes.includes('AUX'));
 
             // Horas
-            if (inf.horas > 0) safeSetText(`904_${index}_S21_Value`, inf.horas.toString());
+            if (inf.horas > 0) {
+                safeSetText(`904_${index}_S21_Value`, inf.horas.toString());
+                // 🔴 2. Vamos sumando las horas válidas
+                totalHoras += parseFloat(inf.horas);
+            }
 
             // Notas/Comentarios
             if (inf.comentarios) safeSetText(`905_${index}_Text_SanSerif`, inf.comentarios);
         }
     });
+
+    // 🔴 3. Inyectar el total al final de la columna (Índice 32)
+    if (totalHoras > 0) {
+        safeSetText('904_32_S21_Value', totalHoras.toString());
+    }
 
     return await pdfDoc.save();
 }
