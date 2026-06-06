@@ -86,7 +86,29 @@ function cerrarModal() { const modalWrapper = document.getElementById('mainModal
 let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let cacheReuniones = [];
 async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') url += `&pendientes=true`; const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; } catch (e) { console.error(e); } }
 function cargarDatosPub() { const id = document.getElementById('selectPubInfo').value; const pub = cachePublicadores.find(p => p.id == id); if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); } else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; } }
-function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } }
+function actualizarEstadoHoras(privilegio) { 
+    const inputHoras = document.getElementById('inputHoras'); 
+    const inputCredito = document.getElementById('inputCredito'); 
+    const p = (privilegio || "").trim().toUpperCase(); 
+    
+    // 🔴 Agregamos 'AUX C' a los que reportan horas
+    const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C']; 
+    const reportanCredito = ['REG', 'ESP']; 
+
+    if (reportan.includes(p)) { 
+        inputHoras.disabled = false; 
+    } else { 
+        inputHoras.disabled = true; 
+        inputHoras.value = ""; 
+    } 
+    
+    if (reportanCredito.includes(p)) { 
+        inputCredito.disabled = false; 
+    } else { 
+        inputCredito.disabled = true; 
+        inputCredito.value = ""; 
+    } 
+}
 function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; document.getElementById('infFiltroNombre').value = ''; cargarTablaInformes(); }
 
 // --- INFORMES ---
@@ -135,7 +157,34 @@ async function cargarTablaInformes() {
 }
 
 function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
-function resetFormInforme(manualClean = false) { document.getElementById('formInforme').reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true; if (manualClean) { document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending'); } }
+function resetFormInforme(manualClean = false) { 
+    const f = document.getElementById('formInforme');
+    f.reset(); 
+    document.getElementById('informeId').value = ""; 
+    document.getElementById('inputHoras').disabled = true; 
+    document.getElementById('inputCredito').disabled = true;
+
+    if (manualClean) { 
+        document.getElementById('readPriv3').value = ""; 
+        const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; 
+        cargarPublicadoresSelect(grp, 'pending');
+
+        // 🔴 ---> LÓGICA DEL MES AUTOMÁTICO BLOQUEADO <--- 🔴
+        const NOMBRES_MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        const mesActualIndex = new Date().getMonth();
+        // Calculamos el mes vencido (Si es Enero, regresa a Diciembre)
+        const mesAnteriorIndex = (mesActualIndex === 0) ? 11 : mesActualIndex - 1;
+        
+        if (f.mes) {
+            f.mes.value = NOMBRES_MESES[mesAnteriorIndex];
+            f.mes.disabled = true; // Bloqueo estricto
+            f.mes.style.backgroundColor = '#f1f5f9';
+            f.mes.style.cursor = 'not-allowed';
+            f.mes.style.fontWeight = 'bold';
+            f.mes.style.color = '#475569';
+        }
+    } 
+}
 
 document.getElementById('formInforme').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -150,32 +199,81 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     }
 
     const rawData = Object.fromEntries(new FormData(f));
+    
+    // 🔴 ---> NUEVO: Forzamos la captura del mes porque el select está bloqueado (disabled) <--- 🔴
+    rawData.mes = f.mes.value; 
+
     rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
     rawData.cursos = f.cursos.value || 0;
     rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
     const h = parseFloat(rawData.horas) || 0;
     const c = parseFloat(rawData.credito_hrs) || 0;
 
-    // 🔴 >>> ¡NUEVA VALIDACIÓN: HORAS OBLIGATORIAS PARA PRECURSORES! <<< 🔴
+    // 🔴 >>> VALIDACIÓN INTELIGENTE DE METAS PARA PRECURSORES <<< 🔴
     const privilegio = (document.getElementById('readPriv3').value || "").trim().toUpperCase();
-    const listaPrecursores = ['REG', 'ESP', 'AUX I', 'AUX M', 'AUX'];
     
-    if (listaPrecursores.includes(privilegio) && h <= 0) {
+    // Clasificamos los tipos de privilegio
+    const esRegular = privilegio === 'REG' || privilegio === 'ESP';
+    const esAux30 = privilegio === 'AUX I' || privilegio === 'AUX M' || privilegio === 'AUX';
+    const esAux15 = privilegio === 'AUX C';
+    
+    const esPrecursor = esRegular || esAux30 || esAux15;
+
+    // 1. Bloqueo Absoluto: Nadie puede registrar 0 horas siendo precursor
+    if (esPrecursor && h <= 0) {
         Swal.fire({ 
-            icon: 'warning', 
-            title: 'Horas Requeridas', 
-            text: `El publicador está registrado como ${privilegio}. No se puede guardar un informe con 0 horas.` 
+            icon: 'error', 
+            title: 'Horas en cero', 
+            text: `Un ${privilegio} no puede reportar 0 horas en su informe.` 
         });
-        // Restauramos el botón para que puedan corregir el dato
         if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
         return; 
     }
 
+    // 2. Definir la meta mínima según la etiqueta
+    let metaMinima = 0;
+    if (esRegular) metaMinima = 50; 
+    if (esAux30) metaMinima = 30;
+    if (esAux15) metaMinima = 15;
+
+    // 3. Evaluar si se alcanzó la meta
+    if (metaMinima > 0 && h < metaMinima) {
+        // 👇 CAMBIO AQUÍ: Usamos !isGlobal para que Admin (0) y Supervisor (9) sí puedan aprobar 👇
+        if (!isGlobal) { 
+            // Si es encargado de grupo normal (del 1 al 8)
+            Swal.fire({
+                icon: 'error',
+                title: 'Meta no alcanzada',
+                html: `El publicador es <b>${privilegio}</b> (Meta: ${metaMinima} hrs) pero solo reportó <b>${h} horas</b>.<br><br>No tienes permisos para registrar este informe. El Secretario debe evaluarlo para decidir si lo aprueba o lo registra como publicador regular.`
+            });
+            if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
+            return;
+        } else { 
+            // Si SÍ es el Administrador (0) o el Secretario/Coordinador (9)
+            const confirmacion = await Swal.fire({
+                icon: 'warning',
+                title: 'Aprobación Especial',
+                html: `Este <b>${privilegio}</b> reportó <b>${h} horas</b> (su meta es de ${metaMinima} hrs).<br><br>¿Deseas aprobar y registrar este informe como precursor de todas formas?`,
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Sí, aprobar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            // Si el secretario se arrepiente o le da cancelar, detenemos el guardado
+            if (!confirmacion.isConfirmed) {
+                if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
+                return;
+            }
+        }
+    }
+
+    // --- CONTINÚA EL FLUJO NORMAL DE GUARDADO ---
     let maxCredito = 55 - h;
     if (maxCredito < 0) maxCredito = 0;
     if (c > maxCredito) {
         Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h} horas reales, el crédito máximo es ${maxCredito}.` });
-        // Restaurar botón si hay error
         if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; }
         return;
     }
@@ -196,8 +294,6 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
         }
     }
 
-    if (id) rawData.mes = f.mes.value;
-
     try {
         const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
         const json = await res.json();
@@ -213,7 +309,7 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     } catch (error) {
         Swal.fire('Error', 'Hubo un problema de conexión.', 'error');
     } finally {
-        // ---> 2. RESTAURAR EL BOTÓN SIEMPRE AL FINAL <---
+        // ---> RESTAURAR EL BOTÓN SIEMPRE AL FINAL <---
         if (btnSubmit) {
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = textoOriginal;
@@ -1413,7 +1509,7 @@ async function cargarGraficaCursos() {
                 labels: labelsMeses,
                 datasets: [
                     { label: 'PUB+PNB', data: dataPub, backgroundColor: '#3b82f6', borderRadius: 4 },
-                    { label: 'AUX I+M', data: dataAux, backgroundColor: '#8b5cf6', borderRadius: 4 },
+                    { label: 'AUX I+M+C', data: dataAux, backgroundColor: '#8b5cf6', borderRadius: 4 },
                     { label: 'REGULARES', data: dataReg, backgroundColor: '#10b981', borderRadius: 4 }
                 ]
             },

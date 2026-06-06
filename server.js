@@ -34,6 +34,7 @@ app.post('/api/login', async (req, res) => {
         if (rows.length === 0) return res.status(401).json({ ok: false, msg: 'Correo no registrado' });
         const user = rows[0];
         if (password !== user.password) return res.status(401).json({ ok: false, msg: 'Contraseña incorrecta' });
+       
         res.json({ ok: true, user: { id: user.id, nombre: user.nombre, grupo: user.grupo, correo: user.correo } });
     } catch (error) { res.status(500).json({ ok: false, msg: 'Error de servidor' }); }
 });
@@ -62,10 +63,11 @@ app.post('/api/cerrar-mes', async (req, res) => {
             return res.json({ ok: false, msg: `Mes ya cerrado.` });
         }
         await conn.query("INSERT INTO cierres (mes) VALUES (?)", [mes]);
-        await conn.query("UPDATE publicadores SET informo = 'NO'"); 
+        await conn.query("UPDATE publicadores SET informo = 'NO'");
         await conn.commit();
         res.json({ ok: true });
-    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: error.message }); } finally { conn.release(); }
+    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: error.message });
+    } finally { conn.release(); }
 });
 
 // --- DASHBOARD ---
@@ -87,9 +89,12 @@ app.get('/api/dashboard', async (req, res) => {
         
         let qReports = `SELECT grupo, COUNT(*) as count FROM informes WHERE mes = ? ${filterGrp} GROUP BY grupo`;
         const [reportsGroup] = await conn.query(qReports, paramsMes);
-        
+
         const [pubStats] = await conn.query(`SELECT COUNT(*) as count, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('PUB', 'PNB') ${filterGrp}`, paramsMes);
-        const [auxStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('AUX I', 'AUX M', 'AUX') ${filterGrp}`, paramsMes);
+        
+        // 🔴 CAMBIO 1: Se agregó 'AUX C' a la consulta del Dashboard
+        const [auxStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 IN ('AUX I', 'AUX M', 'AUX', 'AUX C') ${filterGrp}`, paramsMes);
+        
         const [regStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND priv3 = 'REG' ${filterGrp}`, paramsMes);
         
         conn.release();
@@ -104,41 +109,37 @@ app.get('/api/dashboard', async (req, res) => {
 app.get('/api/dashboard/cursos', async (req, res) => {
     const { mes, grupo } = req.query;
     try {
-        // Hacemos que SQL sume las columnas dividiéndolas por categoría
+        // 🔴 CAMBIO 2: Se agregó 'AUX C' a la sumatoria de cursos para la gráfica
         let sql = `
             SELECT 
                 SUM(CASE WHEN priv3 IN ('PUB', 'PNB') THEN cursos ELSE 0 END) as pub,
-                SUM(CASE WHEN priv3 IN ('AUX', 'AUX I', 'AUX M') THEN cursos ELSE 0 END) as aux,
+                SUM(CASE WHEN priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C') THEN cursos ELSE 0 END) as aux,
                 SUM(CASE WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN cursos ELSE 0 END) as reg
             FROM informes 
             WHERE 1=1
         `;
         let params = [];
 
-        // Si envían un mes, filtramos. Si no (TODOS), suma el año completo
         if (mes && mes !== '' && mes !== 'TODOS') {
             sql += " AND mes = ?";
             params.push(mes);
         }
 
-        // Filtro de seguridad por grupo (0 o 9 son administradores)
         if (grupo && grupo != '0' && grupo != '9') {
             sql += " AND grupo = ?";
             params.push(grupo);
         }
 
         const [rows] = await pool.query(sql, params);
-        
-        // Devolvemos exactamente los 3 números que necesita la gráfica
+
         res.json({
             pub: parseInt(rows[0].pub) || 0,
             aux: parseInt(rows[0].aux) || 0,
             reg: parseInt(rows[0].reg) || 0
         });
-
     } catch (error) { 
         console.error("Error en /api/dashboard/cursos:", error);
-        res.status(500).json({ error: error.message }); 
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -146,7 +147,6 @@ app.get('/api/dashboard/cursos', async (req, res) => {
 app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
     const { grupo } = req.query;
     try {
-        // Agrupamos por mes y usamos CASE para contar 1 si cumple la condición, y 0 si no.
         let sql = `
             SELECT 
                 mes,
@@ -157,7 +157,6 @@ app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
         `;
         let params = [];
 
-        // Filtro de seguridad por grupo (0 o 9 son administradores globales)
         if (grupo && grupo != '0' && grupo != '9') {
             sql += " AND grupo = ?";
             params.push(grupo);
@@ -166,7 +165,7 @@ app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
         sql += " GROUP BY mes";
 
         const [rows] = await pool.query(sql, params);
-        res.json(rows); // Devolvemos el conteo directo a la gráfica
+        res.json(rows); 
 
     } catch (error) { 
         console.error("Error en /api/dashboard/cursos-comparativa:", error);
@@ -183,7 +182,8 @@ app.get('/api/publicadores', async (req, res) => {
         if (grupo && grupo != '0' && grupo != '9') { query += " AND grupo = ?"; params.push(grupo); }
         if (pendientes === 'true') { query += " AND informo = 'NO' AND activo = 1"; }
         if (priv3 && priv3 !== '') { 
-            if (priv3 === 'AUX') { query += " AND priv3 IN ('AUX', 'AUX I', 'AUX M')"; } 
+            // 🔴 CAMBIO 3: Filtro de directorio de publicadores ahora soporta AUX_COMBINED y mapea AUX C
+            if (priv3 === 'AUX' || priv3 === 'AUX_COMBINED') { query += " AND priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C')"; } 
             else { query += " AND priv3 = ?"; params.push(priv3); }
         }
         if (nombre && nombre !== '') { query += " AND nombre LIKE ?"; params.push(`%${nombre}%`); }
@@ -232,10 +232,9 @@ app.delete('/api/publicadores/:id', async (req, res) => {
     }
 });
 
-// >>> INACTIVOS (ORDENADO POR GRUPO + NOMBRE) <<<
+// >>> INACTIVOS <<<
 app.get('/api/check-inactivos', async (req, res) => {
     const { grupo } = req.query;
-    console.log("\n>>> [DEBUG] Buscando irregulares..."); 
     
     try {
         const now = new Date();
@@ -250,7 +249,6 @@ app.get('/api/check-inactivos', async (req, res) => {
         }
         const [publicadores] = await pool.query(sqlPubs, paramsPubs);
 
-        // MAPA: Solo traemos informes donde PREDICO = 'SI'
         const [informes] = await pool.query("SELECT publicador_id, mes FROM informes WHERE predico = 'SI'");
         
         const informesMap = new Set();
@@ -261,24 +259,19 @@ app.get('/api/check-inactivos', async (req, res) => {
         const [cierres] = await pool.query("SELECT mes FROM cierres");
         const mesesCerradosSet = new Set(cierres.map(c => c.mes.trim().toUpperCase()));
 
-        console.log(`- Meses Cerrados: ${Array.from(mesesCerradosSet).join(', ')}`);
-
         const candidatos = [];
         const mesesAtrasMax = 12;
 
         for (const pub of publicadores) {
             let mesesSinInformar = 0;
+            let startScore = 190001;
             
-            // --- CALCULAR MES DE INICIO DE OBLIGACIÓN ---
-            let startScore = 190001; 
-
             if (pub.fecha_ingreso) {
                 const dString = new Date(pub.fecha_ingreso).toISOString().split('T')[0];
                 const parts = dString.split('-'); 
                 let y = parseInt(parts[0]);
                 let m = parseInt(parts[1]); 
                 let d = parseInt(parts[2]);
-
                 if (d === 1) {
                     m--;
                     if (m === 0) { m = 12; y--; }
@@ -300,7 +293,7 @@ app.get('/api/check-inactivos', async (req, res) => {
                 if (!informesMap.has(key)) {
                     mesesSinInformar++;
                 } else {
-                    break; // Rompe racha
+                    break;
                 }
             }
 
@@ -309,16 +302,11 @@ app.get('/api/check-inactivos', async (req, res) => {
             }
         }
         
-        console.log(`>>> [RESULTADO] Irregulares: ${candidatos.length}`);
-        
-        // --- ORDENAMIENTO FINAL: GRUPO (ASC) -> NOMBRE (ASC) ---
         const finalList = candidatos.sort((a, b) => {
-            if (a.grupo !== b.grupo) {
-                return a.grupo - b.grupo; // Grupo 1, 2, 3...
-            }
-            return a.nombre.localeCompare(b.nombre); // Alfabético
+            if (a.grupo !== b.grupo) return a.grupo - b.grupo;
+            return a.nombre.localeCompare(b.nombre);
         });
-
+        
         res.json({ candidatos: finalList }); 
 
     } catch (error) { 
@@ -336,7 +324,8 @@ app.get('/api/informes', async (req, res) => {
         if (grupo != '0' && grupo != '9') { query += ` AND i.grupo = ?`; params.push(grupo); }
         if (mes && mes !== 'TODOS' && mes !== '') { query += ` AND i.mes = ?`; params.push(mes); }
         if (priv3 && priv3 !== '') { 
-            if (priv3 === 'AUX_COMBINED') { query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M')"; } 
+            // 🔴 CAMBIO 4: Filtro de informes ahora busca AUX C también cuando se agrupan
+            if (priv3 === 'AUX_COMBINED') { query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C')"; } 
             else if (priv3 === 'PUB_COMBINED') { query += " AND i.priv3 IN ('PUB', 'PNB')"; } 
             else { query += " AND i.priv3 = ?"; params.push(priv3); }
         }
@@ -353,9 +342,10 @@ app.post('/api/informes', async (req, res) => {
     const cursosFinal = parseInt(cursos) || 0;
     const creditoFinal = parseFloat(credito_hrs) || 0;
 
-    // 🔴 BARRERA EN CREACIÓN: Precursores no pueden tener 0 horas
     const pUpper = (priv3 || "").trim().toUpperCase();
-    if (['REG', 'ESP', 'AUX I', 'AUX M', 'AUX'].includes(pUpper) && horasFinal <= 0) {
+    
+    // 🔴 CAMBIO 5: Agregado 'AUX C' a la barrera estricta que no deja guardar 0 horas en Backend
+    if (['REG', 'ESP', 'AUX I', 'AUX M', 'AUX', 'AUX C'].includes(pUpper) && horasFinal <= 0) {
         return res.status(400).json({ ok: false, msg: `Un ${pUpper} no puede reportar 0 horas.` });
     }
 
@@ -368,15 +358,12 @@ app.post('/api/informes', async (req, res) => {
 
     const conn = await pool.getConnection();
     try {
-        // Verificamos si el mes está cerrado
         const [cierre] = await conn.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (cierre.length > 0) {
             conn.release();
             return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
         }
 
-        // ---> ¡LA NUEVA BARRERA ANTI-DUPLICADOS! <---
-        // Verificamos si este publicador YA tiene un informe registrado en este mes
         const [existente] = await conn.query("SELECT id FROM informes WHERE publicador_id = ? AND mes = ?", [publicador_id, mes]);
         if (existente.length > 0) {
             conn.release();
@@ -393,10 +380,9 @@ app.post('/api/informes', async (req, res) => {
         await conn.commit(); 
         res.json({ ok: true });
     } catch (error) { 
-        await conn.rollback(); 
+        await conn.rollback();
         res.status(500).json({ ok: false, msg: 'Error: ' + error.message }); 
     } finally { 
-        // Asegurarse de que la conexión SIEMPRE se libere
         if (conn && !conn.connection._fatalError) {
             conn.release();
         }
@@ -417,7 +403,6 @@ app.put('/api/informes/:id', async (req, res) => {
     }
 
     try {
-        // 1. Buscamos el informe real en la BD para saber el mes y el privilegio (priv3) original
         const [informeOriginal] = await pool.query("SELECT mes, priv3 FROM informes WHERE id = ?", [req.params.id]);
         if (informeOriginal.length === 0) {
             return res.status(404).json({ ok: false, msg: "Informe no encontrado." });
@@ -425,14 +410,13 @@ app.put('/api/informes/:id', async (req, res) => {
         
         const mesDelInforme = informeOriginal[0].mes;
         const privDelInforme = (informeOriginal[0].priv3 || "").trim().toUpperCase();
-
-        // 🔴 >>> NUEVA VALIDACIÓN: SI ES PRECURSOR, NO SE PERMITEN 0 HORAS AL EDITAR <<<
-        const listaPrecursores = ['REG', 'ESP', 'AUX I', 'AUX M', 'AUX'];
+        
+        // 🔴 CAMBIO 6: Actualizada la listaPrecursores en edición de informes para incluir AUX C
+        const listaPrecursores = ['REG', 'ESP', 'AUX I', 'AUX M', 'AUX', 'AUX C'];
         if (listaPrecursores.includes(privDelInforme) && horasFinal <= 0) {
             return res.status(400).json({ ok: false, msg: `No se puede guardar el informe de un ${privDelInforme} con 0 horas.` });
         }
 
-        // 2. Verificamos de forma interna si ese mes exacto está cerrado
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mesDelInforme]);
         if (cierre.length > 0) {
             return res.status(400).json({ ok: false, msg: `El mes de ${mesDelInforme} está cerrado. Nadie puede modificar este informe.` });
@@ -441,7 +425,6 @@ app.put('/api/informes/:id', async (req, res) => {
         return res.status(500).json({ ok: false, msg: err.message });
     }
 
-    // 3. Si pasó todas las pruebas de seguridad, procedemos con la actualización normal
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -459,17 +442,14 @@ app.delete('/api/informes/:id', async (req, res) => {
     const requester_group = req.query.requester_group;
     const mes = req.query.mes;
     
-    // 1. Verificamos permisos
     if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
     
-    // 2. Verificamos que el mes no esté cerrado
     if(mes) {
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ?", [mes]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `El mes de ${mes} está cerrado.` });
     }
     
     try { 
-        // 3. Averiguamos de quién es este informe ANTES de borrarlo
         const [informe] = await pool.query("SELECT publicador_id FROM informes WHERE id = ?", [req.params.id]);
         
         if (informe.length === 0) {
@@ -478,54 +458,42 @@ app.delete('/api/informes/:id', async (req, res) => {
         
         const publicadorId = informe[0].publicador_id;
 
-        // 4. Borramos el informe de la base de datos
-        await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]); 
-        
-        // 5. ¡LA MAGIA! Restablecemos el estado del publicador a 'NO'
+        await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]);
         await pool.query("UPDATE publicadores SET informo = 'NO' WHERE id = ?", [publicadorId]);
-
-        res.json({ ok: true, msg: "Informe eliminado y estado de INFO restablecido a NO." }); 
-        
+        res.json({ ok: true, msg: "Informe eliminado y estado de INFO restablecido a NO." });
     } catch (error) { 
         res.status(500).json({ ok: false, msg: error.message }); 
     }
 });
 
-// >>> NUEVO: API PARA RESUMEN DEL REPORTE (DATOS S-21) <<<
+// >>> API PARA RESUMEN DEL REPORTE <<<
 app.get('/api/reportes/resumen', async (req, res) => {
     const { mes, grupo } = req.query;
     try {
         let params = [];
         let whereGrp = "";
         
-        // Si se filtra por grupo, ajustamos las consultas
         if (grupo && grupo != '0' && grupo != '9') {
             whereGrp = " AND grupo = ?";
             params.push(grupo);
         }
 
-        // 1. Total Publicadores Activos
         const [rowsPubs] = await pool.query(`SELECT COUNT(*) as total FROM publicadores WHERE activo = 1 ${whereGrp}`, params);
         const totalActivos = rowsPubs[0].total;
 
-        // 2. Promedio Asistencia (Solo Fin de Semana del mes actual)
-        // Nota: Asume que hay una fila en 'reuniones' para ese mes y tipo 'FIN DE SEMANA'
         const [rowsReu] = await pool.query(`SELECT * FROM reuniones WHERE mes = ? AND tipo = 'FIN DE SEMANA'`, [mes]);
         let promedioAsis = 0;
         if (rowsReu.length > 0) {
             const r = rowsReu[0];
             const sum = (r.sem1||0) + (r.sem2||0) + (r.sem3||0) + (r.sem4||0) + (r.sem5||0);
-            // Contamos cuántas semanas tuvieron dato > 0
             let count = 0;
             if(r.sem1 > 0) count++; if(r.sem2 > 0) count++; if(r.sem3 > 0) count++; if(r.sem4 > 0) count++; if(r.sem5 > 0) count++;
             if(count > 0) promedioAsis = Math.round(sum / count);
         }
 
-        // 3. Totales por Privilegio (Publicadores, Auxiliares, Regulares)
-        // Usamos paramsMes porque necesitamos filtrar por MES y GRUPO
         let paramsStats = [mes];
         if (grupo && grupo != '0' && grupo != '9') paramsStats.push(grupo);
-
+        
         const [rowsStats] = await pool.query(`
             SELECT 
                 priv3, 
@@ -536,60 +504,55 @@ app.get('/api/reportes/resumen', async (req, res) => {
             WHERE mes = ? ${whereGrp.replace('AND', 'AND')} 
             GROUP BY priv3
         `, paramsStats);
-
-        // Procesar los datos para agrupar (PUB+PNB) y (AUX+AUX I+AUX M)
+        
         let stats = {
             pub: { cant: 0, horas: 0, cursos: 0 },
             aux: { cant: 0, horas: 0, cursos: 0 },
             reg: { cant: 0, horas: 0, cursos: 0 }
         };
-
+        
         rowsStats.forEach(row => {
             const p = row.priv3.toUpperCase();
             if (p === 'REG' || p === 'ESP') {
                 stats.reg.cant += row.cant;
                 stats.reg.horas += row.horas || 0;
                 stats.reg.cursos += row.cursos || 0;
-            } else if (p.includes('AUX')) { // AUX, AUX I, AUX M
+            } else if (p.includes('AUX')) { 
                 stats.aux.cant += row.cant;
                 stats.aux.horas += row.horas || 0;
                 stats.aux.cursos += row.cursos || 0;
-            } else { // PUB, PNB
+            } else { 
                 stats.pub.cant += row.cant;
-                stats.pub.horas += row.horas || 0; // Aunque PUB no reporta horas, por si acaso
+                stats.pub.horas += row.horas || 0; 
                 stats.pub.cursos += row.cursos || 0;
             }
         });
-
+        
         res.json({
             activos: totalActivos,
             asistencia: promedioAsis,
             detalles: stats
         });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// >>> NUEVO ENDPOINT LIGERO PARA DATOS EXTRA DEL PDF (SOPORTA 'TODOS' LOS MESES) <<<
+// >>> ENDPOINT LIGERO PARA DATOS EXTRA DEL PDF <<<
 app.get('/api/reportes/datos-extra', async (req, res) => {
     const { mes, grupo } = req.query;
     try {
         let paramsPubs = [];
         let whereGrp = "";
         
-        // Filtro de Grupo para Publicadores
         if (grupo && grupo != '0' && grupo != '9') {
             whereGrp = " AND grupo = ?";
             paramsPubs.push(grupo);
         }
 
-        // 1. Total Publicadores Activos
         const [rowsPubs] = await pool.query(`SELECT COUNT(*) as total FROM publicadores WHERE activo = 1 ${whereGrp}`, paramsPubs);
         
-        // 2. Promedio Asistencia (CORREGIDO: Suma total de asistencia real entre semanas reales del mes)
         let sqlReu = "SELECT * FROM reuniones WHERE tipo = 'FIN DE SEMANA'";
         let paramsReu = [];
 
@@ -599,7 +562,6 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
         }
 
         const [rowsReu] = await pool.query(sqlReu, paramsReu);
-        
         let promedioAsis = 0;
         
         if (rowsReu.length > 0) {
@@ -622,10 +584,7 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
                 if(s5 > 0) weeksTotal++;
             });
             
-            // 🔴 CORRECCIÓN CLAVE: Si se filtró por un grupo específico en un mes con múltiples registros de asistencia,
-            // promediamos correctamente la suma por el número de registros para que no altere la escala.
             if (weeksTotal > 0) {
-                // Si hay más de un registro de reunión para el mismo mes, recalculamos basándonos en las semanas únicas
                 promedioAsis = Math.round(sumTotal / (weeksTotal / rowsReu.length));
             }
         }
@@ -634,23 +593,21 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
             activos: rowsPubs[0].total,
             asistencia: promedioAsis
         });
-
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// >>> REPORTE ESPECIAL: PROGRESO PRECURSORES (CON CRÉDITO DE HORAS) <<<
+// >>> REPORTE ESPECIAL: PROGRESO PRECURSORES <<<
 app.get('/api/reportes/precursores', async (req, res) => {
-    const { tipo } = req.query; // 'REG' o 'AUX'
+    const { tipo } = req.query; 
     try {
         let wherePriv = "";
-        // Definimos los privilegios a buscar
         if (tipo === 'REG') {
             wherePriv = "priv3 IN ('REG', 'ESP', 'MISIONERO')"; 
         } else {
-            wherePriv = "priv3 IN ('AUX', 'AUX I', 'AUX M')";
+            // 🔴 CAMBIO 7: Añadido AUX C a la lista de auxiliares al generar PDF especial
+            wherePriv = "priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C')";
         }
 
-        // 1. Obtener Publicadores Activos de ese tipo (HOY)
         const [pubs] = await pool.query(`
             SELECT id, nombre, grupo, priv3 
             FROM publicadores 
@@ -660,8 +617,6 @@ app.get('/api/reportes/precursores', async (req, res) => {
 
         if (pubs.length === 0) return res.json([]);
 
-        // 2. Obtener sus informes FILTRADOS POR EL PRIVILEGIO
-        // AHORA TRAEMOS TAMBIÉN "credito_hrs"
         const [informes] = await pool.query(`
             SELECT publicador_id, mes, horas, credito_hrs 
             FROM informes 
@@ -669,14 +624,12 @@ app.get('/api/reportes/precursores', async (req, res) => {
             AND (${wherePriv}) 
             ORDER BY FIELD(mes, 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO')
         `);
-
-        // 3. Cruzar datos
+        
         const data = pubs.map(p => {
             const misInformes = informes.filter(r => r.publicador_id === p.id);
             
-            // Calcular Total: Suma Horas normales + Crédito de horas
             const totalHoras = misInformes.reduce((sum, r) => sum + (parseFloat(r.horas) || 0) + (parseFloat(r.credito_hrs) || 0), 0);
-            
+             
             return {
                 nombre: p.nombre,
                 grupo: p.grupo,
@@ -684,21 +637,20 @@ app.get('/api/reportes/precursores', async (req, res) => {
                 informes: misInformes.map(i => ({ 
                     mes: i.mes.substring(0,3), 
                     horas: i.horas,
-                    credito_hrs: i.credito_hrs // Enviamos el crédito al frontend
+                    credito_hrs: i.credito_hrs 
                 })),
                 total: totalHoras
             };
         });
 
         res.json(data);
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// >>> NUEVO ENDPOINT: REPORTE DETALLADO DE CURSOS (TIENEN VS NO TIENEN) <<<
+// >>> NUEVO ENDPOINT: REPORTE DETALLADO DE CURSOS <<<
 app.get('/api/reportes/detalle-cursos', async (req, res) => {
     const { grupo } = req.query;
     try {
@@ -726,18 +678,17 @@ app.get('/api/reportes/detalle-cursos', async (req, res) => {
 
         const [rows] = await pool.query(query, params);
 
-        // 👇 CORRECCIÓN: Usamos Number() para forzar la conversión, sin importar si MySQL lo manda como texto o número
         const conducen = rows.filter(r => Number(r.total_meses) > 0).map(r => ({
             grupo: r.grupo,
             nombre: r.nombre,
             meses: r.meses_con_cursos 
         }));
-
+        
         const noConducen = rows.filter(r => Number(r.total_meses) === 0 || !r.total_meses).map(r => ({
             grupo: r.grupo,
             nombre: r.nombre
         }));
-
+        
         res.json({
             totales: {
                 conducen: conducen.length,
@@ -746,22 +697,19 @@ app.get('/api/reportes/detalle-cursos', async (req, res) => {
             conducen: conducen,
             no_conducen: noConducen
         });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// >>> ENDPOINT: OBTENER DATOS ANUALES PARA TARJETA S-21 <<<
+// >>> OBTENER DATOS ANUALES PARA TARJETA S-21 <<<
 app.get('/api/publicador/:id/tarjeta', async (req, res) => {
     const { id } = req.params;
     try {
-        // 1. Obtener datos del publicador
         const [pub] = await pool.query("SELECT * FROM publicadores WHERE id = ?", [id]);
         if (pub.length === 0) return res.status(404).json({ error: "Publicador no encontrado" });
 
-        // 2. Obtener sus informes (Agregamos "priv3" y "predico" a la consulta)
         const [informes] = await pool.query("SELECT mes, horas, cursos, comentarios, priv3, predico FROM informes WHERE publicador_id = ?", [id]);
 
         res.json({
@@ -777,17 +725,12 @@ app.get('/api/publicador/:id/tarjeta', async (req, res) => {
 app.post('/api/reabrir-mes', async (req, res) => {
     const { mes, requester_group } = req.body;
 
-    // Medida de seguridad: Solo el Admin (Grupo 0) puede hacer esto
     if (requester_group != 0) {
         return res.status(403).json({ ok: false, msg: "No tienes permiso para reabrir meses." });
     }
 
     try {
-        // 1. Borramos el registro del mes cerrado 
-        // (⚠️ Cambia "cierres" por el nombre real de tu tabla si es distinto, ej: meses_cerrados)
         await pool.query("DELETE FROM cierres WHERE mes = ?", [mes]);
-
-        // 2. Como pediste: Se marca "SI" en la columna informo de TODOS los publicadores
         await pool.query("UPDATE publicadores SET informo = 'SI'");
 
         res.json({ ok: true });
@@ -798,7 +741,26 @@ app.post('/api/reabrir-mes', async (req, res) => {
 });
 
 // --- REPORTES y OTROS ---
-app.post('/api/reportes/advanced', async (req, res) => { const { mes, grupo, nombre, priv3 } = req.body; try { let query = `SELECT i.*, p.nombre as nombre_publicador FROM informes i LEFT JOIN publicadores p ON i.publicador_id = p.id WHERE 1=1`; const params = []; if (mes) { query += " AND i.mes = ?"; params.push(mes); } if (grupo) { query += " AND i.grupo = ?"; params.push(grupo); } if (priv3) { if (priv3 === 'AUX_COMBINED') query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M')"; else if (priv3 === 'PUB_COMBINED') query += " AND i.priv3 IN ('PUB', 'PNB')"; else { query += " AND i.priv3 = ?"; params.push(priv3); } } if (nombre) { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); } query += ` ORDER BY FIELD(i.mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, i.grupo ASC, p.nombre ASC`; const [rows] = await pool.query(query, params); res.json(rows); } catch (error) { res.status(500).json({ error: error.message }); } });
+app.post('/api/reportes/advanced', async (req, res) => { 
+    const { mes, grupo, nombre, priv3 } = req.body; 
+    try { 
+        let query = `SELECT i.*, p.nombre as nombre_publicador FROM informes i LEFT JOIN publicadores p ON i.publicador_id = p.id WHERE 1=1`; 
+        const params = []; 
+        if (mes) { query += " AND i.mes = ?"; params.push(mes); } 
+        if (grupo) { query += " AND i.grupo = ?"; params.push(grupo); } 
+        if (priv3) { 
+            // 🔴 CAMBIO 8: Filtro avanzado ahora busca AUX C también
+            if (priv3 === 'AUX_COMBINED') query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C')"; 
+            else if (priv3 === 'PUB_COMBINED') query += " AND i.priv3 IN ('PUB', 'PNB')"; 
+            else { query += " AND i.priv3 = ?"; params.push(priv3); } 
+        } 
+        if (nombre) { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); } 
+        query += ` ORDER BY FIELD(i.mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, i.grupo ASC, p.nombre ASC`; 
+        const [rows] = await pool.query(query, params); 
+        res.json(rows); 
+    } catch (error) { res.status(500).json({ error: error.message }); } 
+});
+
 app.get('/api/reuniones', async (req, res) => { try { let query = "SELECT * FROM reuniones"; const params = []; if (req.query.mes && req.query.mes !== 'TODOS') { query += " WHERE mes = ?"; params.push(req.query.mes); } query += ` ORDER BY FIELD(mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, tipo ASC, modalidad ASC`; const [rows] = await pool.query(query, params); res.json(rows); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.post('/api/reuniones', async (req, res) => { const { mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' }); try { await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [mes, tipo, modalidad, sem1||0, sem2||0, sem3||0, sem4||0, sem5||0]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
 app.put('/api/reuniones/:id', async (req, res) => { const { sem1, sem2, sem3, sem4, sem5, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' }); try { await pool.query('UPDATE reuniones SET sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [sem1||0, sem2||0, sem3||0, sem4||0, sem5||0, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
