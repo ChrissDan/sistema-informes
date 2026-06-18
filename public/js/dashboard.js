@@ -1668,11 +1668,111 @@ async function cargarGraficaComparativa() {
     }
 }
 
+/* =========================================================
+   LÓGICA DE LA GRÁFICA DE ASISTENCIA A REUNIONES
+   ========================================================= */
+let chartAsistenciaInstance = null;
+async function cargarGraficaAsistencia() {
+    const ctx = document.getElementById('graficaAsistencia');
+    if (!ctx) return;
+
+    try {
+        if (chartAsistenciaInstance) {
+            chartAsistenciaInstance.destroy();
+        }
+
+        const res = await fetch('/api/dashboard/asistencia-comparativa');
+        const data = await res.json();
+
+        // 1. ORDEN ESTRICTO (Año de Servicio)
+        const ORDEN_AÑO = [
+            'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
+            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
+        ];
+        
+        const datosPorMes = {};
+        ORDEN_AÑO.forEach(m => datosPorMes[m] = { entreSemana: 0, finSemana: 0, hasData: false });
+
+        // 2. Extraer y acomodar datos
+        data.forEach(r => {
+            const m = (r.mes || '').toUpperCase().trim();
+            if (datosPorMes[m]) {
+                datosPorMes[m].hasData = true;
+                if (r.tipo === 'ENTRE SEMANA') {
+                    datosPorMes[m].entreSemana = r.promedio;
+                } else if (r.tipo === 'FIN DE SEMANA') {
+                    datosPorMes[m].finSemana = r.promedio;
+                }
+            }
+        });
+
+        const labelsMeses = [];
+        const dataEntreSemana = [];
+        const dataFinSemana = [];
+
+        ORDEN_AÑO.forEach(m => {
+            if (datosPorMes[m].hasData) {
+                labelsMeses.push(m.substring(0, 3)); // SEP, OCT...
+                dataEntreSemana.push(datosPorMes[m].entreSemana);
+                dataFinSemana.push(datosPorMes[m].finSemana);
+            }
+        });
+
+        if (labelsMeses.length === 0) {
+            labelsMeses.push("Sin Datos");
+            dataEntreSemana.push(0); dataFinSemana.push(0);
+        }
+
+        // 3. Dibujar la Gráfica de líneas
+        chartAsistenciaInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labelsMeses,
+                datasets: [
+                    {
+                        label: 'FIN DE SEMANA',
+                        data: dataFinSemana,
+                        borderColor: '#8b5cf6', // Morado
+                        backgroundColor: '#8b5cf6',
+                        tension: 0.3,
+                        pointRadius: 5,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'ENTRE SEMANA',
+                        data: dataEntreSemana,
+                        borderColor: '#10b981', // Verde Esmeralda
+                        backgroundColor: '#10b981',
+                        tension: 0.3,
+                        pointRadius: 5,
+                        borderWidth: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error en gráfica de asistencia:", error);
+    }
+}
+
 // ARRANQUE AUTOMÁTICO
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(cargarGraficaCursos, 500);
     // Agrega esta nueva línea 👇
     setTimeout(cargarGraficaComparativa, 600);
+    setTimeout(cargarGraficaAsistencia, 700);
 });
 
 /* --- USUARIOS --- */

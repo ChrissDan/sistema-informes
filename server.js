@@ -173,6 +173,55 @@ app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
     }
 });
 
+// >>> NUEVO ENDPOINT: GRÁFICA COMPARATIVA DE ASISTENCIA A REUNIONES <<<
+app.get('/api/dashboard/asistencia-comparativa', async (req, res) => {
+    try {
+        // Agrupamos por mes y tipo, sumando las semanas (esto fusiona Presencial + Zoom automáticamente)
+        const sql = `
+            SELECT 
+                mes, 
+                tipo,
+                SUM(sem1) as s1, 
+                SUM(sem2) as s2, 
+                SUM(sem3) as s3, 
+                SUM(sem4) as s4, 
+                SUM(sem5) as s5
+            FROM reuniones
+            GROUP BY mes, tipo
+        `;
+        const [rows] = await pool.query(sql);
+        
+        const resultados = rows.map(r => {
+            const s1 = parseInt(r.s1) || 0;
+            const s2 = parseInt(r.s2) || 0;
+            const s3 = parseInt(r.s3) || 0;
+            const s4 = parseInt(r.s4) || 0;
+            const s5 = parseInt(r.s5) || 0;
+            
+            let weeks = 0;
+            if (s1 > 0) weeks++;
+            if (s2 > 0) weeks++;
+            if (s3 > 0) weeks++;
+            if (s4 > 0) weeks++;
+            if (s5 > 0) weeks++;
+
+            const sumaTotal = s1 + s2 + s3 + s4 + s5;
+            const promedio = weeks > 0 ? Math.round(sumaTotal / weeks) : 0;
+
+            return {
+                mes: r.mes,
+                tipo: r.tipo, // 'ENTRE SEMANA' o 'FIN DE SEMANA'
+                promedio: promedio
+            };
+        });
+
+        res.json(resultados);
+    } catch (error) {
+        console.error("Error en /api/dashboard/asistencia-comparativa:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // --- PUBLICADORES ---
 app.get('/api/publicadores', async (req, res) => {
     const { grupo, pendientes, nombre, priv3 } = req.query;
