@@ -232,7 +232,7 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
 
     // 2. Definir la meta mínima según la etiqueta
     let metaMinima = 0;
-    if (esRegular) metaMinima = 50; 
+    if (esRegular) metaMinima = 0; 
     if (esAux30) metaMinima = 30;
     if (esAux15) metaMinima = 15;
 
