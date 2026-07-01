@@ -173,21 +173,22 @@ app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
     }
 });
 
-// >>> NUEVO ENDPOINT: GRÁFICA COMPARATIVA DE ASISTENCIA A REUNIONES <<<
+// >>> ENDPOINT: GRÁFICA DE ASISTENCIA A REUNIONES (BARRAS APILADAS) <<<
 app.get('/api/dashboard/asistencia-comparativa', async (req, res) => {
     try {
-        // Agrupamos por mes y tipo, sumando las semanas (esto fusiona Presencial + Zoom automáticamente)
+        // Ahora agrupamos también por "modalidad" (Zoom o Presencial)
         const sql = `
             SELECT 
                 mes, 
                 tipo,
+                modalidad,
                 SUM(sem1) as s1, 
                 SUM(sem2) as s2, 
                 SUM(sem3) as s3, 
                 SUM(sem4) as s4, 
                 SUM(sem5) as s5
             FROM reuniones
-            GROUP BY mes, tipo
+            GROUP BY mes, tipo, modalidad
         `;
         const [rows] = await pool.query(sql);
         
@@ -210,7 +211,8 @@ app.get('/api/dashboard/asistencia-comparativa', async (req, res) => {
 
             return {
                 mes: r.mes,
-                tipo: r.tipo, // 'ENTRE SEMANA' o 'FIN DE SEMANA'
+                tipo: r.tipo,           // 'ENTRE SEMANA' o 'FIN DE SEMANA'
+                modalidad: r.modalidad, // 'PRESENCIAL' o 'ZOOM'
                 promedio: promedio
             };
         });

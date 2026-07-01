@@ -1669,7 +1669,7 @@ async function cargarGraficaComparativa() {
 }
 
 /* =========================================================
-   LÓGICA DE LA GRÁFICA DE ASISTENCIA A REUNIONES
+   LÓGICA DE LA GRÁFICA DE ASISTENCIA (BARRAS APILADAS)
    ========================================================= */
 let chartAsistenciaInstance = null;
 async function cargarGraficaAsistencia() {
@@ -1684,81 +1684,120 @@ async function cargarGraficaAsistencia() {
         const res = await fetch('/api/dashboard/asistencia-comparativa');
         const data = await res.json();
 
-        // 1. ORDEN ESTRICTO (Año de Servicio)
         const ORDEN_AÑO = [
             'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
             'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'
         ];
         
-        const datosPorMes = {};
-        ORDEN_AÑO.forEach(m => datosPorMes[m] = { entreSemana: 0, finSemana: 0, hasData: false });
+        const labelsMeses = [];
+        const dataPresencial = [];
+        const dataZoom = [];
 
-        // 2. Extraer y acomodar datos
+        // Preparamos las etiquetas dobles (Multilínea para el eje X)
+        ORDEN_AÑO.forEach(m => {
+            let mesAbrev = m.substring(0, 3);
+            if (mesAbrev === 'SEP') mesAbrev = 'SET'; // Para que coincida con tu imagen
+
+            // Etiqueta para Entre Semana (ES)
+            labelsMeses.push([mesAbrev, 'ES']);
+            // Etiqueta para Fin de Semana (FS)
+            labelsMeses.push([mesAbrev, 'FS']);
+        });
+
+        // Inicializamos los arreglos de datos en 0 (24 posiciones: 12 meses x 2 reuniones)
+        for(let i = 0; i < 24; i++) {
+            dataPresencial.push(0);
+            dataZoom.push(0);
+        }
+
+        // Rellenamos con los datos reales
         data.forEach(r => {
             const m = (r.mes || '').toUpperCase().trim();
-            if (datosPorMes[m]) {
-                datosPorMes[m].hasData = true;
-                if (r.tipo === 'ENTRE SEMANA') {
-                    datosPorMes[m].entreSemana = r.promedio;
-                } else if (r.tipo === 'FIN DE SEMANA') {
-                    datosPorMes[m].finSemana = r.promedio;
+            const mesIndex = ORDEN_AÑO.indexOf(m);
+            
+            if (mesIndex !== -1) {
+                // Multiplicamos por 2 porque cada mes tiene ES y FS
+                const baseIndex = mesIndex * 2; 
+                const indexOffset = r.tipo === 'ENTRE SEMANA' ? 0 : 1;
+                const finalIndex = baseIndex + indexOffset;
+
+                if (r.modalidad === 'PRESENCIAL') {
+                    dataPresencial[finalIndex] = r.promedio;
+                } else if (r.modalidad === 'ZOOM') {
+                    dataZoom[finalIndex] = r.promedio;
                 }
             }
         });
 
-        const labelsMeses = [];
-        const dataEntreSemana = [];
-        const dataFinSemana = [];
+        // Recortamos los meses futuros que aún no tienen datos para que el gráfico no se vea vacío a la derecha
+        let lastDataIndex = 23;
+        while(lastDataIndex >= 0 && dataPresencial[lastDataIndex] === 0 && dataZoom[lastDataIndex] === 0) {
+            lastDataIndex--;
+        }
+        
+        let finalLabels = labelsMeses.slice(0, lastDataIndex + 1);
+        let finalPres = dataPresencial.slice(0, lastDataIndex + 1);
+        let finalZoom = dataZoom.slice(0, lastDataIndex + 1);
 
-        ORDEN_AÑO.forEach(m => {
-            if (datosPorMes[m].hasData) {
-                labelsMeses.push(m.substring(0, 3)); // SEP, OCT...
-                dataEntreSemana.push(datosPorMes[m].entreSemana);
-                dataFinSemana.push(datosPorMes[m].finSemana);
-            }
-        });
-
-        if (labelsMeses.length === 0) {
-            labelsMeses.push("Sin Datos");
-            dataEntreSemana.push(0); dataFinSemana.push(0);
+        if (finalLabels.length === 0) {
+            finalLabels = [['Sin', 'Datos']];
+            finalPres = [0]; finalZoom = [0];
         }
 
-        // 3. Dibujar la Gráfica de líneas
+        // Dibujamos el gráfico apilado
         chartAsistenciaInstance = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
-                labels: labelsMeses,
+                labels: finalLabels,
                 datasets: [
                     {
-                        label: 'FIN DE SEMANA',
-                        data: dataFinSemana,
-                        borderColor: '#8b5cf6', // Morado
-                        backgroundColor: '#8b5cf6',
-                        tension: 0.3,
-                        pointRadius: 5,
-                        borderWidth: 3
+                        label: 'PRESENCIAL',
+                        data: finalPres,
+                        backgroundColor: '#4472c4', // Azul clásico de tu imagen
                     },
                     {
-                        label: 'ENTRE SEMANA',
-                        data: dataEntreSemana,
-                        borderColor: '#10b981', // Verde Esmeralda
-                        backgroundColor: '#10b981',
-                        tension: 0.3,
-                        pointRadius: 5,
-                        borderWidth: 3
+                        label: 'ZOOM',
+                        data: finalZoom,
+                        backgroundColor: '#ed7d31', // Naranja clásico de tu imagen
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: true, position: 'bottom' },
-                    tooltip: { mode: 'index', intersect: false }
-                },
                 scales: {
-                    y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } },
-                    x: { grid: { display: false } }
+                    x: {
+                        stacked: true, // Esto hace que se apilen
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 10, weight: 'bold' },
+                            color: '#64748b'
+                        }
+                    },
+                    y: {
+                        stacked: true, // Esto hace que se apilen
+                        beginAtZero: true,
+                        grid: { color: '#e2e8f0' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: { usePointStyle: true, boxWidth: 10 }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            // Calcula el total sumando ambas barras en el tooltip
+                            footer: function(tooltipItems) {
+                                let total = 0;
+                                tooltipItems.forEach(function(item) { total += item.raw; });
+                                return '\nAsistencia Total: ' + total;
+                            }
+                        }
+                    }
                 }
             }
         });
