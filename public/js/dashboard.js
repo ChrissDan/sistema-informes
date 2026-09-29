@@ -17,6 +17,13 @@ function cambiarAnioGlobal() {
     if (viewActualElement) {
         const viewActual = viewActualElement.id.replace('view-', '');
         showView(viewActual); 
+        
+        // >>> NUEVO: Si estamos en el Dashboard, forzar la recarga de los 3 gráficos <<<
+        if (viewActual === 'dashboard') {
+            cargarGraficaCursos();
+            cargarGraficaComparativa();
+            cargarGraficaAsistencia();
+        }
     }
 }
 
