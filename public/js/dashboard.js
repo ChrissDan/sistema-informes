@@ -232,9 +232,98 @@ async function cargarTablaPublicadores() {
     if (isGlobal) { document.querySelectorAll('.global-view').forEach(e => e.style.display = 'table-cell'); }
 }
 async function toggleEstado(id, nuevoEstado, checkbox) { const accionTexto = nuevoEstado ? 'activar' : 'desactivar'; const result = await Swal.fire({ title: `¿${accionTexto} publicador?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }); if (result.isConfirmed) { try { const res = await fetch(`/api/publicadores/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: `Listo` }); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstado; } } catch (e) { checkbox.checked = !nuevoEstado; } } else { checkbox.checked = !nuevoEstado; } }
-function editarPub(id) { if (!isAdmin) return; const obj = cachePublicadores.find(p => p.id == id); if (!obj) return; const f = document.getElementById('formPublicador'); document.getElementById('pubId').value = obj.id; document.getElementById('pubGrupoSelect').value = obj.grupo; f.nombre.value = obj.nombre; f.priv1.value = obj.priv1; f.priv2.value = obj.priv2; f.priv3.value = obj.priv3; f.informo.value = obj.informo; f.comentario.value = obj.comentario; if (obj.fecha_ingreso) { const dateObj = new Date(obj.fecha_ingreso); f.fecha_ingreso.value = dateObj.toISOString().split('T')[0]; } else { f.fecha_ingreso.value = ""; } abrirModal('publicador', id); }
+
+function editarPub(id) { 
+    if (!isAdmin) return; 
+    const obj = cachePublicadores.find(p => p.id == id); 
+    if (!obj) return; 
+    
+    const f = document.getElementById('formPublicador'); 
+    document.getElementById('pubId').value = obj.id; 
+    document.getElementById('pubGrupoSelect').value = obj.grupo; 
+    f.nombre.value = obj.nombre; 
+    
+    // --- NUEVOS CAMPOS S-21 ---
+    if (obj.fecha_nacimiento) {
+        f.fecha_nacimiento.value = obj.fecha_nacimiento.split('T')[0];
+    } else {
+        f.fecha_nacimiento.value = "";
+    }
+    
+    if (obj.fecha_bautismo) {
+        f.fecha_bautismo.value = obj.fecha_bautismo.split('T')[0];
+    } else {
+        f.fecha_bautismo.value = "";
+    }
+    
+    f.sexo.value = obj.sexo || 'Hombre';
+    f.esperanza.value = obj.esperanza || 'Otras ovejas';
+
+    // --- LÓGICA PARA CHECKBOXES MÚLTIPLES S-21 ---
+    // 1. Limpiamos todas las casillas primero
+    document.querySelectorAll('input[name="privilegio_s21"]').forEach(cb => cb.checked = false);
+    
+    // 2. Marcamos las que correspondan según la base de datos
+    if (obj.privilegio_s21) {
+        const privs = obj.privilegio_s21.split(','); // Convertimos el texto en un arreglo
+        privs.forEach(p => {
+            const checkbox = document.querySelector(`input[name="privilegio_s21"][value="${p}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+    // ---------------------------------------------
+    // --------------------------
+
+    f.priv1.value = obj.priv1 || ''; 
+    f.priv2.value = obj.priv2 || ''; 
+    f.priv3.value = obj.priv3 || ''; 
+    f.informo.value = obj.informo || 'NO'; 
+    f.comentario.value = obj.comentario || ''; 
+    
+    if (obj.fecha_ingreso) { 
+        const dateObj = new Date(obj.fecha_ingreso); 
+        f.fecha_ingreso.value = dateObj.toISOString().split('T')[0]; 
+    } else { 
+        f.fecha_ingreso.value = ""; 
+    } 
+    
+    abrirModal('publicador', id); 
+}
+
 function resetFormPub() { document.getElementById('formPublicador').reset(); document.getElementById('pubId').value = ""; }
-document.getElementById('formPublicador').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('pubId').value; if (!id) data.informo = 'NO'; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; data.requester_group = session.grupo; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: 'Listo' }); cerrarModal(); resetFormPub(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); } });
+
+document.getElementById('formPublicador').addEventListener('submit', async (e) => { 
+    e.preventDefault(); 
+    const data = Object.fromEntries(new FormData(e.target)); 
+    
+    // >>> NUEVO: Atrapar múltiples checkboxes y unirlos por comas <<<
+    const checkboxes = e.target.querySelectorAll('input[name="privilegio_s21"]:checked');
+    data.privilegio_s21 = Array.from(checkboxes).map(cb => cb.value).join(',');
+    // >>> FIN NUEVO <<<
+
+    const id = document.getElementById('pubId').value; 
+    if (!id) data.informo = 'NO'; 
+    const method = id ? 'PUT' : 'POST'; 
+    const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; 
+    data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; 
+    data.requester_group = session.grupo; 
+    
+    const res = await fetch(url, { 
+        method: method, 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(data) 
+    }); 
+    const json = await res.json(); 
+    
+    if (json.ok) { 
+        Toast.fire({ icon: 'success', title: 'Listo' }); 
+        cerrarModal(); 
+        resetFormPub(); 
+        cargarTablaPublicadores(); 
+    } else { 
+        Swal.fire('Error', json.msg, 'error'); 
+    } 
+});
 
 // --- DASHBOARD ---
 async function cargarDashboard() {
@@ -457,32 +546,182 @@ function generarPDFCursos() {
     } catch (e) { console.error(e); }
 }
 
-let publicadorIdSeleccionado = null; let fileHandleS21 = null;
-async function iniciarRellenadoTarjeta(id) { publicadorIdSeleccionado = id; try { [fileHandleS21] = await window.showOpenFilePicker({ types: [{ description: 'Documentos PDF (S-21)', accept: { 'application/pdf': ['.pdf'] } }], multiple: false }); ejecutarProcesoModificacion(); } catch (error) { if (error.name !== 'AbortError') Swal.fire('Error', 'Tu navegador no soporta edición directa. Usa Chrome o Edge.', 'error'); } }
-async function ejecutarProcesoModificacion() {
-    if (!fileHandleS21 || !publicadorIdSeleccionado) return; Swal.fire({ title: 'Modificando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    try {
-        const res = await fetch(`/api/publicador/${publicadorIdSeleccionado}/tarjeta?anio_servicio=${getAnio()}`); // AÑO AÑADIDO
-        const data = await res.json(); const file = await fileHandleS21.getFile(); const pdfBytes = await motorRellenadoS21(file, data); const writable = await fileHandleS21.createWritable(); await writable.write(pdfBytes); await writable.close(); Swal.close(); Toast.fire({ icon: 'success', title: 'Actualizado' });
-    } catch (error) { Swal.fire('Error', 'No se pudo guardar el PDF.', 'error'); }
+let publicadorIdSeleccionado = null; 
+let fileHandleS21 = null;
+
+async function iniciarRellenadoTarjeta(id) { 
+    publicadorIdSeleccionado = id; 
+    try { 
+        [fileHandleS21] = await window.showOpenFilePicker({ 
+            types: [{ description: 'Documentos PDF (S-21)', accept: { 'application/pdf': ['.pdf'] } }], 
+            multiple: false 
+        }); 
+        ejecutarProcesoModificacion(); 
+    } catch (error) { 
+        if (error.name !== 'AbortError') Swal.fire('Error', 'Tu navegador no soporta esta función.', 'error'); 
+    } 
 }
-async function motorRellenadoS21(file, data) {
-    const arrayBuffer = await file.arrayBuffer(); const { PDFDocument } = PDFLib; const pdfDoc = await PDFDocument.load(arrayBuffer); const form = pdfDoc.getForm();
-    const safeSetText = (fieldName, text) => { try { const f = form.getTextField(fieldName); if (f) f.setText(text ? text.toString() : ''); } catch (e) { } };
-    const safeCheck = (fieldName, condition) => { try { const f = form.getCheckBox(fieldName); if (f && condition) f.check(); } catch (e) { } };
+
+async function ejecutarProcesoModificacion() {
+    if (!fileHandleS21 || !publicadorIdSeleccionado) return; 
+    Swal.fire({ title: 'Generando PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    try {
+        // 1. Pedimos los datos al servidor
+        const res = await fetch(`/api/publicador/${publicadorIdSeleccionado}/tarjeta?anio_servicio=${getAnio()}`); 
+        const data = await res.json(); 
+        
+        // 2. Leemos la plantilla seleccionada
+        const file = await fileHandleS21.getFile(); 
+        const plantillaBuffer = await file.arrayBuffer(); 
+        
+        // 3. Llenamos usando la función maestra actualizada
+        const pdfBytes = await rellenarPlantillaPersonalizada(plantillaBuffer, data, data.publicador); 
+        
+        // 4. Descarga segura mediante Blob (Crea un archivo nuevo)
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        const nombreSeguro = (data.publicador.nombre || "S21").replace(/[^a-zA-Z0-9]/g, '_');
+        link.download = `S21_${nombreSeguro}_${getAnio()}.pdf`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        Swal.close(); 
+        Toast.fire({ icon: 'success', title: 'Tarjeta Descargada' });
+        
+    } catch (error) { 
+        console.error(error);
+        Swal.fire('Error', 'No se pudo generar el PDF.', 'error'); 
+    }
+}
+
+
+// --- GENERACIÓN MASIVA DE TARJETAS S-21 EN ZIP ---
+async function generarTarjetasMasivasZIP() {
+    try {
+        const [fileHandle] = await window.showOpenFilePicker({
+            types: [{ description: 'Plantilla PDF', accept: { 'application/pdf': ['.pdf'] } }],
+            multiple: false
+        });
+        const file = await fileHandle.getFile();
+        const plantillaBuffer = await file.arrayBuffer(); 
+
+        Swal.fire({ 
+            title: 'Generando Tarjetas...', 
+            html: 'Procesando historial y organizando en carpetas.<br><b>No cierres esta ventana.</b>', 
+            allowOutsideClick: false, 
+            didOpen: () => Swal.showLoading() 
+        });
+
+        const zip = new JSZip(); 
+        const anio = getAnio();
+
+        const resPubs = await fetch(`/api/publicadores?grupo=0`); 
+        const publicadores = await resPubs.json();
+        const activos = publicadores.filter(p => p.activo === 1 || p.activo === true);
+
+        for (let pub of activos) {
+            const resHist = await fetch(`/api/publicador/${pub.id}/tarjeta?anio_servicio=${anio}`);
+            if (!resHist.ok) continue;
+            const dataHist = await resHist.json();
+
+            const pdfBytes = await rellenarPlantillaPersonalizada(plantillaBuffer, dataHist, pub);
+            
+            const nombreSeguro = pub.nombre.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            // >>> AQUÍ ESTÁ LA MAGIA DE LAS SUBCARPETAS <<<
+            const nombreCarpeta = `Grupo ${pub.grupo}`;
+            zip.folder(nombreCarpeta).file(`S21_${nombreSeguro}.pdf`, pdfBytes);
+        }
+
+        const contenidoZip = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(contenidoZip);
+        link.download = `Tarjetas_S21_${anio}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        Swal.fire('¡Éxito!', 'Las tarjetas han sido organizadas por grupos y descargadas.', 'success');
+
+    } catch (error) {
+        console.error(error);
+        if (error.name !== 'AbortError') Swal.fire('Error', 'Hubo un problema en la generación masiva.', 'error');
+    }
+}
+
+async function rellenarPlantillaPersonalizada(plantillaBuffer, dataHistorial, pub) {
+    const { PDFDocument } = PDFLib; 
+    const pdfDoc = await PDFDocument.load(plantillaBuffer); 
+    const form = pdfDoc.getForm();
+
+    const safeSetText = (field, text) => { try { const f = form.getTextField(field); if (f) f.setText(text ? text.toString() : ''); } catch (e) {} };
+    const safeCheck = (field, condition) => { try { const f = form.getCheckBox(field); if (f && condition) f.check(); } catch (e) {} };
+
+    // >>> NUEVO: Función auxiliar para invertir la fecha (De YYYY-MM-DD a DD-MM-YYYY) <<<
+    const formatearFecha = (fechaIso) => {
+        if (!fechaIso) return '';
+        const soloFecha = fechaIso.split('T')[0]; // Toma la fecha limpia
+        const partes = soloFecha.split('-'); // Corta en [YYYY, MM, DD]
+        if (partes.length !== 3) return soloFecha;
+        return `${partes[2]}-${partes[1]}-${partes[0]}`; // Lo arma al revés
+    };
+
+    // --- DATOS PERSONALES ---
+    const nombreFinal = pub.nombre_completo || pub.nombre || '';
+    safeSetText('900_1_Text_SanSerif', nombreFinal);
+    
+    // >>> ACTUALIZADO: Usamos la nueva función formatearFecha <<<
+    safeSetText('900_2_Text_SanSerif', formatearFecha(pub.fecha_nacimiento));
+    safeSetText('900_5_Text_SanSerif', formatearFecha(pub.fecha_bautismo));
+
+    // Sexo y Esperanza
+    if (pub.sexo === 'Hombre') safeCheck('900_3_CheckBox', true);
+    if (pub.sexo === 'Mujer') safeCheck('900_4_CheckBox', true);
+    if (pub.esperanza === 'Otras ovejas') safeCheck('900_6_CheckBox', true);
+    if (pub.esperanza === 'Ungido') safeCheck('900_7_CheckBox', true);
+
+    // Privilegios (Múltiples)
+    const privsS21 = pub.privilegio_s21 || '';
+    if (privsS21.includes('Anciano')) safeCheck('900_8_CheckBox', true);
+    if (privsS21.includes('Siervo ministerial')) safeCheck('900_9_CheckBox', true);
+    if (privsS21.includes('Precursor regular')) safeCheck('900_10_CheckBox', true);
+    if (privsS21.includes('Precursor especial')) safeCheck('900_11_CheckBox', true);
+    if (privsS21.includes('Misionero que sirve en el campo')) safeCheck('900_12_CheckBox', true);
+
+    // Año de servicio
+    safeSetText('900_13_Text_C_SanSerif', getAnio().toString());
+
+    // --- INFORMES MENSUALES ---
     const mapaMeses = { 'septiembre': 20, 'octubre': 21, 'noviembre': 22, 'diciembre': 23, 'enero': 24, 'febrero': 25, 'marzo': 26, 'abril': 27, 'mayo': 28, 'junio': 29, 'julio': 30, 'agosto': 31 };
     let totalHoras = 0;
-    data.informes.forEach(inf => {
-        const index = mapaMeses[inf.mes.toLowerCase().trim()];
-        if (index) {
-            safeCheck(`901_${index}_CheckBox`, (inf.horas > 0 || inf.cursos > 0 || inf.predico === 'SI' || inf.predico === 1));
-            if (inf.cursos > 0) safeSetText(`902_${index}_Text_C_SanSerif`, inf.cursos.toString());
-            safeCheck(`903_${index}_CheckBox`, (inf.priv3 || '').toUpperCase().includes('AUX'));
-            if (inf.horas > 0) { safeSetText(`904_${index}_S21_Value`, inf.horas.toString()); totalHoras += parseFloat(inf.horas); }
-            if (inf.comentarios) safeSetText(`905_${index}_Text_SanSerif`, inf.comentarios);
-        }
-    });
+
+    if (dataHistorial && dataHistorial.informes) {
+        dataHistorial.informes.forEach(inf => {
+            const mesNombre = (inf.mes || '').toLowerCase().trim();
+            const index = mapaMeses[mesNombre];
+            if (index) {
+                safeCheck(`901_${index}_CheckBox`, (inf.horas > 0 || inf.cursos > 0 || inf.predico === 'SI' || inf.predico === 1));
+                if (inf.cursos > 0) safeSetText(`902_${index}_Text_C_SanSerif`, inf.cursos.toString());
+                safeCheck(`903_${index}_CheckBox`, (inf.priv3 || '').toUpperCase().includes('AUX'));
+                
+                const hrs = parseFloat(inf.horas) || 0;
+                if (hrs > 0) { 
+                    safeSetText(`904_${index}_S21_Value`, hrs.toString()); 
+                    totalHoras += hrs; 
+                }
+                if (inf.comentarios) safeSetText(`905_${index}_Text_SanSerif`, inf.comentarios);
+            }
+        });
+    }
+    
     if (totalHoras > 0) safeSetText('904_32_S21_Value', totalHoras.toString());
+    
+    form.flatten(); 
     return await pdfDoc.save();
 }
 

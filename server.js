@@ -164,8 +164,40 @@ app.get('/api/publicadores', async (req, res) => {
         const [rows] = await pool.query(query, params); res.json(rows);
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
-app.post('/api/publicadores', async (req, res) => { /* Igual */ const { grupo, nombre, priv1, priv2, priv3, informo, comentario, fecha_ingreso, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede crear.' }); try { const fechaFinal = fecha_ingreso ? fecha_ingreso : new Date(); await pool.query('INSERT INTO publicadores (grupo, nombre, priv1, priv2, priv3, informo, comentario, activo, fecha_ingreso) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)', [grupo, nombre, priv1, priv2, priv3, informo || 'NO', comentario, fechaFinal]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }});
-app.put('/api/publicadores/:id', async (req, res) => { /* Igual */ const { nombre, priv1, priv2, priv3, informo, comentario, grupo, fecha_ingreso, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { await pool.query('UPDATE publicadores SET nombre=?, priv1=?, priv2=?, priv3=?, informo=?, comentario=?, grupo=?, fecha_ingreso=? WHERE id=?', [nombre, priv1, priv2, priv3, informo, comentario, grupo, fecha_ingreso, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }});
+
+app.post('/api/publicadores', async (req, res) => { 
+    const { grupo, nombre, priv1, priv2, priv3, informo, comentario, fecha_ingreso, requester_group, fecha_nacimiento, fecha_bautismo, sexo, esperanza, privilegio_s21 } = req.body; 
+    if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede crear.' }); 
+    try { 
+        const fechaFinal = fecha_ingreso ? fecha_ingreso : new Date(); 
+        const fNac = fecha_nacimiento ? fecha_nacimiento : null;
+        const fBau = fecha_bautismo ? fecha_bautismo : null;
+        await pool.query(
+            'INSERT INTO publicadores (grupo, nombre, priv1, priv2, priv3, informo, comentario, activo, fecha_ingreso, fecha_nacimiento, fecha_bautismo, sexo, esperanza, privilegio_s21) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)', 
+            [grupo, nombre, priv1, priv2, priv3, informo || 'NO', comentario, fechaFinal, fNac, fBau, sexo || 'Hombre', esperanza || 'Otras ovejas', privilegio_s21 || '']
+        ); 
+        res.json({ ok: true }); 
+    } catch (error) { 
+        res.status(500).json({ ok: false, msg: error.message }); 
+    }
+});
+
+app.put('/api/publicadores/:id', async (req, res) => { 
+    const { nombre, priv1, priv2, priv3, informo, comentario, grupo, fecha_ingreso, requester_group, fecha_nacimiento, fecha_bautismo, sexo, esperanza, privilegio_s21 } = req.body; 
+    if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); 
+    try { 
+        const fNac = fecha_nacimiento ? fecha_nacimiento : null;
+        const fBau = fecha_bautismo ? fecha_bautismo : null;
+        await pool.query(
+            'UPDATE publicadores SET nombre=?, priv1=?, priv2=?, priv3=?, informo=?, comentario=?, grupo=?, fecha_ingreso=?, fecha_nacimiento=?, fecha_bautismo=?, sexo=?, esperanza=?, privilegio_s21=? WHERE id=?', 
+            [nombre, priv1, priv2, priv3, informo, comentario, grupo, fecha_ingreso, fNac, fBau, sexo || 'Hombre', esperanza || 'Otras ovejas', privilegio_s21 || '', req.params.id]
+        ); 
+        res.json({ ok: true }); 
+    } catch (error) { 
+        res.status(500).json({ ok: false, msg: error.message }); 
+    }
+});
+
 app.patch('/api/publicadores/:id/estado', async (req, res) => { /* Igual */ const { activo, requester_group } = req.body; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede cambiar estado.' }); try { await pool.query('UPDATE publicadores SET activo = ? WHERE id = ?', [activo ? 1 : 0, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }});
 app.delete('/api/publicadores/:id', async (req, res) => { /* Igual */ const requester_group = req.query.requester_group; if (requester_group != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { await pool.query('DELETE FROM publicadores WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { if(error.code === 'ER_ROW_IS_REFERENCED_2') res.status(400).json({ ok: false, msg: 'Borra sus informes primero.' }); else res.status(500).json({ ok: false, msg: error.message }); }});
 

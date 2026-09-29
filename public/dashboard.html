@@ -29,21 +29,31 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header"><i class="fa-solid fa-layer-group"></i> <span id="sidebarTitle">Gestión Cong.</span></div>
+        <div class="sidebar-header"><i class="fa-solid fa-layer-group"></i> <span id="sidebarTitle">Gestión Cong.</span>
+        </div>
         <ul class="nav-links">
-            <li><a onclick="showView('dashboard'); toggleSidebar(false)" class="active" id="nav-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-            <li><a onclick="showView('informes'); toggleSidebar(false)" id="nav-informes"><i class="fa-solid fa-file-lines"></i> Informes</a></li>
-            <li class="global-view"><a onclick="showView('reuniones'); toggleSidebar(false)" id="nav-reuniones"><i class="fa-solid fa-users-rectangle"></i> Reuniones</a></li>
-            <li><a onclick="showView('publicadores'); toggleSidebar(false)" id="nav-publicadores"><i class="fa-solid fa-users"></i> Publicadores</a></li>
-            <li class="global-view"><a onclick="showView('reportes'); toggleSidebar(false)" id="nav-reportes"><i class="fa-solid fa-print"></i> Reportes</a></li>
-            <li class="admin-only"><a onclick="showView('usuarios'); toggleSidebar(false)" id="nav-usuarios"><i class="fa-solid fa-user-shield"></i> Usuarios</a></li>
-            <li class="admin-only"><a onclick="showView('cierres'); toggleSidebar(false)" id="nav-cierres"><i class="fa-solid fa-lock-open"></i> Gestión de Cierres</a></li>
+            <li><a onclick="showView('dashboard'); toggleSidebar(false)" class="active" id="nav-dashboard"><i
+                        class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+            <li><a onclick="showView('informes'); toggleSidebar(false)" id="nav-informes"><i
+                        class="fa-solid fa-file-lines"></i> Informes</a></li>
+            <li class="global-view"><a onclick="showView('reuniones'); toggleSidebar(false)" id="nav-reuniones"><i
+                        class="fa-solid fa-users-rectangle"></i> Reuniones</a></li>
+            <li><a onclick="showView('publicadores'); toggleSidebar(false)" id="nav-publicadores"><i
+                        class="fa-solid fa-users"></i> Publicadores</a></li>
+            <li class="global-view"><a onclick="showView('reportes'); toggleSidebar(false)" id="nav-reportes"><i
+                        class="fa-solid fa-print"></i> Reportes</a></li>
+            <li class="admin-only"><a onclick="showView('usuarios'); toggleSidebar(false)" id="nav-usuarios"><i
+                        class="fa-solid fa-user-shield"></i> Usuarios</a></li>
+            <li class="admin-only"><a onclick="showView('cierres'); toggleSidebar(false)" id="nav-cierres"><i
+                        class="fa-solid fa-lock-open"></i> Gestión de Cierres</a></li>
         </ul>
         <div class="user-panel">
             <div class="user-info">
                 <div class="user-avatar" id="userAvatar">U</div>
                 <div style="overflow:hidden;">
-                    <div id="userName" style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Cargando...</div>
+                    <div id="userName"
+                        style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        Cargando...</div>
                     <div id="userRole" style="font-size:0.75rem; color:#94a3b8;">...</div>
                 </div>
             </div>
@@ -60,8 +70,10 @@
 
             <!-- NUEVO: Selector Global de Año de Servicio -->
             <div class="header-right" style="display:flex; align-items:center; gap:10px; margin-right: 20px;">
-                <label style="font-weight:600; font-size: 0.85rem; color: #64748b; display:none;" id="labelAnio">Año de Servicio:</label>
-                <select id="globalAnioSelect" onchange="cambiarAnioGlobal()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: var(--primary); background: white; cursor: pointer;">
+                <label style="font-weight:600; font-size: 0.85rem; color: #64748b; display:none;" id="labelAnio">Año de
+                    Servicio:</label>
+                <select id="globalAnioSelect" onchange="cambiarAnioGlobal()"
+                    style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: var(--primary); background: white; cursor: pointer;">
                     <option value="2026">Año 2026</option>
                     <option value="2027">Año 2027</option>
                     <option value="2028">Año 2028</option>
@@ -89,8 +101,10 @@
                     <div class="card-header-flex">
                         <h3><i class="fa-solid fa-calendar-day"></i> Resumen</h3>
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <select id="dashMesSelect" onchange="cargarDashboard()" style="padding:8px; font-weight:600; color:var(--primary); border-color:var(--primary); cursor:pointer; background-image:none;"></select>
-                            <button class="btn-close-month admin-only" onclick="cerrarMes()"><i class="fa-solid fa-lock"></i> Cerrar Mes</button>
+                            <select id="dashMesSelect" onchange="cargarDashboard()"
+                                style="padding:8px; font-weight:600; color:var(--primary); border-color:var(--primary); cursor:pointer; background-image:none;"></select>
+                            <button class="btn-close-month admin-only" onclick="cerrarMes()"><i
+                                    class="fa-solid fa-lock"></i> Cerrar Mes</button>
                         </div>
                     </div>
                     <div class="stats-grid">
@@ -98,30 +112,37 @@
                             <div class="stat-content">
                                 <h4>PUB + PNB</h4>
                                 <div class="stat-value" id="stat-pub-count">0</div>
-                                <div class="stat-detail"><span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-pub-cursos">0</strong></span></div>
+                                <div class="stat-detail"><span><i class="fa-solid fa-book"></i> Cursos: <strong
+                                            id="stat-pub-cursos">0</strong></span></div>
                             </div>
                         </div>
                         <div class="stat-card"><i class="fa-solid fa-stopwatch stat-icon"></i>
                             <div class="stat-content">
                                 <h4>AUXILIARES (I+M+C)</h4>
                                 <div class="stat-value" id="stat-aux-count">0</div>
-                                <div class="stat-detail"><span><i class="fa-regular fa-clock"></i> Horas: <strong id="stat-aux-horas">0</strong></span><span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-aux-cursos">0</strong></span></div>
+                                <div class="stat-detail"><span><i class="fa-regular fa-clock"></i> Horas: <strong
+                                            id="stat-aux-horas">0</strong></span><span><i class="fa-solid fa-book"></i>
+                                        Cursos: <strong id="stat-aux-cursos">0</strong></span></div>
                             </div>
                         </div>
                         <div class="stat-card"><i class="fa-solid fa-briefcase stat-icon"></i>
                             <div class="stat-content">
                                 <h4>REGULARES</h4>
                                 <div class="stat-value" id="stat-reg-count">0</div>
-                                <div class="stat-detail"><span><i class="fa-regular fa-clock"></i> Horas: <strong id="stat-reg-horas">0</strong></span><span><i class="fa-solid fa-book"></i> Cursos: <strong id="stat-reg-cursos">0</strong></span></div>
+                                <div class="stat-detail"><span><i class="fa-regular fa-clock"></i> Horas: <strong
+                                            id="stat-reg-horas">0</strong></span><span><i class="fa-solid fa-book"></i>
+                                        Cursos: <strong id="stat-reg-cursos">0</strong></span></div>
                             </div>
                         </div>
                     </div>
-                    <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-chart-bar"></i> Progreso Informes</h3>
+                    <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-chart-bar"></i> Progreso
+                        Informes</h3>
                     <div id="groups-progress-container" class="groups-grid"></div>
 
                     <div class="card" style="margin-top: 25px;">
                         <div class="card-header-flex">
-                            <h3><i class="fa-solid fa-book-open-reader" style="color: var(--primary);"></i> Cursos Activos (Año de Servicio)</h3>
+                            <h3><i class="fa-solid fa-book-open-reader" style="color: var(--primary);"></i> Cursos
+                                Activos (Año de Servicio)</h3>
                         </div>
                         <div style="position: relative; height: 300px; width: 100%;">
                             <canvas id="graficaCursos"></canvas>
@@ -130,7 +151,8 @@
 
                     <div class="card" style="margin-top: 25px;">
                         <div class="card-header-flex">
-                            <h3><i class="fa-solid fa-chart-line" style="color: #f97316;"></i> Comparativa: Tienen vs. No Tienen Cursos</h3>
+                            <h3><i class="fa-solid fa-chart-line" style="color: #f97316;"></i> Comparativa: Tienen vs.
+                                No Tienen Cursos</h3>
                         </div>
                         <div style="position: relative; height: 300px; width: 100%;">
                             <canvas id="graficaComparativa"></canvas>
@@ -139,7 +161,8 @@
 
                     <div class="card" style="margin-top: 25px;">
                         <div class="card-header-flex">
-                            <h3><i class="fa-solid fa-users-viewfinder" style="color: #8b5cf6;"></i> Promedio de Asistencia a Reuniones</h3>
+                            <h3><i class="fa-solid fa-users-viewfinder" style="color: #8b5cf6;"></i> Promedio de
+                                Asistencia a Reuniones</h3>
                         </div>
                         <div style="position: relative; height: 300px; width: 100%;">
                             <canvas id="graficaAsistencia"></canvas>
@@ -151,7 +174,8 @@
             <!-- INFORMES -->
             <div id="view-informes" class="section-view">
                 <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('informe')"><i class="fa-solid fa-circle-plus"></i> Nuevo Informe</button>
+                    <button class="btn-add-new" onclick="abrirModal('informe')"><i class="fa-solid fa-circle-plus"></i>
+                        Nuevo Informe</button>
                 </div>
 
                 <div class="card">
@@ -160,9 +184,11 @@
                         <div style="grid-column: span 1;">
                             <label>Mes del Reporte</label>
                             <div class="month-nav" style="margin-bottom:0;">
-                                <button type="button" class="btn-nav" onclick="cambiarMesInformes(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                                <button type="button" class="btn-nav" onclick="cambiarMesInformes(-1)"><i
+                                        class="fa-solid fa-chevron-left"></i></button>
                                 <div id="infMesLabel" class="month-title">...</div>
-                                <button type="button" class="btn-nav" onclick="cambiarMesInformes(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                                <button type="button" class="btn-nav" onclick="cambiarMesInformes(1)"><i
+                                        class="fa-solid fa-chevron-right"></i></button>
                             </div>
                             <input type="hidden" id="infFiltroMes">
                         </div>
@@ -178,7 +204,7 @@
                                 <option value="7">7</option>
                                 <option value="8">8</option>
                             </select></div>
-                        
+
                         <!-- FILTRO CORREGIDO Y UNIFICADO -->
                         <div><label>Privilegio</label>
                             <select id="infFiltroPriv3">
@@ -188,12 +214,14 @@
                                 <option value="PUB_COMBINED">PUB + PNB</option>
                             </select>
                         </div>
-                        
+
                         <div><label>Nombre</label><input id="infFiltroNombre" placeholder="Buscar..."></div>
 
                         <div style="align-self:end; display:flex; gap:10px;">
-                            <button class="btn-primary" onclick="cargarTablaInformes()"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
-                            <button class="btn-cancel btn-reset" onclick="limpiarFiltrosInformes()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
+                            <button class="btn-primary" onclick="cargarTablaInformes()"><i
+                                    class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+                            <button class="btn-cancel btn-reset" onclick="limpiarFiltrosInformes()"><i
+                                    class="fa-solid fa-eraser"></i> Limpiar</button>
                         </div>
                     </div>
                 </div>
@@ -201,7 +229,8 @@
                 <div class="card">
                     <div class="card-header-flex">
                         <h3><i class="fa-solid fa-clock-rotate-left"></i> Resultados</h3>
-                        <button class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;" onclick="cargarTablaInformes()"><i class="fa-solid fa-rotate"></i> Recargar</button>
+                        <button class="btn-action btn-edit" style="width:auto; padding:0 12px; gap:5px;"
+                            onclick="cargarTablaInformes()"><i class="fa-solid fa-rotate"></i> Recargar</button>
                     </div>
                     <div class="table-container">
                         <table>
@@ -227,12 +256,14 @@
             <!-- REUNIONES -->
             <div id="view-reuniones" class="section-view">
                 <div class="admin-only" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('reunion')"><i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia</button>
+                    <button class="btn-add-new" onclick="abrirModal('reunion')"><i
+                            class="fa-solid fa-calendar-plus"></i> Registrar Asistencia</button>
                 </div>
                 <div class="card">
                     <div class="card-header-flex">
                         <h3><i class="fa-solid fa-users-rectangle"></i> Historial de Asistencia</h3>
-                        <select id="reuFilterMes" onchange="cargarTablaReuniones()" style="width:auto; padding:6px; font-weight:600; color:var(--text-main);">
+                        <select id="reuFilterMes" onchange="cargarTablaReuniones()"
+                            style="width:auto; padding:6px; font-weight:600; color:var(--text-main);">
                             <option value="">(Todos los Meses)</option>
                         </select>
                     </div>
@@ -255,10 +286,12 @@
                             <tbody id="tbodyReuniones"></tbody>
                         </table>
                     </div>
-                    <div class="report-summary" style="margin-top:20px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+                    <div class="report-summary"
+                        style="margin-top:20px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
                         <div class="summary-box">
                             <div class="summary-title">Promedio Anual Acumulado</div>
-                            <div class="summary-val" id="reuTotalAnual" style="color:var(--primary); font-size:1.5rem;">0</div>
+                            <div class="summary-val" id="reuTotalAnual" style="color:var(--primary); font-size:1.5rem;">
+                                0</div>
                             <div style="font-size:0.8rem; color:#64748b;">(Total Anual / 12)</div>
                         </div>
                     </div>
@@ -269,7 +302,8 @@
             <!-- PUBLICADORES -->
             <div id="view-publicadores" class="section-view">
                 <div class="admin-only" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('publicador')"><i class="fa-solid fa-user-plus"></i> Agregar Publicador</button>
+                    <button class="btn-add-new" onclick="abrirModal('publicador')"><i class="fa-solid fa-user-plus"></i>
+                        Agregar Publicador</button>
                 </div>
                 <div class="card">
                     <h3><i class="fa-solid fa-chart-simple"></i> Resumen de Publicadores</h3>
@@ -316,7 +350,7 @@
                             </select>
                         </div>
                         <div><label>Nombre</label><input id="pubFiltroNombre" placeholder="Buscar nombre..."></div>
-                        
+
                         <!-- FILTRO CORREGIDO -->
                         <div><label>Privilegio</label>
                             <select id="pubFiltroPriv3">
@@ -327,10 +361,12 @@
                                 <option value="PNB">PNB</option>
                             </select>
                         </div>
-                        
+
                         <div style="align-self:end; display:flex; gap:10px;">
-                            <button class="btn-primary" onclick="cargarTablaPublicadores()"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
-                            <button class="btn-cancel btn-reset" onclick="limpiarFiltrosPub()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
+                            <button class="btn-primary" onclick="cargarTablaPublicadores()"><i
+                                    class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+                            <button class="btn-cancel btn-reset" onclick="limpiarFiltrosPub()"><i
+                                    class="fa-solid fa-eraser"></i> Limpiar</button>
                         </div>
                     </div>
                 </div>
@@ -379,7 +415,7 @@
                                 <option value="8">8</option>
                             </select>
                         </div>
-                        
+
                         <!-- FILTRO CORREGIDO -->
                         <div><label>Privilegio 3</label>
                             <select name="priv3">
@@ -389,19 +425,30 @@
                                 <option value="PUB_COMBINED">PUB + PNB</option>
                             </select>
                         </div>
-                        
+
                         <div><label>Nombre</label><input name="nombre" placeholder="Buscar..."></div>
                         <div style="grid-column: 1/-1; display:flex; gap:10px; flex-wrap:wrap;">
-                            <button type="button" class="btn-primary" onclick="generarReporte()"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
-                            <button type="button" class="btn-cancel btn-reset" onclick="limpiarFiltrosReporte()"><i class="fa-solid fa-eraser"></i> Limpiar</button>
-                            <button type="button" class="btn-primary" onclick="abrirModalPrecursores()" style="background:#0f766e;"><i class="fa-solid fa-stopwatch"></i> Precursores</button>
-                            <button type="button" class="btn-cancel" onclick="descargarPDF()" style="background:#475569; color:white; margin-left:auto;"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button type="button" class="btn-primary" onclick="abrirModalCursos()" style="background:#f97316;"><i class="fa-solid fa-book-open-reader"></i> Cursos</button>
+                            <button type="button" class="btn-primary" onclick="generarReporte()"><i
+                                    class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+                            <button type="button" class="btn-cancel btn-reset" onclick="limpiarFiltrosReporte()"><i
+                                    class="fa-solid fa-eraser"></i> Limpiar</button>
+                            <button type="button" class="btn-primary" onclick="abrirModalPrecursores()"
+                                style="background:#0f766e;"><i class="fa-solid fa-stopwatch"></i> Precursores</button>
+                            <button type="button" class="btn-cancel" onclick="descargarPDF()"
+                                style="background:#475569; color:white; margin-left:auto;"><i
+                                    class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button type="button" class="btn-primary" onclick="abrirModalCursos()"
+                                style="background:#f97316;"><i class="fa-solid fa-book-open-reader"></i> Cursos</button>
+                            <button type="button" onclick="generarTarjetasMasivasZIP()" class="btn-primary"
+                                style="background: #059669;">
+                                <i class="fa-solid fa-file-zipper"></i> Descargar Tarjetas
+                            </button>
                         </div>
                     </form>
                 </div>
                 <div id="reporteResultados" class="card" style="display:none;">
-                    <h3>Resultados <span class="badge badge-gray" id="repTotalRows" style="margin-left:10px">0</span></h3>
+                    <h3>Resultados <span class="badge badge-gray" id="repTotalRows" style="margin-left:10px">0</span>
+                    </h3>
                     <div class="table-container">
                         <table id="tablaReporte">
                             <thead>
@@ -445,7 +492,8 @@
             <!-- USUARIOS -->
             <div id="view-usuarios" class="section-view">
                 <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <button class="btn-add-new" onclick="abrirModal('usuario')"><i class="fa-solid fa-user-plus"></i> Crear Usuario</button>
+                    <button class="btn-add-new" onclick="abrirModal('usuario')"><i class="fa-solid fa-user-plus"></i>
+                        Crear Usuario</button>
                 </div>
                 <div class="card">
                     <h3><i class="fa-solid fa-users-gear"></i> Lista Usuarios</h3>
@@ -469,9 +517,11 @@
             <!-- CIERRES -->
             <div id="view-cierres" class="section-view">
                 <div class="card" style="max-width: 500px; margin: 0 auto; padding: 20px;">
-                    <h3 style="color: #1e293b; margin-bottom: 5px;"><i class="fa-solid fa-lock-open" style="color: #f59e0b;"></i> Meses Cerrados</h3>
+                    <h3 style="color: #1e293b; margin-bottom: 5px;"><i class="fa-solid fa-lock-open"
+                            style="color: #f59e0b;"></i> Meses Cerrados</h3>
                     <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">
-                        Solo el Administrador puede reabrir meses. Al hacerlo, el estado de todos los publicadores volverá a ser <b>"Informó: SÍ"</b> para permitir la edición.
+                        Solo el Administrador puede reabrir meses. Al hacerlo, el estado de todos los publicadores
+                        volverá a ser <b>"Informó: SÍ"</b> para permitir la edición.
                     </p>
                     <div id="listaCierresFlex" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
@@ -497,26 +547,45 @@
                 </select>
             </div>
             <div class="col-span-1"><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
-            <div style="grid-column: 1/-1;"><label>Publicador</label><select id="selectPubInfo" name="publicador_id" required onchange="cargarDatosPub()"><option value="">Cargando...</option></select></div>
-            <div style="grid-column: 1/-1;"><label>Privilegio</label><input id="readPriv3" readonly style="background:#f8fafc; color:#64748b;"></div>
-            <div class="col-span-1"><label>¿Predicó?</label><select name="predico" required><option value="">-</option><option value="SI">SÍ</option><option value="NO">NO</option></select></div>
-            <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito" step="0.5" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0" inputmode="numeric"></div>
-            <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..." rows="3"></textarea></div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%" id="btnSaveInfo">Guardar</button></div>
+            <div style="grid-column: 1/-1;"><label>Publicador</label><select id="selectPubInfo" name="publicador_id"
+                    required onchange="cargarDatosPub()">
+                    <option value="">Cargando...</option>
+                </select></div>
+            <div style="grid-column: 1/-1;"><label>Privilegio</label><input id="readPriv3" readonly
+                    style="background:#f8fafc; color:#64748b;"></div>
+            <div class="col-span-1"><label>¿Predicó?</label><select name="predico" required>
+                    <option value="">-</option>
+                    <option value="SI">SÍ</option>
+                    <option value="NO">NO</option>
+                </select></div>
+            <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
+                    min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
+                    step="0.5" min="0" inputmode="numeric"></div>
+            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0" inputmode="numeric">
+            </div>
+            <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
+                    rows="3"></textarea></div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveInfo">Guardar</button></div>
         </form>
 
         <form id="formPublicador" class="form-layout" style="grid-template-columns: 1fr 1fr; gap: 15px;">
             <input type="hidden" name="id" id="pubId">
 
             <div style="grid-column: span 2;">
-                <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">Datos Personales</h4>
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                    Datos Personales</h4>
             </div>
 
-            <div style="grid-column: span 2;"><label>Nombre Completo</label><input name="nombre" required placeholder="Ej: Juan Pérez"></div>
+            <div style="grid-column: span 2;">
+                <label>Nombre Completo</label>
+                <input name="nombre" required placeholder="Ej: Juan Pérez">
+            </div>
 
-            <div class="global-view" style="grid-column: span 1;"><label>Grupo</label>
+            <div class="global-view" style="grid-column: span 1;">
+                <label>Grupo</label>
                 <select id="pubGrupoSelect" name="grupo_manual">
                     <option value="1">1</option>
                     <option value="2">2</option>
@@ -529,20 +598,27 @@
                 </select>
             </div>
 
-            <div style="grid-column: span 1;"><label>Fecha Registro:</label><input type="date" name="fecha_ingreso" required></div>
-
-            <div style="grid-column: span 2; margin-top:10px;">
-                <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">Estado y Privilegios</h4>
+            <div style="grid-column: span 1;">
+                <label>Fecha Registro:</label>
+                <input type="date" name="fecha_ingreso" required>
             </div>
 
-            <div style="grid-column: span 1;"><label>¿Informó este mes?</label>
+            <div style="grid-column: span 2; margin-top:10px;">
+                <h4
+                    style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                    Estado y Privilegios</h4>
+            </div>
+
+            <div style="grid-column: span 1;">
+                <label>¿Informó este mes?</label>
                 <select name="informo" style="font-weight:bold;">
                     <option value="NO">NO</option>
                     <option value="SI">SÍ</option>
                 </select>
             </div>
 
-            <div style="grid-column: span 1;"><label>Privilegio Principal</label>
+            <div style="grid-column: span 1;">
+                <label>Privilegio Principal</label>
                 <select name="priv3">
                     <option>PUB</option>
                     <option>PNB</option>
@@ -555,7 +631,8 @@
                 </select>
             </div>
 
-            <div style="grid-column: span 1;"><label>Cargo (Priv 1)</label>
+            <div style="grid-column: span 1;">
+                <label>Cargo (Priv 1)</label>
                 <select name="priv1">
                     <option value="">-</option>
                     <option value="SG">SG</option>
@@ -563,7 +640,8 @@
                 </select>
             </div>
 
-            <div style="grid-column: span 1;"><label>Nombramiento (Priv 2)</label>
+            <div style="grid-column: span 1;">
+                <label>Nombramiento (Priv 2)</label>
                 <select name="priv2">
                     <option value="">-</option>
                     <option value="A">A</option>
@@ -576,6 +654,57 @@
                 <textarea name="comentario" rows="2" placeholder="Nota adicional..."></textarea>
             </div>
 
+            <!-- AQUÍ ESTÁ EL CAMBIO: Se agregó "grid-column: span 2;" al div contenedor -->
+            <div style="grid-column: span 2; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                <h4 style="margin-bottom: 10px; color: #334155; font-size: 0.95rem;">Datos para la S-21</h4>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" name="fecha_nacimiento">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Fecha de Bautismo</label>
+                        <input type="date" name="fecha_bautismo">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Sexo</label>
+                        <select name="sexo">
+                            <option value="Hombre">Hombre</option>
+                            <option value="Mujer">Mujer</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Esperanza</label>
+                        <select name="esperanza">
+                            <option value="Otras ovejas">Otras ovejas</option>
+                            <option value="Ungido">Ungido</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2; margin-bottom: 10px;">
+                    <label style="margin-bottom: 8px; display: block; font-weight: bold;">Nombramiento / Servicio
+                        Especial (Puedes marcar varios)</label>
+                    <div
+                        style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
+                                name="privilegio_s21" value="Anciano"> Anciano</label>
+                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
+                                name="privilegio_s21" value="Siervo ministerial"> Siervo ministerial</label>
+                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
+                                name="privilegio_s21" value="Precursor regular"> Precursor regular</label>
+                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
+                                name="privilegio_s21" value="Precursor especial"> Precursor especial</label>
+                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
+                                name="privilegio_s21" value="Misionero que sirve en el campo"> Misionero</label>
+                    </div>
+                </div>
+            </div>
+
             <div style="grid-column: span 2; margin-top:10px;">
                 <button type="submit" class="btn-primary" style="width:100%" id="btnSavePub">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Publicador
@@ -586,14 +715,26 @@
         <form id="formReunion" class="form-layout">
             <input type="hidden" name="id" id="reunionId">
             <div class="col-span-1"><label>Mes</label><select name="mes" id="reuMesSelect" required></select></div>
-            <div class="col-span-1"><label>Tipo</label><select name="tipo" required><option value="ENTRE SEMANA">ENTRE SEMANA</option><option value="FIN DE SEMANA">FIN DE SEMANA</option></select></div>
-            <div class="col-span-1"><label>Modalidad</label><select name="modalidad" required><option value="PRESENCIAL">PRESENCIAL</option><option value="ZOOM">ZOOM</option></select></div>
-            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0" inputmode="numeric"></div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%" id="btnSaveReu">Guardar</button></div>
+            <div class="col-span-1"><label>Tipo</label><select name="tipo" required>
+                    <option value="ENTRE SEMANA">ENTRE SEMANA</option>
+                    <option value="FIN DE SEMANA">FIN DE SEMANA</option>
+                </select></div>
+            <div class="col-span-1"><label>Modalidad</label><select name="modalidad" required>
+                    <option value="PRESENCIAL">PRESENCIAL</option>
+                    <option value="ZOOM">ZOOM</option>
+                </select></div>
+            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0" inputmode="numeric">
+            </div>
+            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0" inputmode="numeric">
+            </div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveReu">Guardar</button></div>
         </form>
 
         <form id="formUsuario" class="form-layout">
@@ -615,10 +756,12 @@
                     <option value="9">9 (Supervisor)</option>
                 </select>
             </div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%" id="btnSaveUser">Crear</button></div>
+            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
+                    id="btnSaveUser">Crear</button></div>
         </form>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/dashboard.js" defer></script>
