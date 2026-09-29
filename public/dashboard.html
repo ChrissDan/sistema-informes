@@ -57,6 +57,28 @@
                 <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
                 <h1 id="pageTitle"><i class="fa-solid fa-gauge-high" style="color:var(--primary)"></i> Panel</h1>
             </div>
+
+            <!-- NUEVO: Selector Global de Año de Servicio -->
+            <div class="header-right" style="display:flex; align-items:center; gap:10px; margin-right: 20px;">
+                <label style="font-weight:600; font-size: 0.85rem; color: #64748b; display:none;" id="labelAnio">Año de Servicio:</label>
+                <select id="globalAnioSelect" onchange="cambiarAnioGlobal()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: var(--primary); background: white; cursor: pointer;">
+                    <option value="2026">Año 2026</option>
+                    <option value="2027">Año 2027</option>
+                    <option value="2028">Año 2028</option>
+                    <option value="2029">Año 2029</option>
+                    <option value="2030">Año 2030</option>
+                    <option value="2031">Año 2031</option>
+                    <option value="2032">Año 2032</option>
+                    <option value="2033">Año 2033</option>
+                    <option value="2034">Año 2034</option>
+                    <option value="2035">Año 2035</option>
+                    <option value="2036">Año 2036</option>
+                    <option value="2037">Año 2037</option>
+                    <option value="2038">Año 2038</option>
+                    <option value="2039">Año 2039</option>
+                    <option value="2040">Año 2040</option>
+                </select>
+            </div>
         </header>
 
         <div class="content-scroll">
