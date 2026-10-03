@@ -725,6 +725,132 @@ async function rellenarPlantillaPersonalizada(plantillaBuffer, dataHistorial, pu
     return await pdfDoc.save();
 }
 
+// --- GENERACIÓN DE REPORTES TOTALES DE CONGREGACIÓN (S-21) ---
+async function descargarTotalesS21() {
+    try {
+        const [fileHandle] = await window.showOpenFilePicker({
+            types: [{ description: 'Plantilla PDF', accept: { 'application/pdf': ['.pdf'] } }],
+            multiple: false
+        });
+        const file = await fileHandle.getFile();
+        const plantillaBuffer = await file.arrayBuffer(); 
+
+        Swal.fire({ title: 'Generando Totales...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const anio = getAnio();
+        const res = await fetch(`/api/reportes/totales-s21?anio_servicio=${anio}`);
+        const rawData = await res.json();
+
+        // Estructura en blanco para los 12 meses
+        const mesesEstructura = () => ({ SEPTIEMBRE: null, OCTUBRE: null, NOVIEMBRE: null, DICIEMBRE: null, ENERO: null, FEBRERO: null, MARZO: null, ABRIL: null, MAYO: null, JUNIO: null, JULIO: null, AGOSTO: null });
+        
+        let dataCong = mesesEstructura();
+        let dataReg = mesesEstructura();
+        let dataAux = mesesEstructura();
+        let dataPub = mesesEstructura();
+
+        // Agrupar los datos de la base de datos
+        rawData.forEach(r => {
+            const m = r.mes.toUpperCase().trim();
+            if (!dataCong[m]) dataCong[m] = { cantidad: 0, horas: 0, cursos: 0 };
+            
+            // Sumar al total general de la congregación
+            dataCong[m].cantidad += r.cantidad;
+            dataCong[m].horas += parseFloat(r.total_horas) || 0;
+            dataCong[m].cursos += parseInt(r.total_cursos) || 0;
+
+            // Asignar al grupo específico
+            if (r.categoria === 'REG') dataReg[m] = { cantidad: r.cantidad, horas: r.total_horas, cursos: r.total_cursos };
+            if (r.categoria === 'AUX') dataAux[m] = { cantidad: r.cantidad, horas: r.total_horas, cursos: r.total_cursos };
+            if (r.categoria === 'PUB') dataPub[m] = { cantidad: r.cantidad, horas: r.total_horas, cursos: r.total_cursos };
+        });
+
+        const zip = new JSZip();
+
+        // 1. Tarjeta Congregación (Muestra Horas)
+        zip.file(`S21_Totales_Congregacion_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataCong, `Totales congregación Melgar (${anio})`, 'Publicadores', true));
+        
+        // 2. Tarjeta Precursores Regulares (Muestra Horas)
+        zip.file(`S21_Totales_Regulares_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataReg, `Totales precursores regulares (${anio})`, 'precursores regulares', true));
+        
+        // 3. Tarjeta Precursores Auxiliares (Muestra Horas)
+        zip.file(`S21_Totales_Auxiliares_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataAux, `Totales precursores auxiliares (${anio})`, 'precursores auxiliares', true));
+        
+        // 4. Tarjeta Publicadores (NO Muestra Horas)
+        zip.file(`S21_Totales_Publicadores_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataPub, `Totales publicadores (${anio})`, 'publicadores', false));
+
+        // Descargar el ZIP
+        const contenidoZip = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(contenidoZip);
+        link.download = `Totales_S21_Congregacion_${anio}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        Swal.fire('¡Éxito!', 'Los 4 reportes consolidados han sido descargados en un archivo ZIP.', 'success');
+
+    } catch (error) {
+        console.error(error);
+        if (error.name !== 'AbortError') Swal.fire('Error', 'No se pudieron generar los reportes.', 'error');
+    }
+}
+
+// MOTOR ESPECIAL PARA TARJETAS CONSOLIDADAS
+// MOTOR ESPECIAL PARA TARJETAS CONSOLIDADAS
+async function rellenarTarjetaTotales(plantillaBuffer, datosMeses, titulo, etiquetaNotas, mostrarHoras) {
+    const { PDFDocument } = PDFLib; 
+    const pdfDoc = await PDFDocument.load(plantillaBuffer); 
+    const form = pdfDoc.getForm();
+    
+    const safeSetText = (f, t) => { try { const field = form.getTextField(f); if (field) field.setText(t ? t.toString() : ''); } catch (e) {} };
+    const safeCheck = (f, c) => { try { const field = form.getCheckBox(f); if (field && c) field.check(); } catch (e) {} };
+
+    // Establecer Título y Año
+    safeSetText('900_1_Text_SanSerif', titulo);
+    safeSetText('900_13_Text_C_SanSerif', getAnio().toString());
+
+    const mapaMeses = { 'SEPTIEMBRE': 20, 'OCTUBRE': 21, 'NOVIEMBRE': 22, 'DICIEMBRE': 23, 'ENERO': 24, 'FEBRERO': 25, 'MARZO': 26, 'ABRIL': 27, 'MAYO': 28, 'JUNIO': 29, 'JULIO': 30, 'AGOSTO': 31 };
+    
+    let sumaTotalHoras = 0;
+
+    Object.keys(datosMeses).forEach(mes => {
+        const data = datosMeses[mes];
+        const idx = mapaMeses[mes];
+        
+        if (data && idx) {
+            // Checkbox de participación
+            safeCheck(`901_${idx}_CheckBox`, true);
+            
+            // Cursos Bíblicos
+            if (data.cursos > 0) safeSetText(`902_${idx}_Text_C_SanSerif`, data.cursos.toString());
+            
+            // CONVERSIÓN SEGURA A NÚMERO
+            const horasNum = parseFloat(data.horas) || 0;
+            
+            // Horas (Si la tarjeta lo permite)
+            if (mostrarHoras && horasNum > 0) {
+                // Formatear a entero si no tiene decimales
+                const hrsLimpias = horasNum % 1 === 0 ? horasNum.toString() : horasNum.toFixed(1);
+                safeSetText(`904_${idx}_S21_Value`, hrsLimpias);
+                sumaTotalHoras += horasNum;
+            }
+            
+            // Columna de Notas (Cantidad de publicadores)
+            safeSetText(`905_${idx}_Text_SanSerif`, `${data.cantidad} ${etiquetaNotas}`);
+        }
+    });
+
+    // Suma final anual de horas
+    if (mostrarHoras && sumaTotalHoras > 0) {
+        const hrsTotalesLimpias = sumaTotalHoras % 1 === 0 ? sumaTotalHoras.toString() : sumaTotalHoras.toFixed(1);
+        safeSetText('904_32_S21_Value', hrsTotalesLimpias);
+    }
+
+    form.flatten();
+    return await pdfDoc.save();
+}
+
 let chartCursosInstance = null;
 async function cargarGraficaCursos() {
     const ctx = document.getElementById('graficaCursos'); if (!ctx) return; const grp = isGlobal ? 0 : session.grupo;
@@ -782,6 +908,166 @@ async function cargarGraficaAsistencia() {
         if (finalLabels.length === 0) { finalLabels = [['Sin', 'Datos']]; finalPres = [0]; finalZoom = [0]; }
         chartAsistenciaInstance = new Chart(ctx, { type: 'bar', data: { labels: finalLabels, datasets: [{ label: 'PRESENCIAL', data: finalPres, backgroundColor: '#4472c4' }, { label: 'ZOOM', data: finalZoom, backgroundColor: '#ed7d31' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#64748b' } }, y: { stacked: true, beginAtZero: true, grid: { color: '#e2e8f0' } } }, plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } }, tooltip: { mode: 'index', intersect: false, callbacks: { footer: function(ti) { let t = 0; ti.forEach(function(i) { t += i.raw; }); return '\nTotal: ' + t; } } } } } });
     } catch (e) {}
+}
+
+// --- REPORTE ANUAL DE ASISTENCIA EN PDF (TODOS LOS REGISTROS) ---
+async function descargarReporteAsistencia() {
+    const anio = getAnio();
+    Swal.fire({ title: 'Generando Reporte...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const res = await fetch(`/api/reuniones?anio_servicio=${anio}`);
+        const reuniones = await res.json();
+
+        if (reuniones.length === 0) {
+            Swal.fire('Vacío', 'No hay datos de reuniones registrados para este año.', 'info');
+            return;
+        }
+
+        // 1. Calcular las matemáticas para los promedios anuales
+        let semanasEntre = 0; let semanasFin = 0;
+        let totalEntrePres = 0; let totalEntreZoom = 0;
+        let totalFinPres = 0; let totalFinZoom = 0;
+
+        let mesesMap = {};
+        reuniones.forEach(r => {
+            const key = `${r.mes}-${r.tipo}`;
+            if (!mesesMap[key]) mesesMap[key] = { semanas: 0 };
+            
+            const s1 = parseInt(r.sem1) || 0; const s2 = parseInt(r.sem2) || 0; 
+            const s3 = parseInt(r.sem3) || 0; const s4 = parseInt(r.sem4) || 0; 
+            const s5 = parseInt(r.sem5) || 0;
+            const suma = s1 + s2 + s3 + s4 + s5;
+            
+            let weeks = 0;
+            if (s1 > 0) weeks++; if (s2 > 0) weeks++; if (s3 > 0) weeks++; 
+            if (s4 > 0) weeks++; if (s5 > 0) weeks++;
+            
+            if (weeks > mesesMap[key].semanas) mesesMap[key].semanas = weeks;
+
+            if (r.tipo === 'ENTRE SEMANA') {
+                if (r.modalidad === 'PRESENCIAL') totalEntrePres += suma;
+                if (r.modalidad === 'ZOOM') totalEntreZoom += suma;
+            } else {
+                if (r.modalidad === 'PRESENCIAL') totalFinPres += suma;
+                if (r.modalidad === 'ZOOM') totalFinZoom += suma;
+            }
+        });
+
+        // Sumamos las semanas reales que tuvo el año por cada tipo de reunión
+        Object.keys(mesesMap).forEach(key => {
+            if (key.includes('ENTRE SEMANA')) semanasEntre += mesesMap[key].semanas;
+            if (key.includes('FIN DE SEMANA')) semanasFin += mesesMap[key].semanas;
+        });
+
+        // Promedios Desglosados
+        const promEntrePres = semanasEntre > 0 ? Math.round(totalEntrePres / semanasEntre) : 0;
+        const promEntreZoom = semanasEntre > 0 ? Math.round(totalEntreZoom / semanasEntre) : 0;
+        const promEntreTot = promEntrePres + promEntreZoom;
+
+        const promFinPres = semanasFin > 0 ? Math.round(totalFinPres / semanasFin) : 0;
+        const promFinZoom = semanasFin > 0 ? Math.round(totalFinZoom / semanasFin) : 0;
+        const promFinTot = promFinPres + promFinZoom;
+
+        // Promedio Global Anual (La media de ambas reuniones)
+        const promGlobalPres = Math.round((promEntrePres + promFinPres) / 2);
+        const promGlobalZoom = Math.round((promEntreZoom + promFinZoom) / 2);
+        const promGlobalTot = promGlobalPres + promGlobalZoom;
+
+        // 2. Construir la Tabla de Todos los Registros
+        const tablaRegistros = [];
+        const ORDEN_MESES = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'];
+        
+        reuniones.sort((a, b) => {
+            const mA = ORDEN_MESES.indexOf(a.mes.toUpperCase());
+            const mB = ORDEN_MESES.indexOf(b.mes.toUpperCase());
+            if (mA !== mB) return mA - mB;
+            if (a.tipo !== b.tipo) return a.tipo.localeCompare(b.tipo);
+            return a.modalidad.localeCompare(b.modalidad);
+        });
+
+        reuniones.forEach(r => {
+            const s1 = parseInt(r.sem1) || 0; const s2 = parseInt(r.sem2) || 0; 
+            const s3 = parseInt(r.sem3) || 0; const s4 = parseInt(r.sem4) || 0; 
+            const s5 = parseInt(r.sem5) || 0;
+            const suma = s1 + s2 + s3 + s4 + s5;
+            
+            let weeks = 0;
+            if (s1 > 0) weeks++; if (s2 > 0) weeks++; if (s3 > 0) weeks++; 
+            if (s4 > 0) weeks++; if (s5 > 0) weeks++;
+            
+            const prom = weeks > 0 ? Math.round(suma / weeks) : 0;
+            
+            tablaRegistros.push([
+                r.mes, 
+                r.tipo === 'ENTRE SEMANA' ? 'Entre Sem' : 'Fin Sem', 
+                r.modalidad === 'PRESENCIAL' ? 'Pres' : 'Zoom', 
+                s1 || '-', s2 || '-', s3 || '-', s4 || '-', s5 || '-', 
+                prom
+            ]);
+        });
+
+        // 3. Dibujar el PDF
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF();
+        
+        let y = 15;
+        doc.setFontSize(14); doc.setFont("helvetica", "bold"); 
+        doc.text("REGISTROS DE ASISTENCIA A LAS REUNIONES", 105, y, null, null, "center"); y += 6;
+        
+        doc.setFontSize(10); doc.setFont("helvetica", "normal"); 
+        doc.text(`Año de Servicio: ${anio} | Generado: ${new Date().toLocaleDateString()}`, 105, y, null, null, "center"); y += 10;
+
+        // --- SECCIÓN ARRIBA: PROMEDIO ANUAL GLOBAL ---
+        doc.setFillColor(238, 242, 255); 
+        doc.rect(14, y, 182, 20, 'F');
+        
+        doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(67, 56, 202);
+        doc.text("PROMEDIO ANUAL GLOBAL", 105, y + 6, null, null, "center");
+        
+        doc.setFontSize(10); doc.setTextColor(30, 41, 59);
+        doc.text(`Presencial: ${promGlobalPres}   |   Zoom: ${promGlobalZoom}   |   Total: ${promGlobalTot}`, 105, y + 14, null, null, "center");
+        y += 24;
+
+        // --- SECCIÓN ABAJO: DESGLOSE POR TIPO DE REUNIÓN ---
+        doc.setFillColor(241, 245, 249); 
+        doc.rect(14, y, 88, 22, 'F');
+        doc.rect(108, y, 88, 22, 'F');
+        
+        doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(37, 99, 235);
+        doc.text("ENTRE SEMANA", 58, y + 6, null, null, "center");
+        doc.text("FIN DE SEMANA", 152, y + 6, null, null, "center");
+        
+        doc.setFontSize(9); doc.setTextColor(71, 85, 105); doc.setFont("helvetica", "normal");
+        doc.text(`Presencial: ${promEntrePres}   |   Zoom: ${promEntreZoom}`, 58, y + 13, null, null, "center");
+        doc.text(`Total: ${promEntreTot}`, 58, y + 18, null, null, "center");
+
+        doc.text(`Presencial: ${promFinPres}   |   Zoom: ${promFinZoom}`, 152, y + 13, null, null, "center");
+        doc.text(`Total: ${promFinTot}`, 152, y + 18, null, null, "center");
+        
+        y += 28;
+
+        // --- TABLA DETALLADA: TODOS LOS REGISTROS ---
+        doc.autoTable({ 
+            startY: y, 
+            head: [['Mes', 'Reunión', 'Modalidad', 'S1', 'S2', 'S3', 'S4', 'S5', 'Promedio']], 
+            body: tablaRegistros, 
+            theme: 'grid', 
+            styles: { fontSize: 8, cellPadding: 2, halign: 'center', valign: 'middle' }, 
+            headStyles: { fillColor: [71, 85, 105] },
+            columnStyles: { 
+                0: { halign: 'left', fontStyle: 'bold' },
+                1: { halign: 'left' }
+            }
+        });
+
+        doc.save(`Registros_Asistencia_${anio}.pdf`);
+        Swal.close();
+
+    } catch (error) {
+        console.error(error);
+        Swal.fire('Error', 'No se pudo generar el reporte.', 'error');
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -400,6 +400,31 @@ app.post('/api/reportes/advanced', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); } 
 });
 
+app.get('/api/reportes/totales-s21', async (req, res) => {
+    const { anio_servicio } = req.query;
+    try {
+        const sql = `
+            SELECT 
+                mes,
+                CASE 
+                    WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN 'REG'
+                    WHEN priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C') THEN 'AUX'
+                    ELSE 'PUB'
+                END as categoria,
+                COUNT(DISTINCT publicador_id) as cantidad,
+                SUM(horas) as total_horas,
+                SUM(cursos) as total_cursos
+            FROM informes 
+            WHERE anio_servicio = ?
+            GROUP BY mes, categoria
+        `;
+        const [rows] = await pool.query(sql, [anio_servicio]);
+        res.json(rows);
+    } catch (error) { 
+        res.status(500).json({ error: error.message }); 
+    }
+});
+
 app.get('/api/publicador/:id/tarjeta', async (req, res) => {
     const { id } = req.params; const { anio_servicio } = req.query;
     try {
