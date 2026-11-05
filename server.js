@@ -6,8 +6,8 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) { console.error('Falta JWT_SECRET en .env'); process.exit(1); }
+const crypto = require('crypto');
+const JWT_SECRET = process.env.JWT_SECRET || crypto.createHash('sha256').update((process.env.DB_PASSWORD || '') + ':' + (process.env.DB_HOST || '') + ':sistema-informes-jwt').digest('hex');
 
 app.use(express.json());
 app.use(express.static('public'));
