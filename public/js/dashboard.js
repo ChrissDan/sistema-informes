@@ -130,6 +130,7 @@ if (globalAnioSelect) {
 const formMesSelect = document.getElementById('formMesSelect'); const dashMesSelect = document.getElementById('dashMesSelect'); const repMesSelect = document.getElementById('repMesSelect'); const reuMesSelect = document.getElementById('reuMesSelect'); const reuFilterMes = document.getElementById('reuFilterMes'); const infFiltroMes = document.getElementById('infFiltroMes');
 formMesSelect.innerHTML = '<option value="">-- Seleccione --</option>';
 MESES.forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.textContent = m; formMesSelect.appendChild(opt); dashMesSelect.appendChild(opt.cloneNode(true)); repMesSelect.appendChild(opt.cloneNode(true)); reuMesSelect.appendChild(opt.cloneNode(true)); reuFilterMes.appendChild(opt.cloneNode(true)); infFiltroMes.appendChild(opt.cloneNode(true)); });
+let mesActivo = null;
 function getMesAutomatico() { const m = new Date().getMonth(); return MESES[(m === 0) ? 11 : m - 1]; }
 function aplicarBloqueoMesForm(el) {
     if (!el) return;
@@ -218,7 +219,6 @@ async function cargarTablaInformes() {
 
 function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
 // Mes automático según el servidor (mes calendario anterior, cambia automáticamente al siguiente mes)
-let mesActivo = null;
 async function cargarMesActivo() { try { const r = await fetch('/api/mes-activo'); mesActivo = await r.json(); } catch (e) { mesActivo = null; } return mesActivo; }
 // Solo superadmin (grupo 0): puede cambiar el mes a cualquier mes abierto; los demás usuarios lo tienen bloqueado
 async function habilitarMesesPasadosAdmin(f) {
