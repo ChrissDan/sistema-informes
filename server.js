@@ -89,15 +89,17 @@ const soloAdmin = (req, res, next) => req.user.grupo == 0 ? next() : res.status(
 const posServicio = (mes) => { const i = MESES_ORDER.indexOf(String(mes).trim().toUpperCase()); return i < 0 ? -1 : (i + 4) % 12; };
 const claveMes = (mes, anio) => { const p = posServicio(mes); return p < 0 ? NaN : parseInt(anio) * 12 + p; };
 async function getMesActivo(db) {
-    const [rows] = await db.query('SELECT mes, anio_servicio FROM cierres');
-    let max = -1;
-    rows.forEach(r => { const k = claveMes(r.mes, r.anio_servicio); if (!isNaN(k) && k > max) max = k; });
-    let key = max + 1;
-    if (max < 0) { // sin cierres previos: mes calendario anterior
-        const hoy = new Date(); const idx = (hoy.getMonth() + 11) % 12; const cal = hoy.getMonth() === 0 ? hoy.getFullYear() - 1 : hoy.getFullYear();
-        key = (idx >= 8 ? cal + 1 : cal) * 12 + ((idx + 4) % 12);
-    }
-    return { key, hayCierres: max >= 0, mes: MESES_ORDER[(key % 12 + 8) % 12], anio_servicio: String(Math.floor(key / 12)) };
+    // Mes automático de informe: siempre el mes calendario inmediatamente anterior (zona horaria UTC-5)
+    // Cambia automáticamente al iniciar el siguiente mes calendario.
+    const hoy = new Date(Date.now() - 5 * 3600 * 1000);
+    const mesActual = hoy.getUTCMonth();
+    const anioCal = hoy.getUTCFullYear();
+    const idx = (mesActual + 11) % 12;
+    const calDelMes = mesActual === 0 ? anioCal - 1 : anioCal;
+    const anio_servicio = String(idx >= 8 ? calDelMes + 1 : calDelMes);
+    const mes = MESES_ORDER[idx];
+    const key = parseInt(anio_servicio) * 12 + ((idx + 4) % 12);
+    return { key, hayCierres: false, mes, anio_servicio };
 }
 // Condición SQL "publicador pendiente de informar ese mes": activo, ya ingresado en ese mes y sin informe (no usa la marca 'informo')
 function pendienteSQL(mes, anio, alias = 'publicadores') {
@@ -346,12 +348,13 @@ app.post('/api/informes', async (req, res) => {
     let maxCred = 55 - h; if (maxCred < 0) maxCred = 0;
     if (cred > maxCred) return res.status(400).json({ ok: false, msg: `Límite de crédito excedido.` });
 
-    // Regla: solo se informa el mes activo (el siguiente al último cerrado). Meses anteriores reabiertos: solo superadmin.
+    // Regla: usuarios no-superadmin tienen el mes bloqueado al mes automático actual; solo el superadmin (grupo 0) puede cambiarlo.
     try {
         const act = await getMesActivo(pool); const kMes = claveMes(mes, anio_servicio);
         if (isNaN(kMes)) return res.status(400).json({ ok: false, msg: 'Mes inválido.' });
-        if (kMes > act.key) return res.status(400).json({ ok: false, msg: `Para informar ese mes primero debe cerrarse el anterior. El mes activo es ${act.mes} ${act.anio_servicio}.` });
-        if (kMes < act.key && req.user.grupo != 0) return res.status(403).json({ ok: false, msg: `Solo el superadmin puede registrar informes de meses pasados (el mes activo es ${act.mes} ${act.anio_servicio}).` });
+        if (req.user.grupo != 0 && (String(mes).trim().toUpperCase() !== act.mes || String(anio_servicio) !== act.anio_servicio)) {
+            return res.status(403).json({ ok: false, msg: `El mes está bloqueado. Solo puedes registrar informes del mes actual (${act.mes} ${act.anio_servicio}).` });
+        }
     } catch (e) { return res.status(500).json({ ok: false, msg: e.message }); }
 
     const conn = await pool.getConnection();

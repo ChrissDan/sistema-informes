@@ -129,7 +129,27 @@ if (globalAnioSelect) {
 const formMesSelect = document.getElementById('formMesSelect'); const dashMesSelect = document.getElementById('dashMesSelect'); const repMesSelect = document.getElementById('repMesSelect'); const reuMesSelect = document.getElementById('reuMesSelect'); const reuFilterMes = document.getElementById('reuFilterMes'); const infFiltroMes = document.getElementById('infFiltroMes');
 formMesSelect.innerHTML = '<option value="">-- Seleccione --</option>';
 MESES.forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.textContent = m; formMesSelect.appendChild(opt); dashMesSelect.appendChild(opt.cloneNode(true)); repMesSelect.appendChild(opt.cloneNode(true)); reuMesSelect.appendChild(opt.cloneNode(true)); reuFilterMes.appendChild(opt.cloneNode(true)); infFiltroMes.appendChild(opt.cloneNode(true)); });
+function getMesAutomatico() { const m = new Date().getMonth(); return MESES[(m === 0) ? 11 : m - 1]; }
+function aplicarBloqueoMesForm(el) {
+    if (!el) return;
+    if (!isAdmin) {
+        el.value = (mesActivo && mesActivo.mes) ? mesActivo.mes : getMesAutomatico();
+        el.disabled = true;
+        el.style.backgroundColor = 'var(--bg-subtle, #f1f5f9)';
+        el.style.cursor = 'not-allowed';
+        el.style.fontWeight = 'bold';
+        el.style.color = 'var(--text-secondary, #475569)';
+    } else {
+        el.disabled = false;
+        el.style.backgroundColor = '';
+        el.style.cursor = '';
+        el.style.fontWeight = '';
+        el.style.color = '';
+    }
+}
 dashMesSelect.value = MESES[mesIndexActual];
+formMesSelect.value = getMesAutomatico();
+aplicarBloqueoMesForm(formMesSelect);
 
 window.onload = function () { verificarInactivos(); };
 function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesIndexInformes > 11) mesIndexInformes = 0; if (mesIndexInformes < 0) mesIndexInformes = 11; document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); }
@@ -193,40 +213,51 @@ async function cargarTablaInformes() {
 }
 
 function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
-// Mes activo según el servidor (el siguiente al último mes cerrado)
+// Mes automático según el servidor (mes calendario anterior, cambia automáticamente al siguiente mes)
 let mesActivo = null;
 async function cargarMesActivo() { try { const r = await fetch('/api/mes-activo'); mesActivo = await r.json(); } catch (e) { mesActivo = null; } return mesActivo; }
-// Solo superadmin: permite elegir un mes pasado, pero únicamente si está abierto (los cerrados/futuros se deshabilitan)
+// Solo superadmin (grupo 0): puede cambiar el mes a cualquier mes abierto; los demás usuarios lo tienen bloqueado
 async function habilitarMesesPasadosAdmin(f) {
     const anio = parseInt(getAnio()); let cerrados = [];
     try { const r = await fetch(`/api/cierres?anio_servicio=${anio}`); cerrados = await r.json(); } catch (e) {}
-    const act = mesActivo || await cargarMesActivo(); const limite = act ? (parseInt(act.anio_servicio) * 12 + ((MESES.indexOf(act.mes) + 4) % 12)) : -1;
     Array.from(f.mes.options).forEach(o => {
-        if (!o.value) return; const idx = MESES.indexOf(o.value); const key = anio * 12 + ((idx + 4) % 12);
-        const cerrado = cerrados.includes(o.value); o.disabled = cerrado || key > limite; o.textContent = o.value + (cerrado ? ' (cerrado)' : '');
+        if (!o.value) return;
+        const cerrado = cerrados.includes(o.value);
+        o.disabled = cerrado;
+        o.textContent = o.value + (cerrado ? ' (Cerrado)' : '');
     });
-    f.mes.disabled = false; f.mes.style.backgroundColor = ''; f.mes.style.cursor = ''; f.mes.style.fontWeight = ''; f.mes.style.color = '';
+    aplicarBloqueoMesForm(f.mes);
 }
 async function resetFormInforme(manualClean = false, keepGroup = false) { 
     const f = document.getElementById('formInforme'); const gPrev = isGlobal ? document.getElementById('infGrupoSelect').value : null; const mesPrev = f.mes.value; f.reset(); if (keepGroup && gPrev) document.getElementById('infGrupoSelect').value = gPrev; document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true;
+    const mesAuto = getMesAutomatico();
+    if (f.mes) {
+        await cargarMesActivo();
+        const mesDefecto = (mesActivo && mesActivo.mes) ? mesActivo.mes : mesAuto;
+        f.mes.value = (keepGroup && isAdmin && mesPrev) ? mesPrev : mesDefecto;
+        aplicarBloqueoMesForm(f.mes);
+    }
     if (manualClean) { 
         document.getElementById('readPriv3').value = ""; 
-        const NOMBRES_MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-        const mesActualIndex = new Date().getMonth(); const mesAnteriorIndex = (mesActualIndex === 0) ? 11 : mesActualIndex - 1;
-        if (f.mes) { await cargarMesActivo(); f.mes.value = (keepGroup && isAdmin && mesPrev) ? mesPrev : (mesActivo ? ((isAdmin && mesActivo.anio_servicio !== String(getAnio())) ? '' : mesActivo.mes) : NOMBRES_MESES[mesAnteriorIndex]); f.mes.disabled = true; f.mes.style.backgroundColor = '#f1f5f9'; f.mes.style.cursor = 'not-allowed'; f.mes.style.fontWeight = 'bold'; f.mes.style.color = '#475569'; }
         if (isAdmin && f.mes) await habilitarMesesPasadosAdmin(f);
         const grpSel = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; await cargarPublicadoresSelect(grpSel, 'pending');
     } 
 }
 
-document.getElementById('formMesSelect').addEventListener('change', () => { if (!document.getElementById('informeId').value) cargarPublicadoresSelect(isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo, 'pending'); });
+document.getElementById('formMesSelect').addEventListener('change', () => {
+    if (!isAdmin && !document.getElementById('informeId').value) { aplicarBloqueoMesForm(formMesSelect); return; }
+    if (!document.getElementById('informeId').value) cargarPublicadoresSelect(isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo, 'pending');
+});
 document.getElementById('formInforme').addEventListener('submit', async (e) => {
     e.preventDefault(); const f = e.target;
     const btnSubmit = f.querySelector('button[type="submit"]'); const textoOriginal = btnSubmit.innerHTML;
     if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...'; }
 
     const rawData = Object.fromEntries(new FormData(f));
-    rawData.mes = f.mes.value; 
+    if (!isAdmin && !document.getElementById('informeId').value) {
+        f.mes.value = (mesActivo && mesActivo.mes) ? mesActivo.mes : getMesAutomatico();
+    }
+    rawData.mes = f.mes.value || getMesAutomatico(); 
     rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
     rawData.cursos = f.cursos.value || 0;
     rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
@@ -435,6 +466,7 @@ async function verificarCierres() {
             if (opt.value !== "") { opt.disabled = false; opt.textContent = opt.value; }
             if (mesesCerrados.includes(opt.value)) { opt.disabled = true; opt.textContent += " (Cerrado)"; }
         });
+        if (!document.getElementById('informeId').value) aplicarBloqueoMesForm(formMesSelect);
     } catch (e) { console.error(e); }
 }
 
