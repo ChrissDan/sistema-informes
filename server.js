@@ -169,31 +169,60 @@ app.post('/api/reabrir-mes', async (req, res) => {
 // --- DASHBOARD ---
 app.get('/api/dashboard', async (req, res) => {
     const { mes, grupo, anio_servicio } = req.query;
-    let conn;
     try {
-        conn = await pool.getConnection();
-        const [cierre] = await conn.query("SELECT * FROM cierres WHERE mes = ? AND anio_servicio = ?", [mes, anio_servicio]);
-        const isClosed = cierre.length > 0;
-        
         let filterGrp = ""; let paramsTotal = []; let paramsMes = [mes, anio_servicio];
         if (grupo && grupo != '0' && grupo != '9') { filterGrp = " AND grupo = ?"; paramsTotal.push(grupo); paramsMes.push(grupo); }
-        
-        let qTotal = isClosed 
-            ? `SELECT grupo, COUNT(*) as total FROM informes WHERE mes = ? AND anio_servicio = ? ${filterGrp} GROUP BY grupo` 
-            : `SELECT grupo, COUNT(*) as total FROM publicadores WHERE activo = 1 ${filterGrp} GROUP BY grupo`;
-        
-        const [totalPubs] = await conn.query(qTotal, isClosed ? paramsMes : paramsTotal);
-        
-        let qReports = `SELECT grupo, COUNT(*) as count FROM informes WHERE mes = ? AND anio_servicio = ? ${filterGrp} GROUP BY grupo`;
-        const [reportsGroup] = await conn.query(qReports, paramsMes);
 
-        const [pubStats] = await conn.query(`SELECT COUNT(*) as count, SUM(cursos) as cursos FROM informes WHERE mes = ? AND anio_servicio = ? AND priv3 IN ('PUB', 'PNB') ${filterGrp}`, paramsMes);
-        const [auxStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND anio_servicio = ? AND priv3 IN ('AUX I', 'AUX M', 'AUX', 'AUX C') ${filterGrp}`, paramsMes);
-        const [regStats] = await conn.query(`SELECT COUNT(*) as count, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND anio_servicio = ? AND priv3 IN ('REG', 'ESP', 'MISIONERO') ${filterGrp}`, paramsMes);
-        
-        res.json({ groups: { totals: totalPubs, reports: reportsGroup }, stats: { pub: pubStats[0], aux: auxStats[0], reg: regStats[0] } });
+        const qReports = `SELECT grupo, COUNT(*) as count FROM informes WHERE mes = ? AND anio_servicio = ? ${filterGrp} GROUP BY grupo`;
+        const qStats = `SELECT
+            SUM(CASE WHEN priv3 IN ('PUB', 'PNB') THEN 1 ELSE 0 END) as pub_count,
+            SUM(CASE WHEN priv3 IN ('PUB', 'PNB') THEN cursos ELSE 0 END) as pub_cursos,
+            SUM(CASE WHEN priv3 IN ('AUX I', 'AUX M', 'AUX', 'AUX C') THEN 1 ELSE 0 END) as aux_count,
+            SUM(CASE WHEN priv3 IN ('AUX I', 'AUX M', 'AUX', 'AUX C') THEN horas ELSE 0 END) as aux_horas,
+            SUM(CASE WHEN priv3 IN ('AUX I', 'AUX M', 'AUX', 'AUX C') THEN cursos ELSE 0 END) as aux_cursos,
+            SUM(CASE WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN 1 ELSE 0 END) as reg_count,
+            SUM(CASE WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN horas ELSE 0 END) as reg_horas,
+            SUM(CASE WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN cursos ELSE 0 END) as reg_cursos
+            FROM informes WHERE mes = ? AND anio_servicio = ? ${filterGrp}`;
+
+        const [[cierre], [reportsGroup], [statsRows], [activePubs]] = await Promise.all([
+            pool.query("SELECT 1 FROM cierres WHERE mes = ? AND anio_servicio = ? LIMIT 1", [mes, anio_servicio]),
+            pool.query(qReports, paramsMes),
+            pool.query(qStats, paramsMes),
+            pool.query(`SELECT grupo, COUNT(*) as total FROM publicadores WHERE activo = 1 ${filterGrp} GROUP BY grupo`, paramsTotal)
+        ]);
+
+        const isClosed = cierre.length > 0;
+        const totalPubs = isClosed
+            ? reportsGroup.map(r => ({ grupo: r.grupo, total: r.count }))
+            : activePubs;
+        const st = statsRows[0] || {};
+
+        res.json({
+            groups: { totals: totalPubs, reports: reportsGroup },
+            stats: {
+                pub: { count: Number(st.pub_count) || 0, cursos: Number(st.pub_cursos) || 0 },
+                aux: { count: Number(st.aux_count) || 0, horas: Number(st.aux_horas) || 0, cursos: Number(st.aux_cursos) || 0 },
+                reg: { count: Number(st.reg_count) || 0, horas: Number(st.reg_horas) || 0, cursos: Number(st.reg_cursos) || 0 }
+            }
+        });
     } catch (error) { res.status(500).json({ error: error.message }); }
-    finally { if (conn) conn.release(); }
+});
+
+app.get('/api/dashboard/cursos-por-mes', async (req, res) => {
+    const { grupo, anio_servicio } = req.query;
+    try {
+        let sql = `SELECT mes,
+            SUM(CASE WHEN priv3 IN ('PUB', 'PNB') THEN cursos ELSE 0 END) as pub,
+            SUM(CASE WHEN priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C') THEN cursos ELSE 0 END) as aux,
+            SUM(CASE WHEN priv3 IN ('REG', 'ESP', 'MISIONERO') THEN cursos ELSE 0 END) as reg
+            FROM informes WHERE anio_servicio = ?`;
+        const params = [anio_servicio];
+        if (grupo && grupo != '0' && grupo != '9') { sql += " AND grupo = ?"; params.push(grupo); }
+        sql += " GROUP BY mes";
+        const [rows] = await pool.query(sql, params);
+        res.json(rows);
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/api/dashboard/cursos', async (req, res) => {
@@ -301,12 +330,13 @@ app.get('/api/check-inactivos', async (req, res) => {
         const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth(); 
         let sqlPubs = "SELECT id, nombre, grupo, fecha_ingreso FROM publicadores WHERE activo = 1";
         let paramsPubs = []; if (grupo && grupo != '0' && grupo != '9') { sqlPubs += " AND grupo = ?"; paramsPubs.push(grupo); }
-        const [publicadores] = await pool.query(sqlPubs, paramsPubs);
-        // Año de servicio: septiembre(año N-1) a agosto(año N). Septiembre-diciembre pertenecen al año siguiente.
         const anioServicioDe = (anioCal, mesIdx) => (mesIdx >= 8 ? anioCal + 1 : anioCal);
-        const [informes] = await pool.query("SELECT publicador_id, mes, anio_servicio FROM informes WHERE predico = 'SI'");
-        const informesMap = new Set(); informes.forEach(inf => { if(inf.mes) informesMap.add(`${inf.publicador_id}-${inf.mes.trim().toUpperCase()}-${inf.anio_servicio}`); });
-        const [cierres] = await pool.query("SELECT mes, anio_servicio FROM cierres"); const mesesCerradosSet = new Set(cierres.map(c => `${c.mes.trim().toUpperCase()}-${c.anio_servicio}`));
+        const [[publicadores], [informes], [cierres]] = await Promise.all([
+            pool.query(sqlPubs, paramsPubs),
+            pool.query("SELECT publicador_id, mes, anio_servicio FROM informes WHERE predico = 'SI'"),
+            pool.query("SELECT mes, anio_servicio FROM cierres")
+        ]);
+        const informesMap = new Set(); informes.forEach(inf => { if(inf.mes) informesMap.add(`${inf.publicador_id}-${inf.mes.trim().toUpperCase()}-${inf.anio_servicio}`); }); const mesesCerradosSet = new Set(cierres.map(c => `${c.mes.trim().toUpperCase()}-${c.anio_servicio}`));
         const candidatos = []; const mesesAtrasMax = 12;
         for (const pub of publicadores) {
             let mesesSinInformar = 0; let startScore = 190001;

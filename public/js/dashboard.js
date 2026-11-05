@@ -959,11 +959,11 @@ async function cargarGraficaCursos() {
     const ctx = document.getElementById('graficaCursos'); if (!ctx) return; const grp = isGlobal ? 0 : session.grupo;
     try {
         if (chartCursosInstance) chartCursosInstance.destroy();
-        const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes: "", grupo: grp === 0 ? "" : grp, priv3: "", nombre: "", anio_servicio: getAnio() }) });
+        const res = await fetch(`/api/dashboard/cursos-por-mes?grupo=${grp}&anio_servicio=${getAnio()}`);
         const data = await res.json();
         const ORDEN_AÑO = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'];
         const datosPorMes = {}; ORDEN_AÑO.forEach(m => datosPorMes[m] = { pub: 0, aux: 0, reg: 0, hasData: false });
-        data.forEach(r => { const m = (r.mes || '').toUpperCase().trim(); if (datosPorMes[m]) { datosPorMes[m].hasData = true; const p = (r.priv3 || '').toUpperCase(); const c = parseInt(r.cursos) || 0; if (p === 'REG' || p === 'ESP' || p === 'MISIONERO') datosPorMes[m].reg += c; else if (p.includes('AUX')) datosPorMes[m].aux += c; else datosPorMes[m].pub += c; } });
+        data.forEach(r => { const m = (r.mes || '').toUpperCase().trim(); if (datosPorMes[m]) { datosPorMes[m].hasData = true; datosPorMes[m].pub = parseInt(r.pub) || 0; datosPorMes[m].aux = parseInt(r.aux) || 0; datosPorMes[m].reg = parseInt(r.reg) || 0; } });
         const labelsMeses = []; const dataPub = []; const dataAux = []; const dataReg = [];
         ORDEN_AÑO.forEach(m => { if (datosPorMes[m].hasData) { labelsMeses.push(m.substring(0, 3)); dataPub.push(datosPorMes[m].pub); dataAux.push(datosPorMes[m].aux); dataReg.push(datosPorMes[m].reg); } });
         if (labelsMeses.length === 0) { labelsMeses.push("Sin Datos"); dataPub.push(0); dataAux.push(0); dataReg.push(0); }
@@ -1174,9 +1174,9 @@ async function descargarReporteAsistencia() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(cargarGraficaCursos, 500);
-    setTimeout(cargarGraficaComparativa, 600);
-    setTimeout(cargarGraficaAsistencia, 700);
+    cargarGraficaCursos();
+    cargarGraficaComparativa();
+    cargarGraficaAsistencia();
 });
 
 // --- USUARIOS ---
