@@ -83,6 +83,7 @@ app.use('/api', (req, res, next) => {
     next();
 });
 const soloAdmin = (req, res, next) => req.user.grupo == 0 ? next() : res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
+const soloGlobal = (req, res, next) => esGlobal(req.user.grupo) ? next() : res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
 // --- MES ACTIVO ---
 // Regla: para informar un mes nuevo, el anterior debe estar cerrado. Mes activo = el siguiente al último mes cerrado.
 // Orden dentro del año de servicio: SEPTIEMBRE(0) ... AGOSTO(11). Clave = anio_servicio*12 + posición.
@@ -583,7 +584,7 @@ async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId =
 }
 
 // Catálogo de Territorios + Progreso del ciclo actual
-app.get('/api/territorios', async (req, res) => {
+app.get('/api/territorios', soloGlobal, async (req, res) => {
     try {
         const [territorios] = await pool.query('SELECT * FROM territorios ORDER BY CAST(numero AS UNSIGNED) ASC, numero ASC');
         const [bitacora] = await pool.query('SELECT * FROM bitacora_territorios ORDER BY fecha ASC, id ASC');
@@ -656,7 +657,7 @@ app.delete('/api/territorios/:id', soloAdmin, async (req, res) => {
 });
 
 // Estado de manzanas de un territorio en su vuelta actual (o excluyendo un registro al editar)
-app.get('/api/territorios/:id/manzanas', async (req, res) => {
+app.get('/api/territorios/:id/manzanas', soloGlobal, async (req, res) => {
     try {
         const { exclude_id, ciclo_forzado } = req.query;
         const [terr] = await pool.query('SELECT * FROM territorios WHERE id = ?', [req.params.id]);
@@ -681,7 +682,7 @@ app.get('/api/territorios/:id/manzanas', async (req, res) => {
 });
 
 // Conductores
-app.get('/api/conductores', async (req, res) => {
+app.get('/api/conductores', soloGlobal, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM conductores ORDER BY activo DESC, nombre ASC');
         res.json(rows);
@@ -714,7 +715,7 @@ app.delete('/api/conductores/:id', soloAdmin, async (req, res) => {
 });
 
 // Turnos de Predicación
-app.get('/api/turnos', async (req, res) => {
+app.get('/api/turnos', soloGlobal, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM turnos_predicacion ORDER BY id ASC');
         res.json(rows);
@@ -747,7 +748,7 @@ app.delete('/api/turnos/:id', soloAdmin, async (req, res) => {
 });
 
 // Bitácora de Territorios
-app.get('/api/territorios/bitacora', async (req, res) => {
+app.get('/api/territorios/bitacora', soloGlobal, async (req, res) => {
     const { territorio_id } = req.query;
     try {
         let sql = 'SELECT b.*, t.numero as territorio_numero, t.nombre as territorio_nombre, t.cantidad_manzanas FROM bitacora_territorios b JOIN territorios t ON b.territorio_id = t.id WHERE 1=1';
@@ -827,7 +828,7 @@ app.delete('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
 });
 
 // Resumen de ciclos por territorio para el reporte S-13
-app.get('/api/territorios/s13', async (req, res) => {
+app.get('/api/territorios/s13', soloGlobal, async (req, res) => {
     try {
         const [territorios] = await pool.query('SELECT * FROM territorios ORDER BY CAST(numero AS UNSIGNED) ASC, numero ASC');
         const [bitacora] = await pool.query('SELECT * FROM bitacora_territorios ORDER BY fecha ASC, id ASC');

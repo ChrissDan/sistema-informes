@@ -75,16 +75,16 @@ const sidebarTitle = document.getElementById('sidebarTitle'); if (isAdmin) { sid
 document.getElementById('userName').textContent = session.nombre; document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
 
 if (isAdmin) {
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-    document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = el.tagName === 'BUTTON' ? 'inline-flex' : 'block');
+    document.querySelectorAll('.global-view').forEach(el => el.style.display = el.tagName === 'BUTTON' ? 'inline-flex' : 'block');
     document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = 'table-cell');
     document.querySelectorAll('th.global-view, td.global-view').forEach(el => el.style.display = 'table-cell');
 }
 else if (isSupervisor) {
     document.querySelectorAll('#sidebar .global-view').forEach(el => el.style.display = 'block');
+    document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
     document.querySelectorAll('th.global-view, td.global-view').forEach(el => el.style.display = 'table-cell');
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.global-view').forEach(el => el.style.display = 'block');
 }
 else {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
@@ -92,6 +92,7 @@ else {
     document.getElementById('nav-usuarios').parentElement.style.display = 'none';
     document.getElementById('nav-reportes').parentElement.style.display = 'none';
     document.getElementById('nav-reuniones').parentElement.style.display = 'none';
+    document.getElementById('nav-territorios').parentElement.style.display = 'none';
 }
 
 const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
@@ -157,6 +158,8 @@ function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesI
 async function verificarInactivos() { try { const grp = isGlobal ? 0 : session.grupo; const res = await fetch(`/api/check-inactivos?grupo=${grp}`); const data = await res.json(); if (data.candidatos && data.candidatos.length > 0) { let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`; data.candidatos.forEach(c => { listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`; }); listaHtml += `</ul>`; Swal.fire({ title: '⚠️ Irregulares Detectados', html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> sin informar:<br><br>${listaHtml}`, icon: 'warning', confirmButtonText: 'Entendido' }); } } catch (e) { console.error(e); } }
 
 function showView(viewName) {
+    if (!isGlobal && ['territorios', 'reuniones', 'reportes', 'usuarios', 'cierres'].includes(viewName)) return;
+    if (!isAdmin && ['usuarios', 'cierres'].includes(viewName)) return;
     document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
     document.getElementById(`view-${viewName}`).classList.add('active');
@@ -175,6 +178,7 @@ function showView(viewName) {
 }
 
 function abrirModal(tipo, id = null) {
+    if (!isAdmin && ['territorio', 'conductor', 'turno', 'bitacora', 'publicador', 'reunion', 'usuario'].includes(tipo)) return;
     const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const modalTitle = document.getElementById('modalTitle'); modalBody.innerHTML = ''; let formId = '';
     if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); } else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); } else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); } else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); } else if (tipo === 'territorio') { formId = 'formTerritorio'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Territorio' : '<i class="fa-solid fa-map"></i> Nuevo Territorio'; if (!id) resetFormTerritorio(); } else if (tipo === 'conductor') { formId = 'formConductor'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Conductor' : '<i class="fa-solid fa-user-tie"></i> Registrar Conductor'; if (!id) resetFormConductor(); } else if (tipo === 'turno') { formId = 'formTurno'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Turno' : '<i class="fa-solid fa-clock"></i> Crear Turno de Predicación'; if (!id) resetFormTurno(); } else if (tipo === 'bitacora') { formId = 'formBitacora'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Registro de Bitácora' : '<i class="fa-solid fa-pen-to-square"></i> Registrar Avance en Bitácora'; if (!id) resetFormBitacora(); }
     const form = document.getElementById(formId); if (form) { form.style.display = 'grid'; modalBody.appendChild(form); } modalWrapper.classList.add('active');
