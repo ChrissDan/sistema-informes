@@ -55,6 +55,7 @@ form.addEventListener('submit', async (e) => {
 
             // Guardar sesión
             localStorage.setItem('user_session', JSON.stringify(data.user));
+            localStorage.setItem('auth_token', data.token);
             
             Toast.fire({ icon: 'success', title: `¡Hola, ${data.user.nombre}!` });
             

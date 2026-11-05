@@ -1,3 +1,43 @@
+// --- AUTH: adjunta el token a cada llamada /api y cierra sesión si expira ---
+(function () {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (url, opts = {}) => {
+        const token = localStorage.getItem('auth_token');
+        if (typeof url === 'string' && url.startsWith('/api/') && token) {
+            opts = { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + token } };
+        }
+        const res = await originalFetch(url, opts);
+        if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.startsWith('/api/login')) {
+            localStorage.removeItem('user_session'); localStorage.removeItem('auth_token');
+            window.location.href = '/index.html';
+        }
+        return res;
+    };
+})();
+// --- TEMA CLARO / OSCURO ---
+function isDarkTheme() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+function aplicarColoresChart() {
+    if (typeof Chart === 'undefined') return;
+    const dark = isDarkTheme();
+    Chart.defaults.color = dark ? '#a1a1a1' : '#666666';
+    Chart.defaults.borderColor = dark ? '#242424' : '#e2e8f0';
+}
+function toggleTheme() {
+    const next = isDarkTheme() ? 'light' : 'dark';
+    if (next === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', next);
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    aplicarColoresChart();
+    if (typeof cargarGraficaCursos === 'function') { cargarGraficaCursos(); cargarGraficaComparativa(); cargarGraficaAsistencia(); if (typeof renderGraficaTerritorios === 'function') renderGraficaTerritorios(); }
+}
+window.addEventListener('DOMContentLoaded', () => {
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = isDarkTheme() ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    aplicarColoresChart();
+});
+
 // --- NUEVO: OBTENER EL AÑO GLOBAL SELECCIONADO ---
 function getAnio() {
     const anioSelect = document.getElementById('globalAnioSelect');
@@ -29,7 +69,7 @@ function cambiarAnioGlobal() {
 
 function toggleSidebar(force) { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if (force === false) { sb.classList.remove('active'); ov.classList.remove('active'); } else { sb.classList.toggle('active'); ov.classList.toggle('active'); } }
 const session = JSON.parse(localStorage.getItem('user_session')); if (!session) window.location.href = '/index.html';
-function logout() { localStorage.removeItem('user_session'); window.location.href = '/index.html'; } document.getElementById('btnLogoutSide').addEventListener('click', logout);
+function logout() { localStorage.removeItem('user_session'); localStorage.removeItem('auth_token'); window.location.href = '/index.html'; } document.getElementById('btnLogoutSide').addEventListener('click', logout);
 const isAdmin = session.grupo == 0; const isSupervisor = session.grupo == 9; const isGlobal = (isAdmin || isSupervisor);
 const sidebarTitle = document.getElementById('sidebarTitle'); if (isAdmin) { sidebarTitle.textContent = "ADMINISTRADOR"; document.getElementById('userRole').textContent = "Acceso Total"; } else if (isSupervisor) { sidebarTitle.textContent = "SUPERVISOR"; document.getElementById('userRole').textContent = "Auditoría"; } else { sidebarTitle.textContent = "GRUPO " + session.grupo; document.getElementById('userRole').textContent = "Encargado"; }
 document.getElementById('userName').textContent = session.nombre; document.getElementById('userAvatar').textContent = session.nombre.charAt(0).toUpperCase();
@@ -101,8 +141,8 @@ function showView(viewName) {
     document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
     document.getElementById(`view-${viewName}`).classList.add('active');
     document.getElementById(`nav-${viewName}`).classList.add('active');
-    const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones', 'cierres': 'Gestión de Cierres' };
-    const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle', 'cierres': 'lock-open' };
+    const titles = { 'dashboard': 'Dashboard General', 'informes': 'Gestión de Informes', 'publicadores': 'Directorio Publicadores', 'territorios': 'Gestión de Territorios', 'usuarios': 'Administración Usuarios', 'reportes': 'Centro de Reportes', 'reuniones': 'Asistencia Reuniones', 'cierres': 'Gestión de Cierres' };
+    const icons = { 'dashboard': 'gauge-high', 'informes': 'file-lines', 'publicadores': 'users', 'territorios': 'map-location-dot', 'usuarios': 'user-shield', 'reportes': 'print', 'reuniones': 'users-rectangle', 'cierres': 'lock-open' };
     document.getElementById('pageTitle').innerHTML = `<i class="fa-solid fa-${icons[viewName]}" style="color:var(--primary)"></i> ${titles[viewName]}`;
 
     if (viewName === 'informes') { document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); cargarPublicadoresSelect(isGlobal ? 1 : session.grupo, 'pending'); verificarCierres(); }
@@ -111,17 +151,20 @@ function showView(viewName) {
     if (viewName === 'dashboard') cargarDashboard();
     if (viewName === 'reuniones') cargarTablaReuniones();
     if (viewName === 'cierres') cargarTablaCierres();
+    if (viewName === 'territorios') cargarVistaTerritorios();
 }
 
 function abrirModal(tipo, id = null) {
     const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const modalTitle = document.getElementById('modalTitle'); modalBody.innerHTML = ''; let formId = '';
-    if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); } else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); } else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); } else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); }
+    if (tipo === 'informe') { formId = 'formInforme'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Informe' : '<i class="fa-solid fa-circle-plus"></i> Nuevo Informe'; if (!id) resetFormInforme(true); } else if (tipo === 'publicador') { formId = 'formPublicador'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Publicador' : '<i class="fa-solid fa-user-plus"></i> Nuevo Publicador'; if (!id) resetFormPub(); } else if (tipo === 'reunion') { formId = 'formReunion'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Asistencia' : '<i class="fa-solid fa-calendar-plus"></i> Registrar Asistencia'; if (!id) resetFormReu(); } else if (tipo === 'usuario') { formId = 'formUsuario'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Usuario' : '<i class="fa-solid fa-user-shield"></i> Crear Usuario'; if (!id) resetFormUser(); } else if (tipo === 'territorio') { formId = 'formTerritorio'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Territorio' : '<i class="fa-solid fa-map"></i> Nuevo Territorio'; if (!id) resetFormTerritorio(); } else if (tipo === 'conductor') { formId = 'formConductor'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Conductor' : '<i class="fa-solid fa-user-tie"></i> Registrar Conductor'; if (!id) resetFormConductor(); } else if (tipo === 'turno') { formId = 'formTurno'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Turno' : '<i class="fa-solid fa-clock"></i> Crear Turno de Predicación'; if (!id) resetFormTurno(); } else if (tipo === 'bitacora') { formId = 'formBitacora'; modalTitle.innerHTML = id ? '<i class="fa-solid fa-pen"></i> Editar Registro de Bitácora' : '<i class="fa-solid fa-pen-to-square"></i> Registrar Avance en Bitácora'; if (!id) resetFormBitacora(); }
     const form = document.getElementById(formId); if (form) { form.style.display = 'grid'; modalBody.appendChild(form); } modalWrapper.classList.add('active');
 }
 function cerrarModal() { const modalWrapper = document.getElementById('mainModal'); const modalBody = document.getElementById('modalBody'); const formsContainer = document.getElementById('formsContainer'); modalWrapper.classList.remove('active'); while (modalBody.firstChild) { formsContainer.appendChild(modalBody.firstChild); } }
 
 let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let cacheReuniones = [];
-async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') url += `&pendientes=true`; const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; } catch (e) { console.error(e); } }
+// Año de servicio para registrar: los no-admin siempre usan el del mes activo; el admin el del selector global
+function anioFormInforme() { return (!isAdmin && mesActivo) ? mesActivo.anio_servicio : getAnio(); }
+async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') { const NM = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']; const mesForm = document.getElementById('formMesSelect').value || NM[(new Date().getMonth() + 11) % 12]; url += `&sin_informe_mes=${encodeURIComponent(mesForm)}&anio_servicio=${anioFormInforme()}`; } const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = mode === 'pending' ? (cachePublicadores.length ? `<option value="">-- Seleccione (${cachePublicadores.length} pendientes) --</option>` : '<option value="">✔ Todos ya informaron este mes</option>') : '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; return cachePublicadores; } catch (e) { console.error(e); return []; } }
 function cargarDatosPub() { const id = document.getElementById('selectPubInfo').value; const pub = cachePublicadores.find(p => p.id == id); if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); } else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; } }
 function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } }
 function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; document.getElementById('infFiltroNombre').value = ''; cargarTablaInformes(); }
@@ -149,17 +192,34 @@ async function cargarTablaInformes() {
     if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
 }
 
-function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
-function resetFormInforme(manualClean = false) { 
-    const f = document.getElementById('formInforme'); f.reset(); document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true;
+function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
+// Mes activo según el servidor (el siguiente al último mes cerrado)
+let mesActivo = null;
+async function cargarMesActivo() { try { const r = await fetch('/api/mes-activo'); mesActivo = await r.json(); } catch (e) { mesActivo = null; } return mesActivo; }
+// Solo superadmin: permite elegir un mes pasado, pero únicamente si está abierto (los cerrados/futuros se deshabilitan)
+async function habilitarMesesPasadosAdmin(f) {
+    const anio = parseInt(getAnio()); let cerrados = [];
+    try { const r = await fetch(`/api/cierres?anio_servicio=${anio}`); cerrados = await r.json(); } catch (e) {}
+    const act = mesActivo || await cargarMesActivo(); const limite = act ? (parseInt(act.anio_servicio) * 12 + ((MESES.indexOf(act.mes) + 4) % 12)) : -1;
+    Array.from(f.mes.options).forEach(o => {
+        if (!o.value) return; const idx = MESES.indexOf(o.value); const key = anio * 12 + ((idx + 4) % 12);
+        const cerrado = cerrados.includes(o.value); o.disabled = cerrado || key > limite; o.textContent = o.value + (cerrado ? ' (cerrado)' : '');
+    });
+    f.mes.disabled = false; f.mes.style.backgroundColor = ''; f.mes.style.cursor = ''; f.mes.style.fontWeight = ''; f.mes.style.color = '';
+}
+async function resetFormInforme(manualClean = false, keepGroup = false) { 
+    const f = document.getElementById('formInforme'); const gPrev = isGlobal ? document.getElementById('infGrupoSelect').value : null; const mesPrev = f.mes.value; f.reset(); if (keepGroup && gPrev) document.getElementById('infGrupoSelect').value = gPrev; document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true;
     if (manualClean) { 
-        document.getElementById('readPriv3').value = ""; const grp = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; cargarPublicadoresSelect(grp, 'pending');
+        document.getElementById('readPriv3').value = ""; 
         const NOMBRES_MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
         const mesActualIndex = new Date().getMonth(); const mesAnteriorIndex = (mesActualIndex === 0) ? 11 : mesActualIndex - 1;
-        if (f.mes) { f.mes.value = NOMBRES_MESES[mesAnteriorIndex]; f.mes.disabled = true; f.mes.style.backgroundColor = '#f1f5f9'; f.mes.style.cursor = 'not-allowed'; f.mes.style.fontWeight = 'bold'; f.mes.style.color = '#475569'; }
+        if (f.mes) { await cargarMesActivo(); f.mes.value = (keepGroup && isAdmin && mesPrev) ? mesPrev : (mesActivo ? ((isAdmin && mesActivo.anio_servicio !== String(getAnio())) ? '' : mesActivo.mes) : NOMBRES_MESES[mesAnteriorIndex]); f.mes.disabled = true; f.mes.style.backgroundColor = '#f1f5f9'; f.mes.style.cursor = 'not-allowed'; f.mes.style.fontWeight = 'bold'; f.mes.style.color = '#475569'; }
+        if (isAdmin && f.mes) await habilitarMesesPasadosAdmin(f);
+        const grpSel = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; await cargarPublicadoresSelect(grpSel, 'pending');
     } 
 }
 
+document.getElementById('formMesSelect').addEventListener('change', () => { if (!document.getElementById('informeId').value) cargarPublicadoresSelect(isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo, 'pending'); });
 document.getElementById('formInforme').addEventListener('submit', async (e) => {
     e.preventDefault(); const f = e.target;
     const btnSubmit = f.querySelector('button[type="submit"]'); const textoOriginal = btnSubmit.innerHTML;
@@ -170,7 +230,7 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     rawData.horas = f.horas.disabled ? 0 : (f.horas.value || 0);
     rawData.cursos = f.cursos.value || 0;
     rawData.credito_hrs = f.credito_hrs.disabled ? 0 : (f.credito_hrs.value || 0);
-    rawData.anio_servicio = getAnio(); // AÑO AÑADIDO
+    rawData.anio_servicio = document.getElementById('informeId').value ? getAnio() : anioFormInforme(); // AÑO AÑADIDO
 
     const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0;
     const privilegio = (document.getElementById('readPriv3').value || "").trim().toUpperCase();
@@ -202,7 +262,16 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     try {
         const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rawData) });
         const json = await res.json();
-        if (res.ok) { Toast.fire({ icon: 'success', title: 'Informe guardado' }); cerrarModal(); resetFormInforme(true); cargarTablaInformes(); } 
+        if (res.ok) {
+            cargarTablaInformes();
+            if (id) { Toast.fire({ icon: 'success', title: 'Informe guardado' }); cerrarModal(); resetFormInforme(true); }
+            else {
+                await resetFormInforme(true, true); // quita de la lista al que ya informó
+                const quedan = Math.max(cachePublicadores.length, 0);
+                if (quedan === 0) { cerrarModal(); Toast.fire({ icon: 'success', title: 'Informe guardado. ¡Todos informaron!' }); }
+                else Toast.fire({ icon: 'success', title: `Guardado. Faltan ${quedan}` });
+            }
+        } 
         else Swal.fire('Error', json.msg || 'No se pudo guardar', 'error');
     } catch (error) { Swal.fire('Error', 'Hubo un problema de conexión.', 'error'); } 
     finally { if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; } }
@@ -221,7 +290,7 @@ async function cargarTablaPublicadores() {
         const rowClass = d.activo ? '' : 'row-inactivo';
         const switchHtml = isAdmin ? `<div class="switch-container"><label class="switch"><input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)"><span class="slider round"></span></label></div>` : `<span class="${d.activo ? 'badge badge-si' : 'badge badge-no'}">${d.activo ? 'ACTIVO' : 'INACTIVO'}</span>`;
         const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
-        const infoBadge = d.informo === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
+        const infoBadge = d.informo_mes === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
         let fechaTxt = '-'; if (d.fecha_ingreso) { const dateObj = new Date(d.fecha_ingreso); const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000; fechaTxt = new Date(dateObj.getTime() + userTimezoneOffset).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }); }
         tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.comentario || ''}</td><td class="global-view" style="font-size:0.85em;">${fechaTxt}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
     });
@@ -277,7 +346,6 @@ function editarPub(id) {
     f.priv1.value = obj.priv1 || ''; 
     f.priv2.value = obj.priv2 || ''; 
     f.priv3.value = obj.priv3 || ''; 
-    f.informo.value = obj.informo || 'NO'; 
     f.comentario.value = obj.comentario || ''; 
     
     if (obj.fecha_ingreso) { 
@@ -302,7 +370,6 @@ document.getElementById('formPublicador').addEventListener('submit', async (e) =
     // >>> FIN NUEVO <<<
 
     const id = document.getElementById('pubId').value; 
-    if (!id) data.informo = 'NO'; 
     const method = id ? 'PUT' : 'POST'; 
     const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; 
     data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; 
@@ -864,7 +931,7 @@ async function cargarGraficaCursos() {
         const labelsMeses = []; const dataPub = []; const dataAux = []; const dataReg = [];
         ORDEN_AÑO.forEach(m => { if (datosPorMes[m].hasData) { labelsMeses.push(m.substring(0, 3)); dataPub.push(datosPorMes[m].pub); dataAux.push(datosPorMes[m].aux); dataReg.push(datosPorMes[m].reg); } });
         if (labelsMeses.length === 0) { labelsMeses.push("Sin Datos"); dataPub.push(0); dataAux.push(0); dataReg.push(0); }
-        chartCursosInstance = new Chart(ctx, { type: 'bar', data: { labels: labelsMeses, datasets: [{ label: 'PUB+PNB', data: dataPub, backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'AUX I+M+C', data: dataAux, backgroundColor: '#8b5cf6', borderRadius: 4 }, { label: 'REGULARES', data: dataReg, backgroundColor: '#10b981', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { mode: 'index', intersect: false, callbacks: { footer: function (ti) { let t = 0; ti.forEach(function (i) { t += i.raw; }); return '\nTotal: ' + t; } } } }, scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } }, x: { grid: { display: false } } } } });
+        chartCursosInstance = new Chart(ctx, { type: 'bar', data: { labels: labelsMeses, datasets: [{ label: 'PUB+PNB', data: dataPub, backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'AUX I+M+C', data: dataAux, backgroundColor: '#8b5cf6', borderRadius: 4 }, { label: 'REGULARES', data: dataReg, backgroundColor: '#10b981', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { mode: 'index', intersect: false, callbacks: { footer: function (ti) { let t = 0; ti.forEach(function (i) { t += i.raw; }); return '\nTotal: ' + t; } } } }, scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5], color: isDarkTheme() ? '#242424' : '#e2e8f0' } }, x: { grid: { display: false } } } } });
     } catch (e) {}
 }
 
@@ -881,7 +948,7 @@ async function cargarGraficaComparativa() {
         const labelsMeses = []; const dataConCursos = []; const dataSinCursos = [];
         ORDEN_AÑO.forEach(m => { if (datosPorMes[m].hasData) { labelsMeses.push(m.substring(0, 3)); dataConCursos.push(datosPorMes[m].con); dataSinCursos.push(datosPorMes[m].sin); } });
         if (labelsMeses.length === 0) { labelsMeses.push("Sin Datos"); dataConCursos.push(0); dataSinCursos.push(0); }
-        chartComparativaInstance = new Chart(ctx, { type: 'line', data: { labels: labelsMeses, datasets: [{ label: 'INFORMAN CURSOS', data: dataConCursos, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, pointRadius: 5, borderWidth: 3 }, { label: 'NO INFORMAN CURSOS', data: dataSinCursos, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, pointRadius: 5, borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { mode: 'index', intersect: false, callbacks: { label: function (context) { let v = context.raw; let t = 0; context.chart.data.datasets.forEach(d => { t += d.data[context.dataIndex]; }); let p = t > 0 ? Math.round((v / t) * 100) : 0; return ` ${context.dataset.label}: ${v} (${p}%)`; } } } }, scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } }, x: { grid: { display: false } } } } });
+        chartComparativaInstance = new Chart(ctx, { type: 'line', data: { labels: labelsMeses, datasets: [{ label: 'INFORMAN CURSOS', data: dataConCursos, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, pointRadius: 5, borderWidth: 3 }, { label: 'NO INFORMAN CURSOS', data: dataSinCursos, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, pointRadius: 5, borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { mode: 'index', intersect: false, callbacks: { label: function (context) { let v = context.raw; let t = 0; context.chart.data.datasets.forEach(d => { t += d.data[context.dataIndex]; }); let p = t > 0 ? Math.round((v / t) * 100) : 0; return ` ${context.dataset.label}: ${v} (${p}%)`; } } } }, scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5], color: isDarkTheme() ? '#242424' : '#e2e8f0' } }, x: { grid: { display: false } } } } });
     } catch (e) {}
 }
 
@@ -906,7 +973,7 @@ async function cargarGraficaAsistencia() {
         let lastDataIndex = 23; while(lastDataIndex >= 0 && dataPresencial[lastDataIndex] === 0 && dataZoom[lastDataIndex] === 0) { lastDataIndex--; }
         let finalLabels = labelsMeses.slice(0, lastDataIndex + 1); let finalPres = dataPresencial.slice(0, lastDataIndex + 1); let finalZoom = dataZoom.slice(0, lastDataIndex + 1);
         if (finalLabels.length === 0) { finalLabels = [['Sin', 'Datos']]; finalPres = [0]; finalZoom = [0]; }
-        chartAsistenciaInstance = new Chart(ctx, { type: 'bar', data: { labels: finalLabels, datasets: [{ label: 'PRESENCIAL', data: finalPres, backgroundColor: '#4472c4' }, { label: 'ZOOM', data: finalZoom, backgroundColor: '#ed7d31' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#64748b' } }, y: { stacked: true, beginAtZero: true, grid: { color: '#e2e8f0' } } }, plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } }, tooltip: { mode: 'index', intersect: false, callbacks: { footer: function(ti) { let t = 0; ti.forEach(function(i) { t += i.raw; }); return '\nTotal: ' + t; } } } } } });
+        chartAsistenciaInstance = new Chart(ctx, { type: 'bar', data: { labels: finalLabels, datasets: [{ label: 'PRESENCIAL', data: finalPres, backgroundColor: '#4472c4' }, { label: 'ZOOM', data: finalZoom, backgroundColor: '#ed7d31' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: isDarkTheme() ? '#a1a1a1' : '#64748b' } }, y: { stacked: true, beginAtZero: true, grid: { color: isDarkTheme() ? '#242424' : '#e2e8f0' } } }, plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } }, tooltip: { mode: 'index', intersect: false, callbacks: { footer: function(ti) { let t = 0; ti.forEach(function(i) { t += i.raw; }); return '\nTotal: ' + t; } } } } } });
     } catch (e) {}
 }
 
@@ -1077,9 +1144,620 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // --- USUARIOS ---
-function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = obj.password; f.grupo.value = obj.grupo; abrirModal('usuario', id); }
+function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = ''; f.grupo.value = obj.grupo; abrirModal('usuario', id); }
 function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
 document.getElementById('formUsuario').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios'; data.requester_group = session.grupo; await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios(); });
-async function cargarTablaUsuarios() { if (!isAdmin) return; const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json(); const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = ''; cacheUsuarios.forEach(d => { tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>${d.password}</td><td><button class="btn-action btn-edit" onclick="editarUser(${d.id})"><i class="fa-solid fa-pen-to-square"></i></button> <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }); }
-async function eliminar(entidad, id) { const result = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { const params = new URLSearchParams(); params.append('requester_group', session.grupo); params.append('anio_servicio', getAnio()); if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); } const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: 'Listo' }); if (entidad === 'informes') cargarTablaInformes(); if (entidad === 'publicadores') cargarTablaPublicadores(); if (entidad === 'usuarios') cargarTablaUsuarios(); if (entidad === 'reuniones') cargarTablaReuniones(); } else { Swal.fire('Error', json.msg, 'error'); } } }
+async function cargarTablaUsuarios() { if (!isAdmin) return; const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json(); const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = ''; cacheUsuarios.forEach(d => { tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>••••••</td><td><button class="btn-action btn-edit" onclick="editarUser(${d.id})"><i class="fa-solid fa-pen-to-square"></i></button> <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }); }
+async function eliminar(entidad, id) { const result = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { const params = new URLSearchParams(); params.append('requester_group', session.grupo); params.append('anio_servicio', getAnio()); if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); } const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: 'Listo' }); if (entidad === 'informes') cargarTablaInformes(); if (entidad === 'publicadores') cargarTablaPublicadores(); if (entidad === 'usuarios') cargarTablaUsuarios(); if (entidad === 'reuniones') cargarTablaReuniones(); if (entidad === 'territorios') cargarVistaTerritorios(); if (entidad === 'conductores') cargarConductoresData(); if (entidad === 'turnos') cargarTurnosData(); if (entidad === 'territorios/bitacora') cargarVistaTerritorios(); } else { Swal.fire('Error', json.msg, 'error'); } } }
+
+// ==========================================================================
+// MÓDULO DE TERRITORIOS (Catálogo, Conductores, Turnos, Bitácora y S-13)
+// ==========================================================================
+let cacheTerritorios = [];
+let cacheConductores = [];
+let cacheTurnos = [];
+let cacheBitacoraTerr = [];
+let chartTerritoriosInstance = null;
+let manzanasSeleccionadasSet = new Set();
+let infoManzanasActual = null;
+
+function mostrarSubTabTerritorio(tab) {
+    document.querySelectorAll('.terr-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.terr-subview').forEach(v => v.classList.remove('active'));
+    const btn = document.getElementById('tab-terr-' + tab);
+    const view = document.getElementById('subview-terr-' + tab);
+    if (btn) btn.classList.add('active');
+    if (view) view.classList.add('active');
+}
+
+async function cargarVistaTerritorios() {
+    await Promise.all([
+        cargarTerritoriosData(),
+        cargarConductoresData(),
+        cargarTurnosData(),
+        cargarBitacoraTerritorios()
+    ]);
+}
+
+async function cargarTerritoriosData() {
+    try {
+        const res = await fetch('/api/territorios');
+        cacheTerritorios = await res.json();
+        const countEl = document.getElementById('countTerrCatalogo');
+        if (countEl) countEl.textContent = cacheTerritorios.length;
+
+        // Llenar filtro de bitácora
+        const filtro = document.getElementById('filtroBitacoraTerritorio');
+        if (filtro) {
+            const valPrev = filtro.value;
+            filtro.innerHTML = '<option value="">(Todos los territorios)</option>';
+            cacheTerritorios.forEach(t => {
+                filtro.innerHTML += `<option value="${t.id}">Territorio ${t.numero} ${t.nombre ? '- ' + t.nombre : ''}</option>`;
+            });
+            filtro.value = valPrev;
+        }
+
+        renderTarjetasTerritorios();
+        renderTablaCatalogoTerritorios();
+        renderGraficaTerritorios();
+    } catch (e) { console.error(e); }
+}
+
+function renderTarjetasTerritorios() {
+    const cont = document.getElementById('gridTarjetasTerritorios');
+    if (!cont) return;
+    if (cacheTerritorios.length === 0) {
+        cont.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:#8f8f8f;">No hay territorios registrados aún. Usa el botón "Nuevo Territorio" para empezar.</div>';
+        return;
+    }
+    cont.innerHTML = '';
+    cacheTerritorios.forEach(t => {
+        let pills = '';
+        const det = t.manzanas_detalle || {};
+        for (let m = 1; m <= t.cantidad_manzanas; m++) {
+            const st = det[m];
+            const cls = st === 'COMPLETO' ? 'is-completo' : (st === 'INCOMPLETO' ? 'is-incompleto' : '');
+            const title = st === 'COMPLETO' ? 'Manzana ' + m + ': Completa' : (st === 'INCOMPLETO' ? 'Manzana ' + m + ': Incompleta (a medias)' : 'Manzana ' + m + ': Pendiente');
+            pills += `<span class="manzana-pill ${cls}" title="${title}">${m}</span>`;
+        }
+        const badgeEstado = t.estado_actual === 'CIERRE'
+            ? '<span class="badge badge-si">CIERRE (100%)</span>'
+            : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO (En curso)</span>' : '<span class="badge badge-gray">SIN INICIAR</span>');
+
+        cont.innerHTML += `
+            <div class="terr-card">
+                <div class="terr-card-head">
+                    <div>
+                        <div class="terr-card-title">Territorio ${t.numero}</div>
+                        <div class="terr-card-sub">${t.nombre || 'Sin descripción'} · Vuelta #${t.ciclo_actual}</div>
+                    </div>
+                    ${badgeEstado}
+                </div>
+                <div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom:4px;">
+                        <span>Manzanas: <strong>${t.completadas}/${t.cantidad_manzanas}</strong> completas</span>
+                        <strong>${t.porcentaje}%</strong>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${t.porcentaje}%"></div></div>
+                </div>
+                <div class="manzanas-mini-grid">${pills}</div>
+            </div>
+        `;
+    });
+}
+
+function renderTablaCatalogoTerritorios() {
+    const tbody = document.getElementById('tablaCatalogoTerritorios');
+    if (!tbody) return;
+    if (cacheTerritorios.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#8f8f8f;">Sin territorios registrados.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '';
+    cacheTerritorios.forEach(t => {
+        const badge = t.estado_actual === 'CIERRE'
+            ? '<span class="badge badge-si">CIERRE</span>'
+            : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>');
+        const acciones = isAdmin
+            ? `<button class="btn-action btn-edit" onclick="editarTerritorio(${t.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+               <button class="btn-action btn-del" onclick="eliminar('territorios', ${t.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`
+            : '-';
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>Territorio ${t.numero}</strong></td>
+                <td>${t.nombre || '-'}</td>
+                <td>Manzanas 1 a ${t.cantidad_manzanas} (${t.cantidad_manzanas} en total)</td>
+                <td>Vuelta #${t.ciclo_actual}</td>
+                <td>${t.completadas}/${t.cantidad_manzanas} (${t.porcentaje}%)</td>
+                <td>${badge}</td>
+                <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
+            </tr>
+        `;
+    });
+}
+
+function renderGraficaTerritorios() {
+    const canvas = document.getElementById('graficaTerritorios');
+    if (!canvas) return;
+    if (chartTerritoriosInstance) chartTerritoriosInstance.destroy();
+    const labels = cacheTerritorios.length ? cacheTerritorios.map(t => 'T-' + t.numero) : ['Sin territorios'];
+    const valores = cacheTerritorios.length ? cacheTerritorios.map(t => t.porcentaje) : [0];
+    const dark = typeof isDarkTheme === 'function' && isDarkTheme();
+
+    chartTerritoriosInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: '% Cobertura (Vuelta Actual)',
+                data: valores,
+                backgroundColor: valores.map(p => p >= 100 ? '#10b981' : (dark ? '#ededed' : '#171717')),
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, max: 100, grid: { color: dark ? '#242424' : '#e2e8f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+async function cargarConductoresData() {
+    try {
+        const res = await fetch('/api/conductores');
+        cacheConductores = await res.json();
+        const countEl = document.getElementById('countTerrConductores');
+        if (countEl) countEl.textContent = cacheConductores.length;
+
+        const tbody = document.getElementById('tablaConductores');
+        if (!tbody) return;
+        if (cacheConductores.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#8f8f8f;">No hay conductores registrados.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        cacheConductores.forEach(c => {
+            const acciones = isAdmin
+                ? `<button class="btn-action btn-edit" onclick="editarConductor(${c.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                   <button class="btn-action btn-del" onclick="eliminar('conductores', ${c.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`
+                : '-';
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${c.nombre}</strong></td>
+                    <td><span class="badge badge-si">ACTIVO</span></td>
+                    <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
+                </tr>
+            `;
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function cargarTurnosData() {
+    try {
+        const res = await fetch('/api/turnos');
+        cacheTurnos = await res.json();
+        const countEl = document.getElementById('countTerrTurnos');
+        if (countEl) countEl.textContent = cacheTurnos.length;
+
+        const tbody = document.getElementById('tablaTurnos');
+        if (!tbody) return;
+        if (cacheTurnos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#8f8f8f;">No hay turnos creados.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        cacheTurnos.forEach(t => {
+            const acciones = isAdmin
+                ? `<button class="btn-action btn-edit" onclick="editarTurno(${t.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                   <button class="btn-action btn-del" onclick="eliminar('turnos', ${t.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`
+                : '-';
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${t.nombre}</strong></td>
+                    <td>${t.horario || '-'}</td>
+                    <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
+                </tr>
+            `;
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function cargarBitacoraTerritorios() {
+    try {
+        const fTerr = document.getElementById('filtroBitacoraTerritorio')?.value || '';
+        const url = fTerr ? `/api/territorios/bitacora?territorio_id=${fTerr}` : '/api/territorios/bitacora';
+        const res = await fetch(url);
+        cacheBitacoraTerr = await res.json();
+
+        const tbody = document.getElementById('tablaBitacoraTerritorios');
+        if (!tbody) return;
+        if (cacheBitacoraTerr.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#8f8f8f;">No hay registros en la bitácora todavía.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        cacheBitacoraTerr.forEach(b => {
+            const fechaStr = String(b.fecha).split('T')[0];
+            const badgeManz = b.estado_manzanas === 'COMPLETO'
+                ? '<span class="badge badge-si">COMPLETO</span>'
+                : '<span class="badge badge-no">INCOMPLETO</span>';
+            const badgeTerr = b.estado_territorio === 'CIERRE'
+                ? '<span class="badge badge-si">CIERRE</span>'
+                : '<span class="badge badge-grp">INICIO</span>';
+            const acciones = isAdmin
+                ? `<button class="btn-action btn-edit" onclick="editarBitacora(${b.id})" title="Editar registro"><i class="fa-solid fa-pen-to-square"></i></button>
+                   <button class="btn-action btn-del" onclick="eliminar('territorios/bitacora', ${b.id})" title="Eliminar registro"><i class="fa-solid fa-trash-can"></i></button>`
+                : '-';
+            tbody.innerHTML += `
+                <tr>
+                    <td>${fechaStr}</td>
+                    <td><strong>Territorio ${b.territorio_numero}</strong></td>
+                    <td><span class="badge badge-gray">Vuelta #${b.ciclo}</span></td>
+                    <td>Manz. <strong>${b.manzanas}</strong></td>
+                    <td>${badgeManz}</td>
+                    <td>${b.turno_nombre}</td>
+                    <td>${b.conductor_nombre}</td>
+                    <td>${badgeTerr}</td>
+                    <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
+                </tr>
+            `;
+        });
+    } catch (e) { console.error(e); }
+}
+
+// Formularios y modales de Territorios
+function resetFormTerritorio() {
+    const f = document.getElementById('formTerritorio');
+    if (!f) return;
+    f.reset();
+    document.getElementById('territorioId').value = '';
+}
+
+function editarTerritorio(id) {
+    const obj = cacheTerritorios.find(t => t.id == id);
+    if (!obj) return;
+    const f = document.getElementById('formTerritorio');
+    document.getElementById('territorioId').value = obj.id;
+    f.numero.value = obj.numero;
+    f.cantidad_manzanas.value = obj.cantidad_manzanas;
+    f.nombre.value = obj.nombre || '';
+    abrirModal('territorio', id);
+}
+
+async function resetFormConductor() {
+    const f = document.getElementById('formConductor');
+    if (!f) return;
+    f.reset();
+    document.getElementById('conductorId').value = '';
+    const sel = document.getElementById('selectPubConductor');
+    if (sel) {
+        sel.innerHTML = '<option value="">-- Escribir nombre manualmente o elegir publicador --</option>';
+        try {
+            const res = await fetch('/api/publicadores?grupo=0');
+            const pubs = await res.json();
+            pubs.filter(p => p.activo).forEach(p => {
+                sel.innerHTML += `<option value="${p.id}" data-nombre="${p.nombre}">${p.nombre} (G${p.grupo})</option>`;
+            });
+        } catch (e) {}
+    }
+}
+
+function autocompletarConductor() {
+    const sel = document.getElementById('selectPubConductor');
+    const opt = sel.options[sel.selectedIndex];
+    const nombre = opt ? opt.getAttribute('data-nombre') : '';
+    if (nombre) document.getElementById('inputNombreConductor').value = nombre;
+}
+
+async function editarConductor(id) {
+    const obj = cacheConductores.find(c => c.id == id);
+    if (!obj) return;
+    await resetFormConductor();
+    document.getElementById('conductorId').value = obj.id;
+    document.getElementById('inputNombreConductor').value = obj.nombre;
+    if (obj.publicador_id) document.getElementById('selectPubConductor').value = obj.publicador_id;
+    abrirModal('conductor', id);
+}
+
+function resetFormTurno() {
+    const f = document.getElementById('formTurno');
+    if (f) f.reset();
+    document.getElementById('turnoId').value = '';
+}
+
+function editarTurno(id) {
+    const obj = cacheTurnos.find(t => t.id == id);
+    if (!obj) return;
+    const f = document.getElementById('formTurno');
+    document.getElementById('turnoId').value = obj.id;
+    f.nombre.value = obj.nombre;
+    f.horario.value = obj.horario || '';
+    abrirModal('turno', id);
+}
+
+async function resetFormBitacora() {
+    const f = document.getElementById('formBitacora');
+    if (!f) return;
+    f.reset();
+    document.getElementById('bitacoraId').value = '';
+    manzanasSeleccionadasSet.clear();
+    infoManzanasActual = null;
+    document.getElementById('bitFecha').value = new Date().toISOString().split('T')[0];
+
+    if (cacheTurnos.length === 0) await cargarTurnosData();
+    if (cacheConductores.length === 0) await cargarConductoresData();
+    if (cacheTerritorios.length === 0) await cargarTerritoriosData();
+
+    const selTurno = document.getElementById('bitTurnoSelect');
+    selTurno.innerHTML = cacheTurnos.length
+        ? cacheTurnos.map(t => `<option value="${t.id}" data-nombre="${t.nombre}">${t.nombre}${t.horario ? ' (' + t.horario + ')' : ''}</option>`).join('')
+        : '<option value="">-- Primero crea un turno --</option>';
+
+    const selCond = document.getElementById('bitConductorSelect');
+    selCond.innerHTML = cacheConductores.length
+        ? cacheConductores.map(c => `<option value="${c.id}" data-nombre="${c.nombre}">${c.nombre}</option>`).join('')
+        : '<option value="">-- Primero registra un conductor --</option>';
+
+    const selTerr = document.getElementById('bitTerritorioSelect');
+    selTerr.innerHTML = '<option value="">-- Seleccione territorio --</option>' +
+        cacheTerritorios.map(t => `<option value="${t.id}">Territorio ${t.numero} (${t.completadas}/${t.cantidad_manzanas} manz. · ${t.porcentaje}%)</option>`).join('');
+
+    document.getElementById('bitInfoTerritorio').textContent = 'Selecciona un territorio para ver sus manzanas (1 a N)...';
+    document.getElementById('bitManzanasGrid').innerHTML = '';
+}
+
+async function editarBitacora(id) {
+    const obj = cacheBitacoraTerr.find(b => b.id == id);
+    if (!obj) return;
+    await resetFormBitacora();
+    document.getElementById('bitacoraId').value = obj.id;
+    document.getElementById('bitFecha').value = String(obj.fecha).split('T')[0];
+    if (obj.turno_id) document.getElementById('bitTurnoSelect').value = obj.turno_id;
+    if (obj.conductor_id) document.getElementById('bitConductorSelect').value = obj.conductor_id;
+    document.getElementById('bitTerritorioSelect').value = obj.territorio_id;
+    await cargarSelectorManzanasBitacora(obj.id, obj.ciclo);
+
+    const prevManz = String(obj.manzanas).split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n));
+    prevManz.forEach(m => {
+        manzanasSeleccionadasSet.add(m);
+        const chip = document.querySelector(`#bitManzanasGrid .manzana-chip[data-manzana="${m}"]`);
+        if (chip) chip.classList.add('selected');
+    });
+    document.getElementById('bitEstadoManzanas').value = obj.estado_manzanas;
+    document.getElementById('bitEstadoTerritorio').value = obj.estado_territorio;
+    document.getElementById('formBitacora').notas.value = obj.notas || '';
+    abrirModal('bitacora', id);
+}
+
+async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloForzado = null) {
+    const terrId = document.getElementById('bitTerritorioSelect').value;
+    const grid = document.getElementById('bitManzanasGrid');
+    const info = document.getElementById('bitInfoTerritorio');
+    const editId = excludeBitacoraId || document.getElementById('bitacoraId').value || '';
+    manzanasSeleccionadasSet.clear();
+    grid.innerHTML = '';
+    if (!terrId) {
+        info.textContent = 'Selecciona un territorio para ver sus manzanas (1 a N)...';
+        return;
+    }
+    try {
+        let q = editId ? `?exclude_id=${editId}` : '';
+        if (cicloForzado) q += (q ? '&' : '?') + `ciclo_forzado=${cicloForzado}`;
+        const res = await fetch(`/api/territorios/${terrId}/manzanas${q}`);
+        const data = await res.json();
+        infoManzanasActual = data;
+        const total = data.territorio.cantidad_manzanas;
+        const map = data.manzanas || {};
+        const compCount = Object.values(map).filter(v => v === 'COMPLETO').length;
+
+        if (data.nueva_vuelta) {
+            info.innerHTML = `<strong>¡Nueva vuelta (#${data.ciclo})!</strong> El recorrido anterior se completó al 100%. Todas las manzanas (1 a ${total}) están disponibles nuevamente.`;
+        } else {
+            info.innerHTML = `<strong>Territorio ${data.territorio.numero}</strong> · Vuelta #${data.ciclo} · Completadas: <strong>${compCount} de ${total}</strong> manzanas. Las manzanas ya completas están bloqueadas.`;
+        }
+
+        for (let m = 1; m <= total; m++) {
+            const st = map[m];
+            const chip = document.createElement('div');
+            if (st === 'COMPLETO') {
+                chip.className = 'manzana-chip disabled';
+                chip.innerHTML = `<span>Manz. ${m}</span><small>✔ Completa</small>`;
+            } else {
+                chip.className = 'manzana-chip' + (st === 'INCOMPLETO' ? ' incompleto' : '');
+                chip.dataset.manzana = m;
+                chip.innerHTML = `<span>Manz. ${m}</span><small>${st === 'INCOMPLETO' ? 'A medias' : 'Disponible'}</small>`;
+                chip.addEventListener('click', () => toggleChipManzana(m, chip));
+            }
+            grid.appendChild(chip);
+        }
+        sugerirEstadoTerritorio();
+    } catch (e) { console.error(e); }
+}
+
+function toggleChipManzana(m, chipEl) {
+    if (manzanasSeleccionadasSet.has(m)) {
+        manzanasSeleccionadasSet.delete(m);
+        chipEl.classList.remove('selected');
+    } else {
+        manzanasSeleccionadasSet.add(m);
+        chipEl.classList.add('selected');
+    }
+    sugerirEstadoTerritorio();
+}
+
+function seleccionarTodasManzanasDisp(marcar) {
+    document.querySelectorAll('#bitManzanasGrid .manzana-chip:not(.disabled)').forEach(chip => {
+        const m = parseInt(chip.dataset.manzana, 10);
+        if (marcar) { manzanasSeleccionadasSet.add(m); chip.classList.add('selected'); }
+        else { manzanasSeleccionadasSet.delete(m); chip.classList.remove('selected'); }
+    });
+    sugerirEstadoTerritorio();
+}
+
+function sugerirEstadoTerritorio() {
+    if (!infoManzanasActual) return;
+    const total = infoManzanasActual.territorio.cantidad_manzanas;
+    const map = infoManzanasActual.manzanas || {};
+    const estadoManz = document.getElementById('bitEstadoManzanas').value;
+    const selEstTerr = document.getElementById('bitEstadoTerritorio');
+
+    const compSet = new Set(Object.keys(map).filter(k => map[k] === 'COMPLETO').map(Number));
+    if (estadoManz === 'COMPLETO') {
+        manzanasSeleccionadasSet.forEach(m => compSet.add(m));
+    }
+    if (compSet.size >= total) selEstTerr.value = 'CIERRE';
+    else selEstTerr.value = 'INICIO';
+}
+
+document.getElementById('formTerritorio')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const id = document.getElementById('territorioId').value;
+    const data = Object.fromEntries(new FormData(f));
+    const url = id ? `/api/territorios/${id}` : '/api/territorios';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const json = await res.json();
+    if (res.ok && json.ok) {
+        Toast.fire({ icon: 'success', title: id ? 'Territorio actualizado' : 'Territorio registrado' });
+        cerrarModal();
+        cargarTerritoriosData();
+    } else {
+        Swal.fire('Error', json.msg || 'No se pudo guardar el territorio', 'error');
+    }
+});
+
+document.getElementById('formConductor')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('conductorId').value;
+    const sel = document.getElementById('selectPubConductor');
+    const nombre = document.getElementById('inputNombreConductor').value;
+    const res = await fetch(id ? `/api/conductores/${id}` : '/api/conductores', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicador_id: sel.value || null, nombre })
+    });
+    const json = await res.json();
+    if (res.ok && json.ok) {
+        Toast.fire({ icon: 'success', title: id ? 'Conductor actualizado' : 'Conductor registrado' });
+        cerrarModal();
+        cargarConductoresData();
+    } else {
+        Swal.fire('Error', json.msg || 'No se pudo guardar el conductor', 'error');
+    }
+});
+
+document.getElementById('formTurno')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('turnoId').value;
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await fetch(id ? `/api/turnos/${id}` : '/api/turnos', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (res.ok && json.ok) {
+        Toast.fire({ icon: 'success', title: id ? 'Turno actualizado' : 'Turno creado' });
+        cerrarModal();
+        cargarTurnosData();
+    } else {
+        Swal.fire('Error', json.msg || 'No se pudo guardar el turno', 'error');
+    }
+});
+
+document.getElementById('formBitacora')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (manzanasSeleccionadasSet.size === 0) {
+        Swal.fire('Faltan manzanas', 'Selecciona al menos una manzana predicada en este turno.', 'warning');
+        return;
+    }
+    const selTurno = document.getElementById('bitTurnoSelect');
+    const selCond = document.getElementById('bitConductorSelect');
+    const turnoNombre = selTurno.options[selTurno.selectedIndex]?.getAttribute('data-nombre') || selTurno.value;
+    const condNombre = selCond.options[selCond.selectedIndex]?.getAttribute('data-nombre') || selCond.value;
+
+    const payload = {
+        fecha: document.getElementById('bitFecha').value,
+        territorio_id: document.getElementById('bitTerritorioSelect').value,
+        manzanas: Array.from(manzanasSeleccionadasSet).sort((a, b) => a - b).join(', '),
+        estado_manzanas: document.getElementById('bitEstadoManzanas').value,
+        turno_id: selTurno.value || null,
+        turno_nombre: turnoNombre,
+        conductor_id: selCond.value || null,
+        conductor_nombre: condNombre,
+        estado_territorio: document.getElementById('bitEstadoTerritorio').value,
+        notas: e.target.notas.value || ''
+    };
+
+    const id = document.getElementById('bitacoraId').value;
+    const res = await fetch(id ? `/api/territorios/bitacora/${id}` : '/api/territorios/bitacora', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (res.ok && json.ok) {
+        Toast.fire({ icon: 'success', title: id ? 'Registro de bitácora actualizado' : 'Avance guardado en bitácora' });
+        cerrarModal();
+        cargarVistaTerritorios();
+    } else {
+        Swal.fire('Error', json.msg || 'No se pudo guardar en bitácora', 'error');
+    }
+});
+
+async function descargarS13PDF() {
+    try {
+        const res = await fetch('/api/territorios/s13');
+        const data = await res.json();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("REGISTRO DE ASIGNACIÓN DE TERRITORIO (S-13)", 105, 15, { align: "center" });
+
+        const rows = [];
+        data.forEach(item => {
+            const t = item.territorio;
+            if (item.ciclos.length === 0) {
+                rows.push([t.numero, t.nombre || '-', `1 - ${t.cantidad_manzanas}`, '-', 'Sin iniciar', '-', '-', '0%']);
+            } else {
+                item.ciclos.forEach(c => {
+                    const fIni = c.fecha_inicio ? String(c.fecha_inicio).split('T')[0] : '-';
+                    const fFin = c.fecha_cierre ? String(c.fecha_cierre).split('T')[0] : 'En curso';
+                    const porc = Math.min(100, Math.round((c.completadas / c.total_manzanas) * 100)) + '%';
+                    rows.push([
+                        t.numero,
+                        t.nombre || '-',
+                        `Vuelta #${c.ciclo}`,
+                        c.conductor_inicio || '-',
+                        fIni,
+                        c.conductor_cierre || '-',
+                        fFin,
+                        `${c.completadas}/${c.total_manzanas} (${porc})`
+                    ]);
+                });
+            }
+        });
+
+        doc.autoTable({
+            startY: 22,
+            head: [['Terr. N°', 'Zona', 'Ciclo', 'Conductor Inicio', 'Fecha Inicio', 'Conductor Cierre', 'Fecha Cierre', 'Cobertura']],
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 2.5, valign: 'middle' },
+            headStyles: { fillColor: [23, 23, 23] }
+        });
+        doc.save('Registro_Territorios_S13.pdf');
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo generar el PDF S-13.', 'error');
+    }
+}
+
 showView('dashboard');
