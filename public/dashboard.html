@@ -660,6 +660,7 @@
                                                 <option value="INICIO">INICIO</option>
                                                 <option value="AVANCE">AVANCE</option>
                                                 <option value="CIERRE">CIERRE</option>
+                                                <option value="INICIO - CIERRE">INICIO - CIERRE</option>
                                             </select>
                                         </th>
                                         <th class="admin-only" style="vertical-align:top;">Acción</th>
@@ -1124,7 +1125,7 @@
             </div>
             <div class="col-span-1">
                 <label>Fecha de Inicio <span id="bitFechaHint" class="label-hint-badge"></span></label>
-                <input type="text" class="vcal-single-input" name="fecha" id="bitFecha" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required>
+                <input type="text" class="vcal-single-input" name="fecha" id="bitFecha" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required onchange="sugerirEstadoTerritorio()">
             </div>
             <div class="col-span-1">
                 <label>Fecha de Cierre <span class="label-hint">(Opcional · Cierra vuelta)</span></label>
@@ -1155,6 +1156,7 @@
                     <option value="INICIO">INICIO (Nueva vuelta)</option>
                     <option value="AVANCE">AVANCE (En recorrido)</option>
                     <option value="CIERRE">CIERRE (Territorio terminado)</option>
+                    <option value="INICIO - CIERRE">INICIO - CIERRE (Mismo día)</option>
                 </select>
             </div>
 

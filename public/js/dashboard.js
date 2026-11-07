@@ -1268,9 +1268,11 @@ function renderTarjetasTerritorios() {
             const title = st === 'COMPLETO' ? 'Manzana ' + m + ': Completa' : (st === 'INCOMPLETO' ? 'Manzana ' + m + ': Incompleta (a medias)' : 'Manzana ' + m + ': Pendiente');
             pills += `<span class="manzana-pill ${cls}" title="${title}">${m}</span>`;
         }
-        const badgeEstado = t.estado_actual === 'CIERRE'
-            ? '<span class="badge badge-si">CIERRE (100%)</span>'
-            : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE (En curso)</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>'));
+        const badgeEstado = t.estado_actual === 'INICIO - CIERRE'
+            ? '<span class="badge badge-si">INICIO - CIERRE (100%)</span>'
+            : (t.estado_actual === 'CIERRE'
+                ? '<span class="badge badge-si">CIERRE (100%)</span>'
+                : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE (En curso)</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>')));
 
         const vComp = t.vueltas_completas || 0;
         const vIncomp = t.vueltas_incompletas || 0;
@@ -1329,9 +1331,11 @@ function renderTablaCatalogoTerritorios() {
     }
     tbody.innerHTML = '';
     cacheTerritorios.forEach(t => {
-        const badge = t.estado_actual === 'CIERRE'
-            ? '<span class="badge badge-si">CIERRE</span>'
-            : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>'));
+        const badge = t.estado_actual === 'INICIO - CIERRE'
+            ? '<span class="badge badge-si">INICIO - CIERRE</span>'
+            : (t.estado_actual === 'CIERRE'
+                ? '<span class="badge badge-si">CIERRE</span>'
+                : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>')));
         const acciones = isAdmin
             ? `<button class="btn-action btn-edit" onclick="editarTerritorio(${t.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
                <button class="btn-action btn-del" onclick="eliminar('territorios', ${t.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`
@@ -1545,7 +1549,8 @@ function renderTablaBitacoraFiltrada() {
 
     const filtrados = cacheBitacoraTerr.filter(b => {
         const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '';
-        const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (b.estado_territorio === 'CIERRE' ? fechaStr : '');
+        const esCierreEst = b.estado_territorio === 'CIERRE' || b.estado_territorio === 'INICIO - CIERRE';
+        const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (esCierreEst ? fechaStr : '');
 
         if (fIniFrom || fIniTo) {
             if (!fechaStr) return false;
@@ -1580,14 +1585,17 @@ function renderTablaBitacoraFiltrada() {
     tbody.innerHTML = '';
     filtrados.forEach(b => {
         const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '-';
-        const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (b.estado_territorio === 'CIERRE' ? fechaStr : '');
+        const esCierreEst = b.estado_territorio === 'CIERRE' || b.estado_territorio === 'INICIO - CIERRE';
+        const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (esCierreEst ? fechaStr : '');
         const fechaCierreHtml = fechaCierreRaw ? `<span class="badge badge-si">${fechaCierreRaw}</span>` : '<span style="color:#8f8f8f; font-size:0.8rem;">En curso</span>';
         const badgeManz = b.estado_manzanas === 'COMPLETO'
             ? '<span class="badge badge-si">COMPLETO</span>'
             : '<span class="badge badge-no">INCOMPLETO</span>';
-        const badgeTerr = b.estado_territorio === 'CIERRE'
-            ? '<span class="badge badge-si">CIERRE</span>'
-            : (b.estado_territorio === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : '<span class="badge badge-grp">INICIO</span>');
+        const badgeTerr = b.estado_territorio === 'INICIO - CIERRE'
+            ? '<span class="badge badge-si">INICIO - CIERRE</span>'
+            : (b.estado_territorio === 'CIERRE'
+                ? '<span class="badge badge-si">CIERRE</span>'
+                : (b.estado_territorio === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : '<span class="badge badge-grp">INICIO</span>'));
         const acciones = isAdmin
             ? `<button class="btn-action btn-edit" onclick="editarBitacora(${b.id})" title="Editar registro"><i class="fa-solid fa-pen-to-square"></i></button>
                <button class="btn-action btn-del" onclick="eliminar('territorios/bitacora', ${b.id})" title="Eliminar registro"><i class="fa-solid fa-trash-can"></i></button>`
@@ -1870,12 +1878,17 @@ function alCambiarFechaCierreBitacora() {
 
 function sugerirEstadoTerritorio() {
     const selEstTerr = document.getElementById('bitEstadoTerritorio');
+    const fEl = document.getElementById('bitFecha');
     const fcEl = document.getElementById('bitFechaCierre');
     if (!selEstTerr) return;
 
-    const tieneFechaCierre = Boolean(fcEl && fcEl.value);
-    if (tieneFechaCierre) {
-        selEstTerr.value = 'CIERRE';
+    const fechaIni = normalizarFechaYMD(fEl?.value);
+    const fechaFin = normalizarFechaYMD(fcEl?.value);
+    if (fechaFin) {
+        const fechaInicioCicloReal = (infoManzanasActual && !infoManzanasActual.nueva_vuelta && infoManzanasActual.fecha_inicio_ciclo)
+            ? normalizarFechaYMD(infoManzanasActual.fecha_inicio_ciclo)
+            : fechaIni;
+        selEstTerr.value = (fechaInicioCicloReal && fechaInicioCicloReal === fechaFin) ? 'INICIO - CIERRE' : 'CIERRE';
         return;
     }
 

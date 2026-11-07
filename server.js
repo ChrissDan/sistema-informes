@@ -619,7 +619,7 @@ async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId =
             if (r.estado_manzanas === 'COMPLETO') estadoPorManzana[m] = 'COMPLETO';
             else if (estadoPorManzana[m] !== 'COMPLETO') estadoPorManzana[m] = 'INCOMPLETO';
         }
-        if (r.estado_territorio === 'CIERRE' || Boolean(r.fecha_cierre)) cerradoExplicito = true;
+        if (r.estado_territorio === 'CIERRE' || r.estado_territorio === 'INICIO - CIERRE' || Boolean(r.fecha_cierre)) cerradoExplicito = true;
     }
     const fechaInicioCiclo = rows.length > 0 && rows[0].fecha ? formatearFechaYMD(rows[0].fecha) : null;
     return { estadoPorManzana, cerradoExplicito, registrosCount: rows.length, fechaInicioCiclo };
@@ -666,16 +666,22 @@ app.get('/api/territorios', soloGlobal, async (req, res) => {
             const completadas = Object.values(estadoPorManzana).filter(v => v === 'COMPLETO').length;
             const incompletas = Object.values(estadoPorManzana).filter(v => v === 'INCOMPLETO').length;
             const porcentaje = t.cantidad_manzanas > 0 ? Math.min(100, Math.round((completadas / t.cantidad_manzanas) * 100)) : 0;
-            const tieneCierreCiclo = regsCiclo.some(r => Boolean(r.fecha_cierre) || r.estado_territorio === 'CIERRE');
-            if (tieneCierreCiclo && regsCiclo.length > 0) estadoTerritorioActual = 'CIERRE';
-            else if (regsCiclo.length > 0) {
+            const esEstadoCierre = (est) => est === 'CIERRE' || est === 'INICIO - CIERRE';
+            const tieneCierreCiclo = regsCiclo.some(r => Boolean(r.fecha_cierre) || esEstadoCierre(r.estado_territorio));
+            const regCierre = regsCiclo.slice().reverse().find(r => r.fecha_cierre || esEstadoCierre(r.estado_territorio));
+            if (tieneCierreCiclo && regsCiclo.length > 0) {
+                const fIniStr = formatearFechaYMD(regsCiclo[0].fecha);
+                const fFinStr = formatearFechaYMD(regCierre?.fecha_cierre || regsCiclo[regsCiclo.length - 1]?.fecha);
+                estadoTerritorioActual = (regCierre?.estado_territorio === 'INICIO - CIERRE' || (fIniStr && fFinStr && fIniStr === fFinStr))
+                    ? 'INICIO - CIERRE'
+                    : 'CIERRE';
+            } else if (regsCiclo.length > 0) {
                 const ultEst = regsCiclo[regsCiclo.length - 1].estado_territorio;
                 estadoTerritorioActual = (ultEst === 'AVANCE' || regsCiclo.length > 1) ? 'AVANCE' : 'INICIO';
             }
 
             const fechaInicioCiclo = regsCiclo.length > 0 ? regsCiclo[0].fecha : null;
-            const regCierre = regsCiclo.slice().reverse().find(r => r.fecha_cierre || r.estado_territorio === 'CIERRE');
-            const fechaCierreCiclo = estadoTerritorioActual === 'CIERRE'
+            const fechaCierreCiclo = esEstadoCierre(estadoTerritorioActual)
                 ? (regCierre?.fecha_cierre || regsCiclo[regsCiclo.length - 1]?.fecha || null)
                 : (regCierre?.fecha_cierre || null);
 
@@ -857,7 +863,8 @@ app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
         }
 
         const estadoFinalTerr = estado_territorio || 'INICIO';
-        const fechaCierreFinal = fecha_cierre ? fecha_cierre : (estadoFinalTerr === 'CIERRE' ? fecha : null);
+        const esCierre = estadoFinalTerr === 'CIERRE' || estadoFinalTerr === 'INICIO - CIERRE';
+        const fechaCierreFinal = fecha_cierre ? fecha_cierre : (esCierre ? fecha : null);
         const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
             'INSERT INTO bitacora_territorios (fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -884,7 +891,8 @@ app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
             }
         }
         const estadoFinalTerr = estado_territorio || 'INICIO';
-        const fechaCierreFinal = fecha_cierre ? fecha_cierre : (estadoFinalTerr === 'CIERRE' ? fecha : null);
+        const esCierre = estadoFinalTerr === 'CIERRE' || estadoFinalTerr === 'INICIO - CIERRE';
+        const fechaCierreFinal = fecha_cierre ? fecha_cierre : (esCierre ? fecha : null);
         const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
             'UPDATE bitacora_territorios SET fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=? WHERE id=?',
@@ -922,7 +930,7 @@ app.get('/api/territorios/s13', soloGlobal, async (req, res) => {
                 let cerrado = false;
                 lista.forEach(r => {
                     if (r.estado_manzanas === 'COMPLETO') parseManzanasList(r.manzanas).forEach(m => manzComp.add(m));
-                    if (r.estado_territorio === 'CIERRE') cerrado = true;
+                    if (r.estado_territorio === 'CIERRE' || r.estado_territorio === 'INICIO - CIERRE' || Boolean(r.fecha_cierre)) cerrado = true;
                 });
                 const terminado = cerrado || manzComp.size >= t.cantidad_manzanas;
                 return {

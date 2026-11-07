@@ -114,7 +114,7 @@ const tables = [
         turno_nombre VARCHAR(80) NOT NULL,
         conductor_id INT DEFAULT NULL,
         conductor_nombre VARCHAR(150) NOT NULL,
-        estado_territorio ENUM('INICIO','AVANCE','EN CURSO','CIERRE') NOT NULL DEFAULT 'INICIO',
+        estado_territorio ENUM('INICIO','AVANCE','EN CURSO','CIERRE','INICIO - CIERRE') NOT NULL DEFAULT 'INICIO',
         ciclo INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         KEY idx_terr_ciclo (territorio_id, ciclo)
