@@ -1279,7 +1279,7 @@ function renderTarjetasTerritorios() {
         }
         const badgeEstado = t.estado_actual === 'CIERRE'
             ? '<span class="badge badge-si">CIERRE (100%)</span>'
-            : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO (En curso)</span>' : '<span class="badge badge-gray">SIN INICIAR</span>');
+            : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE (En curso)</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>'));
 
         const vComp = t.vueltas_completas || 0;
         const vIncomp = t.vueltas_incompletas || 0;
@@ -1336,7 +1336,7 @@ function renderTablaCatalogoTerritorios() {
     cacheTerritorios.forEach(t => {
         const badge = t.estado_actual === 'CIERRE'
             ? '<span class="badge badge-si">CIERRE</span>'
-            : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>');
+            : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>'));
         const acciones = isAdmin
             ? `<button class="btn-action btn-edit" onclick="editarTerritorio(${t.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
                <button class="btn-action btn-del" onclick="eliminar('territorios', ${t.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>`
@@ -1469,7 +1469,7 @@ async function cargarBitacoraTerritorios() {
                 : '<span class="badge badge-no">INCOMPLETO</span>';
             const badgeTerr = b.estado_territorio === 'CIERRE'
                 ? '<span class="badge badge-si">CIERRE</span>'
-                : '<span class="badge badge-grp">INICIO</span>';
+                : (b.estado_territorio === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : '<span class="badge badge-grp">INICIO</span>');
             const acciones = isAdmin
                 ? `<button class="btn-action btn-edit" onclick="editarBitacora(${b.id})" title="Editar registro"><i class="fa-solid fa-pen-to-square"></i></button>
                    <button class="btn-action btn-del" onclick="eliminar('territorios/bitacora', ${b.id})" title="Eliminar registro"><i class="fa-solid fa-trash-can"></i></button>`
@@ -1660,7 +1660,12 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
             }
             grid.appendChild(chip);
         }
-        sugerirEstadoTerritorio();
+        const fcEl = document.getElementById('bitFechaCierre');
+        if (!editId && fcEl && fcEl.value) {
+            seleccionarTodasManzanasDisp(true);
+        } else {
+            sugerirEstadoTerritorio();
+        }
     } catch (e) { console.error(e); }
 }
 
@@ -1684,30 +1689,37 @@ function seleccionarTodasManzanasDisp(marcar) {
     sugerirEstadoTerritorio();
 }
 
-function sugerirEstadoTerritorio() {
-    if (!infoManzanasActual) return;
-    const total = infoManzanasActual.territorio.cantidad_manzanas;
-    const map = infoManzanasActual.manzanas || {};
-    const estadoManz = document.getElementById('bitEstadoManzanas').value;
-    const selEstTerr = document.getElementById('bitEstadoTerritorio');
-
-    const compSet = new Set(Object.keys(map).filter(k => map[k] === 'COMPLETO').map(Number));
-    if (estadoManz === 'COMPLETO') {
-        manzanasSeleccionadasSet.forEach(m => compSet.add(m));
+function alCambiarFechaCierreBitacora() {
+    const fcEl = document.getElementById('bitFechaCierre');
+    const selEstManz = document.getElementById('bitEstadoManzanas');
+    if (fcEl && fcEl.value) {
+        // Si se coloca fecha de cierre, marcar todas las manzanas disponibles automáticamente (flexible para desmarcar)
+        if (selEstManz) selEstManz.value = 'COMPLETO';
+        seleccionarTodasManzanasDisp(true);
     }
-    if (compSet.size >= total) selEstTerr.value = 'CIERRE';
-    else selEstTerr.value = 'INICIO';
-    sincronizarFechaCierreBitacora();
+    sugerirEstadoTerritorio();
 }
 
-function sincronizarFechaCierreBitacora() {
+function sugerirEstadoTerritorio() {
     const selEstTerr = document.getElementById('bitEstadoTerritorio');
     const fcEl = document.getElementById('bitFechaCierre');
-    const fiEl = document.getElementById('bitFecha');
-    if (!selEstTerr || !fcEl) return;
-    if (selEstTerr.value === 'CIERRE' && !fcEl.value) {
-        fcEl.value = (fiEl && fiEl.value) ? fiEl.value : new Date().toISOString().split('T')[0];
+    if (!selEstTerr) return;
+
+    const tieneFechaCierre = Boolean(fcEl && fcEl.value);
+    if (tieneFechaCierre) {
+        selEstTerr.value = 'CIERRE';
+        return;
     }
+
+    if (!infoManzanasActual) {
+        selEstTerr.value = 'INICIO';
+        return;
+    }
+
+    // Si el territorio ya tiene registros en la vuelta abierta actual y no se está cerrando -> AVANCE
+    // Si venía cerrado (nueva_vuelta) o no tenía registros -> INICIO
+    const yaIniciadoEnVuelta = (infoManzanasActual.registros_en_ciclo || 0) > 0 && !infoManzanasActual.nueva_vuelta;
+    selEstTerr.value = yaIniciadoEnVuelta ? 'AVANCE' : 'INICIO';
 }
 
 document.getElementById('formTerritorio')?.addEventListener('submit', async (e) => {

@@ -1000,8 +1000,8 @@
                 <input type="date" name="fecha" id="bitFecha" required>
             </div>
             <div class="col-span-1">
-                <label>Fecha de Cierre <span style="font-weight:400; color:#8f8f8f; font-size:0.75rem;">(Al cerrar territorio)</span></label>
-                <input type="date" name="fecha_cierre" id="bitFechaCierre">
+                <label>Fecha de Cierre <span style="font-weight:400; color:#8f8f8f; font-size:0.75rem;">(Marca todo y cierra)</span></label>
+                <input type="date" name="fecha_cierre" id="bitFechaCierre" onchange="alCambiarFechaCierreBitacora()">
             </div>
             <div class="col-span-1">
                 <label>Turno de Predicación</label>
@@ -1037,8 +1037,9 @@
             </div>
             <div class="col-span-1">
                 <label>Estado del Territorio</label>
-                <select name="estado_territorio" id="bitEstadoTerritorio" required onchange="sincronizarFechaCierreBitacora()">
-                    <option value="INICIO">INICIO (En recorrido)</option>
+                <select name="estado_territorio" id="bitEstadoTerritorio" required>
+                    <option value="INICIO">INICIO (Nueva vuelta)</option>
+                    <option value="AVANCE">AVANCE (En recorrido)</option>
                     <option value="CIERRE">CIERRE (Territorio terminado)</option>
                 </select>
             </div>

@@ -595,7 +595,7 @@ function parseManzanasList(str) {
 }
 
 async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId = null) {
-    let sql = 'SELECT id, manzanas, estado_manzanas, estado_territorio FROM bitacora_territorios WHERE territorio_id = ? AND ciclo = ?';
+    let sql = 'SELECT id, fecha, fecha_cierre, manzanas, estado_manzanas, estado_territorio FROM bitacora_territorios WHERE territorio_id = ? AND ciclo = ?';
     const params = [territorio_id, ciclo];
     if (excludeId) { sql += ' AND id != ?'; params.push(excludeId); }
     sql += ' ORDER BY fecha ASC, id ASC';
@@ -608,7 +608,7 @@ async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId =
             if (r.estado_manzanas === 'COMPLETO') estadoPorManzana[m] = 'COMPLETO';
             else if (estadoPorManzana[m] !== 'COMPLETO') estadoPorManzana[m] = 'INCOMPLETO';
         }
-        if (r.estado_territorio === 'CIERRE') cerradoExplicito = true;
+        if (r.estado_territorio === 'CIERRE' || Boolean(r.fecha_cierre)) cerradoExplicito = true;
     }
     return { estadoPorManzana, cerradoExplicito, registrosCount: rows.length };
 }
@@ -654,8 +654,12 @@ app.get('/api/territorios', soloGlobal, async (req, res) => {
             const completadas = Object.values(estadoPorManzana).filter(v => v === 'COMPLETO').length;
             const incompletas = Object.values(estadoPorManzana).filter(v => v === 'INCOMPLETO').length;
             const porcentaje = t.cantidad_manzanas > 0 ? Math.min(100, Math.round((completadas / t.cantidad_manzanas) * 100)) : 0;
-            if (completadas >= t.cantidad_manzanas && regsCiclo.length > 0) estadoTerritorioActual = 'CIERRE';
-            else if (regsCiclo.length > 0 && estadoTerritorioActual !== 'CIERRE') estadoTerritorioActual = 'INICIO';
+            const tieneCierreCiclo = regsCiclo.some(r => Boolean(r.fecha_cierre) || r.estado_territorio === 'CIERRE');
+            if (tieneCierreCiclo && regsCiclo.length > 0) estadoTerritorioActual = 'CIERRE';
+            else if (regsCiclo.length > 0) {
+                const ultEst = regsCiclo[regsCiclo.length - 1].estado_territorio;
+                estadoTerritorioActual = (ultEst === 'AVANCE' || regsCiclo.length > 1) ? 'AVANCE' : 'INICIO';
+            }
 
             const fechaInicioCiclo = regsCiclo.length > 0 ? regsCiclo[0].fecha : null;
             const regCierre = regsCiclo.slice().reverse().find(r => r.fecha_cierre || r.estado_territorio === 'CIERRE');
@@ -725,7 +729,7 @@ app.get('/api/territorios/:id/manzanas', soloGlobal, async (req, res) => {
         }
         const { estadoPorManzana, cerradoExplicito, registrosCount } = await calcularEstadoManzanasCiclo(pool, t.id, ciclo, exclude_id || null);
         const completadas = Object.values(estadoPorManzana).filter(v => v === 'COMPLETO').length;
-        const cicloTerminado = !exclude_id && registrosCount > 0 && (completadas >= t.cantidad_manzanas || cerradoExplicito);
+        const cicloTerminado = !exclude_id && registrosCount > 0 && cerradoExplicito;
         res.json({
             territorio: t,
             ciclo: cicloTerminado ? ciclo + 1 : ciclo,
@@ -829,9 +833,7 @@ app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
         const [maxRow] = await pool.query('SELECT COALESCE(MAX(ciclo), 1) as ciclo FROM bitacora_territorios WHERE territorio_id = ?', [t.id]);
         let cicloActual = maxRow[0].ciclo || 1;
         const { estadoPorManzana, cerradoExplicito, registrosCount } = await calcularEstadoManzanasCiclo(pool, t.id, cicloActual);
-        const completadasAntes = Object.values(estadoPorManzana).filter(v => v === 'COMPLETO').length;
-
-        if (registrosCount > 0 && (completadasAntes >= t.cantidad_manzanas || cerradoExplicito)) {
+        if (registrosCount > 0 && cerradoExplicito) {
             cicloActual++;
         } else {
             for (const m of listaManz) {
