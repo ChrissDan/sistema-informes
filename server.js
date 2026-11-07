@@ -839,7 +839,7 @@ app.get('/api/territorios/bitacora', soloGlobal, async (req, res) => {
 });
 
 app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
-    const { fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
+    const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
     const listaManz = parseManzanasList(manzanas);
     if (!fecha || !territorio_id || listaManz.length === 0) {
         return res.status(400).json({ ok: false, msg: 'Debes indicar la fecha de inicio, el territorio y al menos una manzana.' });
@@ -862,20 +862,22 @@ app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
             }
         }
 
+        const hoyPeru = new Date(Date.now() - 5 * 3600000).toISOString().split('T')[0];
+        const fechaRegFinal = fecha_registro || hoyPeru;
         const estadoFinalTerr = estado_territorio || 'INICIO';
         const esCierre = estadoFinalTerr === 'CIERRE' || estadoFinalTerr === 'INICIO - CIERRE';
         const fechaCierreFinal = fecha_cierre ? fecha_cierre : (esCierre ? fecha : null);
         const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
-            'INSERT INTO bitacora_territorios (fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [fecha, fechaCierreFinal, t.id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual]
+            'INSERT INTO bitacora_territorios (fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [fechaRegFinal, fecha, fechaCierreFinal, t.id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual]
         );
         res.json({ ok: true, ciclo: cicloActual });
     } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
-    const { fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
+    const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
     const listaManz = parseManzanasList(manzanas);
     if (!fecha || !territorio_id || listaManz.length === 0) {
         return res.status(400).json({ ok: false, msg: 'Debes indicar la fecha de inicio, el territorio y al menos una manzana.' });
@@ -890,13 +892,14 @@ app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
                 return res.status(400).json({ ok: false, msg: `La manzana ${m} ya fue completada en otro registro de esta vuelta.` });
             }
         }
+        const fechaRegFinal = fecha_registro || formatearFechaYMD(orig[0].fecha_registro) || fecha;
         const estadoFinalTerr = estado_territorio || 'INICIO';
         const esCierre = estadoFinalTerr === 'CIERRE' || estadoFinalTerr === 'INICIO - CIERRE';
         const fechaCierreFinal = fecha_cierre ? fecha_cierre : (esCierre ? fecha : null);
         const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
-            'UPDATE bitacora_territorios SET fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=? WHERE id=?',
-            [fecha, fechaCierreFinal, territorio_id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, req.params.id]
+            'UPDATE bitacora_territorios SET fecha_registro=?, fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=? WHERE id=?',
+            [fechaRegFinal, fecha, fechaCierreFinal, territorio_id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, req.params.id]
         );
         res.json({ ok: true });
     } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }

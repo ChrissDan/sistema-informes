@@ -105,6 +105,7 @@ const tables = [
     )`,
     `CREATE TABLE IF NOT EXISTS bitacora_territorios (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        fecha_registro DATE DEFAULT NULL,
         fecha DATE NOT NULL,
         fecha_cierre DATE DEFAULT NULL,
         territorio_id INT NOT NULL,

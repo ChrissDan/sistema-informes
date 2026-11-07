@@ -602,6 +602,14 @@
                                 <thead>
                                     <tr class="bit-header-filter-row">
                                         <th>
+                                            <div>Fecha Registro</div>
+                                            <div class="bit-date-filter-wrap">
+                                                <i class="fa-regular fa-calendar bit-date-filter-icon"></i>
+                                                <input type="text" id="fBitFechaReg" class="bit-col-filter bit-date-range-input" placeholder="Rango de fechas..." inputmode="none" autocomplete="off" readonly data-vcal="range" data-from="" data-to="">
+                                                <button type="button" class="bit-date-clear-btn" id="fBitFechaRegClear" title="Limpiar filtro" style="display:none;" onclick="limpiarRangoFechaBitacora('fBitFechaReg', event)"><i class="fa-solid fa-xmark"></i></button>
+                                            </div>
+                                        </th>
+                                        <th>
                                             <div>Fecha Inicio</div>
                                             <div class="bit-date-filter-wrap">
                                                 <i class="fa-regular fa-calendar bit-date-filter-icon"></i>
@@ -1122,6 +1130,10 @@
 
             <div class="col-span-2 form-section-title">
                 <i class="fa-regular fa-calendar-check"></i> 2. Fechas y Asignación del Turno
+            </div>
+            <div class="col-span-2">
+                <label>Fecha de Registro <span class="label-hint-badge">Automática · Hoy</span></label>
+                <input type="text" name="fecha_registro" id="bitFechaRegistro" readonly data-locked="1">
             </div>
             <div class="col-span-1">
                 <label>Fecha de Inicio <span id="bitFechaHint" class="label-hint-badge"></span></label>

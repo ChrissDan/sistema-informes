@@ -1499,7 +1499,7 @@ function limpiarRangoFechaBitacora(inputId, ev) {
 }
 
 function limpiarFiltrosBitacora() {
-    ['fBitFechaIni', 'fBitFechaFin'].forEach(id => {
+    ['fBitFechaReg', 'fBitFechaIni', 'fBitFechaFin'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.value = '';
@@ -1531,6 +1531,10 @@ function renderTablaBitacoraFiltrada() {
     const tbody = document.getElementById('tablaBitacoraTerritorios');
     if (!tbody) return;
 
+    const elReg = document.getElementById('fBitFechaReg');
+    const fRegFrom = elReg?.dataset.from || '';
+    const fRegTo = elReg?.dataset.to || '';
+
     const elIni = document.getElementById('fBitFechaIni');
     const fIniFrom = elIni?.dataset.from || '';
     const fIniTo = elIni?.dataset.to || '';
@@ -1551,7 +1555,13 @@ function renderTablaBitacoraFiltrada() {
         const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '';
         const esCierreEst = b.estado_territorio === 'CIERRE' || b.estado_territorio === 'INICIO - CIERRE';
         const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (esCierreEst ? fechaStr : '');
+        const fechaRegStr = b.fecha_registro ? String(b.fecha_registro).split('T')[0] : (fechaCierreRaw || fechaStr);
 
+        if (fRegFrom || fRegTo) {
+            if (!fechaRegStr) return false;
+            if (fRegFrom && fechaRegStr < fRegFrom) return false;
+            if (fRegTo && fechaRegStr > fRegTo) return false;
+        }
         if (fIniFrom || fIniTo) {
             if (!fechaStr) return false;
             if (fIniFrom && fechaStr < fIniFrom) return false;
@@ -1578,7 +1588,7 @@ function renderTablaBitacoraFiltrada() {
     });
 
     if (filtrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:24px; color:#8f8f8f;">No se encontraron registros con los filtros seleccionados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:24px; color:#8f8f8f;">No se encontraron registros con los filtros seleccionados.</td></tr>';
         return;
     }
 
@@ -1587,6 +1597,7 @@ function renderTablaBitacoraFiltrada() {
         const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '-';
         const esCierreEst = b.estado_territorio === 'CIERRE' || b.estado_territorio === 'INICIO - CIERRE';
         const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (esCierreEst ? fechaStr : '');
+        const fechaRegStr = b.fecha_registro ? String(b.fecha_registro).split('T')[0] : (fechaCierreRaw || fechaStr);
         const fechaCierreHtml = fechaCierreRaw ? `<span class="badge badge-si">${fechaCierreRaw}</span>` : '<span style="color:#8f8f8f; font-size:0.8rem;">En curso</span>';
         const badgeManz = b.estado_manzanas === 'COMPLETO'
             ? '<span class="badge badge-si">COMPLETO</span>'
@@ -1602,6 +1613,7 @@ function renderTablaBitacoraFiltrada() {
             : '-';
         tbody.innerHTML += `
             <tr>
+                <td><span style="color:#64748b; font-weight:500;">${fechaRegStr}</span></td>
                 <td>${fechaStr}</td>
                 <td>${fechaCierreHtml}</td>
                 <td><strong>Territorio ${b.territorio_numero}</strong></td>
@@ -1736,6 +1748,8 @@ async function resetFormBitacora() {
     document.getElementById('bitacoraId').value = '';
     manzanasSeleccionadasSet.clear();
     infoManzanasActual = null;
+    const fRegEl = document.getElementById('bitFechaRegistro');
+    if (fRegEl) fRegEl.value = vcalTodayStr();
     aplicarEstadoInputFechaInicioBitacora(null);
     const fcEl = document.getElementById('bitFechaCierre');
     if (fcEl) fcEl.value = '';
@@ -1767,6 +1781,8 @@ async function editarBitacora(id) {
     if (!obj) return;
     await resetFormBitacora();
     document.getElementById('bitacoraId').value = obj.id;
+    const fRegEl = document.getElementById('bitFechaRegistro');
+    if (fRegEl) fRegEl.value = obj.fecha_registro ? String(obj.fecha_registro).split('T')[0] : String(obj.fecha).split('T')[0];
     document.getElementById('bitFecha').value = String(obj.fecha).split('T')[0];
     const fcEl = document.getElementById('bitFechaCierre');
     if (fcEl) fcEl.value = obj.fecha_cierre ? String(obj.fecha_cierre).split('T')[0] : '';
@@ -1972,6 +1988,7 @@ document.getElementById('formBitacora')?.addEventListener('submit', async (e) =>
     const condNombre = selCond.options[selCond.selectedIndex]?.getAttribute('data-nombre') || selCond.value;
 
     const payload = {
+        fecha_registro: document.getElementById('bitFechaRegistro')?.value || vcalTodayStr(),
         fecha: document.getElementById('bitFecha').value,
         fecha_cierre: document.getElementById('bitFechaCierre')?.value || null,
         territorio_id: document.getElementById('bitTerritorioSelect').value,
