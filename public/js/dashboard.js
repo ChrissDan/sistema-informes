@@ -1679,15 +1679,38 @@ function editarTurno(id) {
     abrirModal('turno', id);
 }
 
+function normalizarFechaYMD(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    return s;
+}
+
+function formatearFechaCortaEs(ymd) {
+    const clean = normalizarFechaYMD(ymd);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+    const [y, m, d] = clean.split('-').map(Number);
+    const mesesCortos = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
+    return `${String(d).padStart(2, '0')} ${mesesCortos[m - 1] || ''} ${y}`;
+}
+
 function aplicarEstadoInputFechaInicioBitacora(fechaInicioCiclo = null) {
     const fEl = document.getElementById('bitFecha');
     const hintEl = document.getElementById('bitFechaHint');
     if (!fEl) return;
-    if (fechaInicioCiclo) {
-        fEl.value = fechaInicioCiclo;
+    const cleanYMD = normalizarFechaYMD(fechaInicioCiclo);
+    if (cleanYMD) {
+        fEl.value = cleanYMD;
         fEl.readOnly = true;
         fEl.dataset.locked = '1';
-        if (hintEl) hintEl.textContent = `(Iniciado el ${fechaInicioCiclo})`;
+        if (hintEl) hintEl.textContent = `Iniciado el ${formatearFechaCortaEs(cleanYMD)}`;
     } else {
         if (fEl.dataset.locked === '1' || !fEl.value) {
             fEl.value = new Date().toISOString().split('T')[0];

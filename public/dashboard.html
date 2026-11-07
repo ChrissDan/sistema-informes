@@ -766,86 +766,107 @@
 
     <!-- FORMULARIOS OCULTOS -->
     <div id="formsContainer" style="display:none;">
+        <!-- FORMULARIO: INFORME MENSUAL -->
         <form id="formInforme" class="form-layout">
             <input type="hidden" name="id" id="informeId">
-            <div class="global-view col-span-1"><label>Grupo (Admin):</label>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-user-check"></i> Datos del Publicador y Mes
+            </div>
+            <div class="global-view col-span-1">
+                <label>Grupo</label>
                 <select id="infGrupoSelect" onchange="cargarPublicadoresSelect(this.value)">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
+                    <option value="1">Grupo 1</option>
+                    <option value="2">Grupo 2</option>
+                    <option value="3">Grupo 3</option>
+                    <option value="4">Grupo 4</option>
+                    <option value="5">Grupo 5</option>
+                    <option value="6">Grupo 6</option>
+                    <option value="7">Grupo 7</option>
+                    <option value="8">Grupo 8</option>
                 </select>
             </div>
-            <div class="col-span-1"><label>Mes</label><select name="mes" id="formMesSelect" required></select></div>
-            <div style="grid-column: 1/-1;"><label>Publicador</label><select id="selectPubInfo" name="publicador_id"
-                    required onchange="cargarDatosPub()">
-                    <option value="">Cargando...</option>
-                </select></div>
-            <div style="grid-column: 1/-1;"><label>Privilegio</label><input id="readPriv3" readonly
-                    style="background:#f8fafc; color:#64748b;"></div>
-            <div class="col-span-1"><label>¿Predicó?</label><select name="predico" required>
-                    <option value="">-</option>
-                    <option value="SI">SÍ</option>
-                    <option value="NO">NO</option>
-                </select></div>
-            <div class="col-span-1"><label>Horas</label><input type="number" name="horas" id="inputHoras" step="0.5"
-                    min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Crédito Hrs</label><input type="number" name="credito_hrs" id="inputCredito"
-                    step="0.5" min="0" inputmode="numeric"></div>
-            <div class="col-span-1"><label>Cursos</label><input type="number" name="cursos" min="0" inputmode="numeric">
+            <div class="col-span-1">
+                <label>Mes de Informe</label>
+                <select name="mes" id="formMesSelect" required></select>
             </div>
-            <div style="grid-column: 1/-1;"><label>Comentario</label><textarea name="comentarios" placeholder="Notas..."
-                    rows="3"></textarea></div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
-                    id="btnSaveInfo">Guardar</button></div>
+            <div class="col-span-1">
+                <label>Publicador</label>
+                <select id="selectPubInfo" name="publicador_id" required onchange="cargarDatosPub()">
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <label>Privilegio Actual</label>
+                <input id="readPriv3" readonly placeholder="-">
+            </div>
+
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-clipboard-list"></i> Actividad del Mes
+            </div>
+            <div class="col-span-1">
+                <label>¿Participó en el ministerio?</label>
+                <select name="predico" required>
+                    <option value="">Seleccione...</option>
+                    <option value="SI">SÍ predicó</option>
+                    <option value="NO">NO predicó</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <label>Cursos Bíblicos</label>
+                <input type="number" name="cursos" min="0" inputmode="numeric" placeholder="0">
+            </div>
+            <div class="col-span-1">
+                <label>Horas (Precursores)</label>
+                <input type="number" name="horas" id="inputHoras" step="0.5" min="0" inputmode="numeric" placeholder="0">
+            </div>
+            <div class="col-span-1">
+                <label>Crédito de Horas</label>
+                <input type="number" name="credito_hrs" id="inputCredito" step="0.5" min="0" inputmode="numeric" placeholder="0">
+            </div>
+            <div class="col-span-2">
+                <label>Comentarios / Notas</label>
+                <textarea name="comentarios" placeholder="Observaciones opcionales..." rows="2"></textarea>
+            </div>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveInfo">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Informe
+                </button>
+            </div>
         </form>
 
-        <form id="formPublicador" class="form-layout" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+        <!-- FORMULARIO: PUBLICADOR -->
+        <form id="formPublicador" class="form-layout">
             <input type="hidden" name="id" id="pubId">
 
-            <div style="grid-column: span 2;">
-                <h4
-                    style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
-                    Datos Personales</h4>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-id-card"></i> Datos Personales
             </div>
-
-            <div style="grid-column: span 2;">
+            <div class="col-span-2">
                 <label>Nombre Completo</label>
                 <input name="nombre" required placeholder="Ej: Juan Pérez">
             </div>
-
-            <div class="global-view" style="grid-column: span 1;">
-                <label>Grupo</label>
+            <div class="global-view col-span-1">
+                <label>Grupo Asignado</label>
                 <select id="pubGrupoSelect" name="grupo_manual">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
+                    <option value="1">Grupo 1</option>
+                    <option value="2">Grupo 2</option>
+                    <option value="3">Grupo 3</option>
+                    <option value="4">Grupo 4</option>
+                    <option value="5">Grupo 5</option>
+                    <option value="6">Grupo 6</option>
+                    <option value="7">Grupo 7</option>
+                    <option value="8">Grupo 8</option>
                 </select>
             </div>
-
-            <div style="grid-column: span 1;">
-                <label>Fecha Registro:</label>
+            <div class="col-span-1">
+                <label>Fecha de Registro</label>
                 <input type="text" class="vcal-single-input" name="fecha_ingreso" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required>
             </div>
 
-            <div style="grid-column: span 2; margin-top:10px;">
-                <h4
-                    style="margin:0 0 10px 0; font-size:0.9rem; color:var(--primary); border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
-                    Estado y Privilegios</h4>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-award"></i> Estado y Privilegios
             </div>
-
-            
-
-            <div style="grid-column: span 1;">
+            <div class="col-span-1">
                 <label>Privilegio Principal</label>
                 <select name="priv3">
                     <option>PUB</option>
@@ -858,139 +879,156 @@
                     <option>ESP</option>
                 </select>
             </div>
-
-            <div style="grid-column: span 1;">
-                <label>Cargo (Priv 1)</label>
+            <div class="col-span-1">
+                <label>Responsabilidad en Grupo (Priv 1)</label>
                 <select name="priv1">
-                    <option value="">-</option>
-                    <option value="SG">SG</option>
-                    <option value="AXG">AXG</option>
+                    <option value="">Ninguno (-)</option>
+                    <option value="SG">SG (Superintendente de Grupo)</option>
+                    <option value="AXG">AXG (Auxiliar de Grupo)</option>
                 </select>
             </div>
-
-            <div style="grid-column: span 1;">
+            <div class="col-span-2">
                 <label>Nombramiento (Priv 2)</label>
                 <select name="priv2">
-                    <option value="">-</option>
-                    <option value="A">A</option>
-                    <option value="SM">SM</option>
+                    <option value="">Ninguno (-)</option>
+                    <option value="A">A (Anciano)</option>
+                    <option value="SM">SM (Siervo Ministerial)</option>
                 </select>
             </div>
-
-            <div style="grid-column: span 2; margin-top:10px;">
+            <div class="col-span-2">
                 <label>Comentario / Observación</label>
                 <textarea name="comentario" rows="2" placeholder="Nota adicional..."></textarea>
             </div>
 
-            <!-- AQUÍ ESTÁ EL CAMBIO: Se agregó "grid-column: span 2;" al div contenedor -->
-            <div style="grid-column: span 2; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
-                <h4 style="margin-bottom: 10px; color: #334155; font-size: 0.95rem;">Datos para la S-21</h4>
-
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>Fecha de Nacimiento</label>
-                        <input type="text" class="vcal-single-input" name="fecha_nacimiento" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single">
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>Fecha de Bautismo</label>
-                        <input type="text" class="vcal-single-input" name="fecha_bautismo" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single">
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>Sexo</label>
-                        <select name="sexo">
-                            <option value="Hombre">Hombre</option>
-                            <option value="Mujer">Mujer</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>Esperanza</label>
-                        <select name="esperanza">
-                            <option value="Otras ovejas">Otras ovejas</option>
-                            <option value="Ungido">Ungido</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group" style="grid-column: span 2; margin-bottom: 10px;">
-                    <label style="margin-bottom: 8px; display: block; font-weight: bold;">Nombramiento / Servicio
-                        Especial (Puedes marcar varios)</label>
-                    <div
-                        style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
-                                name="privilegio_s21" value="Anciano"> Anciano</label>
-                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
-                                name="privilegio_s21" value="Siervo ministerial"> Siervo ministerial</label>
-                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
-                                name="privilegio_s21" value="Precursor regular"> Precursor regular</label>
-                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
-                                name="privilegio_s21" value="Precursor especial"> Precursor especial</label>
-                        <label style="cursor: pointer; font-weight: normal;"><input type="checkbox"
-                                name="privilegio_s21" value="Misionero que sirve en el campo"> Misionero</label>
-                    </div>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-file-pdf"></i> Datos para Tarjeta S-21
+            </div>
+            <div class="col-span-1">
+                <label>Fecha de Nacimiento</label>
+                <input type="text" class="vcal-single-input" name="fecha_nacimiento" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single">
+            </div>
+            <div class="col-span-1">
+                <label>Fecha de Bautismo</label>
+                <input type="text" class="vcal-single-input" name="fecha_bautismo" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single">
+            </div>
+            <div class="col-span-1">
+                <label>Sexo</label>
+                <select name="sexo">
+                    <option value="Hombre">Hombre</option>
+                    <option value="Mujer">Mujer</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <label>Esperanza</label>
+                <select name="esperanza">
+                    <option value="Otras ovejas">Otras ovejas</option>
+                    <option value="Ungido">Ungido</option>
+                </select>
+            </div>
+            <div class="col-span-2">
+                <label>Nombramiento / Servicio Especial (S-21)</label>
+                <div class="form-checkbox-group">
+                    <label class="form-check-pill"><input type="checkbox" name="privilegio_s21" value="Anciano"> Anciano</label>
+                    <label class="form-check-pill"><input type="checkbox" name="privilegio_s21" value="Siervo ministerial"> Siervo ministerial</label>
+                    <label class="form-check-pill"><input type="checkbox" name="privilegio_s21" value="Precursor regular"> Precursor regular</label>
+                    <label class="form-check-pill"><input type="checkbox" name="privilegio_s21" value="Precursor especial"> Precursor especial</label>
+                    <label class="form-check-pill"><input type="checkbox" name="privilegio_s21" value="Misionero que sirve en el campo"> Misionero</label>
                 </div>
             </div>
 
-            <div style="grid-column: span 2; margin-top:10px;">
+            <div class="col-span-2 form-submit-row">
                 <button type="submit" class="btn-primary" style="width:100%" id="btnSavePub">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Publicador
                 </button>
             </div>
         </form>
 
+        <!-- FORMULARIO: ASISTENCIA A REUNIONES -->
         <form id="formReunion" class="form-layout">
             <input type="hidden" name="id" id="reunionId">
-            <div class="col-span-1"><label>Mes</label><select name="mes" id="reuMesSelect" required></select></div>
-            <div class="col-span-1"><label>Tipo</label><select name="tipo" required>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-calendar-days"></i> Configuración del Mes y Reunión
+            </div>
+            <div class="col-span-2">
+                <label>Mes</label>
+                <select name="mes" id="reuMesSelect" required></select>
+            </div>
+            <div class="col-span-1">
+                <label>Tipo de Reunión</label>
+                <select name="tipo" required>
                     <option value="ENTRE SEMANA">ENTRE SEMANA</option>
                     <option value="FIN DE SEMANA">FIN DE SEMANA</option>
-                </select></div>
-            <div class="col-span-1"><label>Modalidad</label><select name="modalidad" required>
-                    <option value="PRESENCIAL">PRESENCIAL</option>
-                    <option value="ZOOM">ZOOM</option>
-                </select></div>
-            <div class="col-span-1"><label>Sem 1</label><input type="number" name="sem1" min="0" inputmode="numeric">
-            </div>
-            <div class="col-span-1"><label>Sem 2</label><input type="number" name="sem2" min="0" inputmode="numeric">
-            </div>
-            <div class="col-span-1"><label>Sem 3</label><input type="number" name="sem3" min="0" inputmode="numeric">
-            </div>
-            <div class="col-span-1"><label>Sem 4</label><input type="number" name="sem4" min="0" inputmode="numeric">
-            </div>
-            <div class="col-span-1"><label>Sem 5</label><input type="number" name="sem5" min="0" inputmode="numeric">
-            </div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
-                    id="btnSaveReu">Guardar</button></div>
-        </form>
-
-        <form id="formUsuario" class="form-layout">
-            <input type="hidden" name="id" id="userId">
-            <div style="grid-column: 1/-1;"><label>Nombre</label><input name="nombre" required></div>
-            <div class="col-span-2"><label>Correo</label><input name="correo" type="email" required></div>
-            <div class="col-span-1"><label>Contraseña</label><input name="password" type="password" autocomplete="new-password" placeholder="Dejar vacío para no cambiar (mín. 6)"></div>
-            <div style="grid-column: 1/-1;"><label>Grupo</label>
-                <select name="grupo">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="0">0 (Admin)</option>
-                    <option value="9">9 (Supervisor)</option>
                 </select>
             </div>
-            <div style="grid-column: 1/-1;"><button type="submit" class="btn-primary" style="width:100%"
-                    id="btnSaveUser">Crear</button></div>
+            <div class="col-span-1">
+                <label>Modalidad</label>
+                <select name="modalidad" required>
+                    <option value="PRESENCIAL">PRESENCIAL</option>
+                    <option value="ZOOM">ZOOM</option>
+                </select>
+            </div>
+
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-users"></i> Asistencia por Semana
+            </div>
+            <div class="col-span-1"><label>Semana 1</label><input type="number" name="sem1" min="0" inputmode="numeric" placeholder="0"></div>
+            <div class="col-span-1"><label>Semana 2</label><input type="number" name="sem2" min="0" inputmode="numeric" placeholder="0"></div>
+            <div class="col-span-1"><label>Semana 3</label><input type="number" name="sem3" min="0" inputmode="numeric" placeholder="0"></div>
+            <div class="col-span-1"><label>Semana 4</label><input type="number" name="sem4" min="0" inputmode="numeric" placeholder="0"></div>
+            <div class="col-span-2"><label>Semana 5 (Si aplica)</label><input type="number" name="sem5" min="0" inputmode="numeric" placeholder="0"></div>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveReu">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Asistencia
+                </button>
+            </div>
+        </form>
+
+        <!-- FORMULARIO: USUARIO DEL SISTEMA -->
+        <form id="formUsuario" class="form-layout">
+            <input type="hidden" name="id" id="userId">
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-user-shield"></i> Credenciales y Rol de Acceso
+            </div>
+            <div class="col-span-2">
+                <label>Nombre del Responsable</label>
+                <input name="nombre" required placeholder="Ej: Hno. Carlos Gómez">
+            </div>
+            <div class="col-span-1">
+                <label>Correo / Usuario</label>
+                <input name="correo" type="email" required placeholder="usuario@congregacion.org">
+            </div>
+            <div class="col-span-1">
+                <label>PIN / Contraseña</label>
+                <input name="password" type="password" autocomplete="new-password" placeholder="Vacío = no cambiar (mín. 6)">
+            </div>
+            <div class="col-span-2">
+                <label>Grupo / Nivel de Acceso</label>
+                <select name="grupo">
+                    <option value="1">Grupo 1</option>
+                    <option value="2">Grupo 2</option>
+                    <option value="3">Grupo 3</option>
+                    <option value="4">Grupo 4</option>
+                    <option value="5">Grupo 5</option>
+                    <option value="6">Grupo 6</option>
+                    <option value="7">Grupo 7</option>
+                    <option value="8">Grupo 8</option>
+                    <option value="0">0 — Super Administrador</option>
+                    <option value="9">9 — Supervisor (Solo lectura global)</option>
+                </select>
+            </div>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveUser">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Usuario
+                </button>
+            </div>
         </form>
 
         <!-- FORMULARIO: CREAR / EDITAR TERRITORIO -->
         <form id="formTerritorio" class="form-layout">
             <input type="hidden" name="id" id="territorioId">
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-map-location-dot"></i> Información del Territorio
+            </div>
             <div class="col-span-1">
                 <label>N° de Territorio</label>
                 <input name="numero" required placeholder="Ej: 1, 2, 3A">
@@ -999,58 +1037,97 @@
                 <label>Cantidad de Manzanas (1 a N)</label>
                 <input type="number" name="cantidad_manzanas" min="1" max="200" value="10" required inputmode="numeric">
             </div>
-            <div style="grid-column: 1/-1;">
-                <label>Nombre / Referencia de Zona (Opcional)</label>
+            <div class="col-span-2">
+                <label>Nombre / Referencia de Zona <span class="label-hint">(Opcional)</span></label>
                 <input name="nombre" placeholder="Ej: Sector Norte / Av. Principal">
             </div>
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveTerritorio">Guardar Territorio</button>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveTerritorio">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Territorio
+                </button>
             </div>
         </form>
 
         <!-- FORMULARIO: REGISTRAR / EDITAR CONDUCTOR -->
         <form id="formConductor" class="form-layout">
             <input type="hidden" name="id" id="conductorId">
-            <div style="grid-column: 1/-1;">
-                <label>Seleccionar del Directorio de Publicadores (Opcional)</label>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-user-tie"></i> Datos del Conductor Autorizado
+            </div>
+            <div class="col-span-2">
+                <label>Autocompletar desde Directorio de Publicadores <span class="label-hint">(Opcional)</span></label>
                 <select id="selectPubConductor" onchange="autocompletarConductor()">
                     <option value="">-- Escribir nombre manualmente o elegir --</option>
                 </select>
             </div>
-            <div style="grid-column: 1/-1;">
+            <div class="col-span-2">
                 <label>Nombre del Conductor</label>
                 <input name="nombre" id="inputNombreConductor" required placeholder="Ej: Hno. Juan Pérez">
             </div>
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" style="width:100%">Guardar Conductor</button>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Conductor
+                </button>
             </div>
         </form>
 
         <!-- FORMULARIO: CREAR / EDITAR TURNO DE PREDICACIÓN -->
         <form id="formTurno" class="form-layout">
             <input type="hidden" name="id" id="turnoId">
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-clock"></i> Configuración del Turno
+            </div>
             <div class="col-span-1">
                 <label>Nombre del Turno</label>
                 <input name="nombre" required placeholder="Ej: Mañana, Tarde, Noche">
             </div>
             <div class="col-span-1">
-                <label>Horario / Referencia (Opcional)</label>
+                <label>Horario / Referencia <span class="label-hint">(Opcional)</span></label>
                 <input name="horario" placeholder="Ej: 9:00 AM">
             </div>
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" style="width:100%">Guardar Turno</button>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Turno
+                </button>
             </div>
         </form>
 
         <!-- FORMULARIO: REGISTRAR / EDITAR BITÁCORA DE TERRITORIO -->
         <form id="formBitacora" class="form-layout">
             <input type="hidden" name="id" id="bitacoraId">
+
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-map"></i> 1. Territorio y Selección de Manzanas
+            </div>
+            <div class="col-span-2">
+                <label>Territorio</label>
+                <select name="territorio_id" id="bitTerritorioSelect" required onchange="cargarSelectorManzanasBitacora()"></select>
+            </div>
+            <div class="col-span-2">
+                <div class="manzanas-header-bar">
+                    <label style="margin:0;">Manzanas Predicadas en el Turno <span class="label-hint">(Haz clic para marcar)</span></label>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarTodasManzanasDisp(true)">
+                            <i class="fa-solid fa-check-double"></i> Marcar disponibles
+                        </button>
+                        <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarTodasManzanasDisp(false)">
+                            <i class="fa-solid fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+                <div id="bitInfoTerritorio" class="terr-bitacora-info">Selecciona un territorio para ver sus manzanas (1 a N)...</div>
+                <div id="bitManzanasGrid" class="manzanas-chips-grid"></div>
+            </div>
+
+            <div class="col-span-2 form-section-title">
+                <i class="fa-regular fa-calendar-check"></i> 2. Fechas y Asignación del Turno
+            </div>
             <div class="col-span-1">
-                <label>Fecha de Inicio <span id="bitFechaHint" style="font-weight:500; color:#10b981; font-size:0.74rem;"></span></label>
+                <label>Fecha de Inicio <span id="bitFechaHint" class="label-hint-badge"></span></label>
                 <input type="text" class="vcal-single-input" name="fecha" id="bitFecha" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required>
             </div>
             <div class="col-span-1">
-                <label>Fecha de Cierre <span style="font-weight:400; color:#8f8f8f; font-size:0.75rem;">(Marca todo y cierra)</span></label>
+                <label>Fecha de Cierre <span class="label-hint">(Opcional · Cierra vuelta)</span></label>
                 <input type="text" class="vcal-single-input" name="fecha_cierre" id="bitFechaCierre" placeholder="En curso (sin cierre)" inputmode="none" autocomplete="off" data-vcal="single" onchange="alCambiarFechaCierreBitacora()">
             </div>
             <div class="col-span-1">
@@ -1061,26 +1138,13 @@
                 <label>Conductor</label>
                 <select name="conductor_id" id="bitConductorSelect" required></select>
             </div>
-            <div class="col-span-1">
-                <label>Territorio</label>
-                <select name="territorio_id" id="bitTerritorioSelect" required onchange="cargarSelectorManzanasBitacora()"></select>
-            </div>
 
-            <div style="grid-column: 1/-1;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-                    <label style="margin:0;">Manzanas Predicadas en el Turno (haz clic para marcar)</label>
-                    <div style="display:flex; gap:6px;">
-                        <button type="button" class="btn-cancel" style="padding:3px 8px; font-size:0.75rem;" onclick="seleccionarTodasManzanasDisp(true)">Marcar disponibles</button>
-                        <button type="button" class="btn-cancel" style="padding:3px 8px; font-size:0.75rem;" onclick="seleccionarTodasManzanasDisp(false)">Limpiar</button>
-                    </div>
-                </div>
-                <div id="bitInfoTerritorio" class="terr-bitacora-info">Selecciona un territorio para ver sus manzanas (1 a N)...</div>
-                <div id="bitManzanasGrid" class="manzanas-chips-grid"></div>
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-flag-checkered"></i> 3. Estado del Registro
             </div>
-
             <div class="col-span-1">
                 <label>Estado de las Manzanas Marcadas</label>
-                <select name="estado_manzanas" id="bitEstadoManzanas" required onchange=" sugerirEstadoTerritorio()">
+                <select name="estado_manzanas" id="bitEstadoManzanas" required onchange="sugerirEstadoTerritorio()">
                     <option value="COMPLETO">COMPLETO (Terminadas)</option>
                     <option value="INCOMPLETO">INCOMPLETO (A medias)</option>
                 </select>
@@ -1094,8 +1158,10 @@
                 </select>
             </div>
 
-            <div style="grid-column: 1/-1;">
-                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveBitacora">Guardar en Bitácora</button>
+            <div class="col-span-2 form-submit-row">
+                <button type="submit" class="btn-primary" style="width:100%" id="btnSaveBitacora">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar en Bitácora
+                </button>
             </div>
         </form>
     </div>

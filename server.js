@@ -594,6 +594,17 @@ function parseManzanasList(str) {
     return String(str).split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n) && n >= 1);
 }
 
+function formatearFechaYMD(val) {
+    if (!val) return null;
+    if (val instanceof Date) {
+        return val.toISOString().split('T')[0];
+    }
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const d = new Date(s);
+    return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : s;
+}
+
 async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId = null) {
     let sql = 'SELECT id, fecha, fecha_cierre, manzanas, estado_manzanas, estado_territorio FROM bitacora_territorios WHERE territorio_id = ? AND ciclo = ?';
     const params = [territorio_id, ciclo];
@@ -610,7 +621,7 @@ async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId =
         }
         if (r.estado_territorio === 'CIERRE' || Boolean(r.fecha_cierre)) cerradoExplicito = true;
     }
-    const fechaInicioCiclo = rows.length > 0 && rows[0].fecha ? String(rows[0].fecha).split('T')[0] : null;
+    const fechaInicioCiclo = rows.length > 0 && rows[0].fecha ? formatearFechaYMD(rows[0].fecha) : null;
     return { estadoPorManzana, cerradoExplicito, registrosCount: rows.length, fechaInicioCiclo };
 }
 
