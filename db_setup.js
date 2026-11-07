@@ -106,6 +106,7 @@ const tables = [
     `CREATE TABLE IF NOT EXISTS bitacora_territorios (
         id INT AUTO_INCREMENT PRIMARY KEY,
         fecha DATE NOT NULL,
+        fecha_cierre DATE DEFAULT NULL,
         territorio_id INT NOT NULL,
         manzanas VARCHAR(255) NOT NULL,
         estado_manzanas ENUM('COMPLETO','INCOMPLETO') NOT NULL DEFAULT 'COMPLETO',

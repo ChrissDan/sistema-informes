@@ -602,7 +602,8 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Fecha</th>
+                                        <th>Fecha Inicio</th>
+                                        <th>Fecha Cierre</th>
                                         <th>Territorio</th>
                                         <th>Vuelta</th>
                                         <th>Manzanas Predicadas</th>
@@ -994,8 +995,12 @@
         <form id="formBitacora" class="form-layout">
             <input type="hidden" name="id" id="bitacoraId">
             <div class="col-span-1">
-                <label>Día (Fecha)</label>
+                <label>Fecha de Inicio</label>
                 <input type="date" name="fecha" id="bitFecha" required>
+            </div>
+            <div class="col-span-1">
+                <label>Fecha de Cierre <span style="font-weight:400; color:#8f8f8f; font-size:0.75rem;">(Al cerrar territorio)</span></label>
+                <input type="date" name="fecha_cierre" id="bitFechaCierre">
             </div>
             <div class="col-span-1">
                 <label>Turno de Predicación</label>
@@ -1031,7 +1036,7 @@
             </div>
             <div class="col-span-1">
                 <label>Estado del Territorio</label>
-                <select name="estado_territorio" id="bitEstadoTerritorio" required>
+                <select name="estado_territorio" id="bitEstadoTerritorio" required onchange="sincronizarFechaCierreBitacora()">
                     <option value="INICIO">INICIO (En recorrido)</option>
                     <option value="CIERRE">CIERRE (Territorio terminado)</option>
                 </select>

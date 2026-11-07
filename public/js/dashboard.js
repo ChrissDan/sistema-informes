@@ -1265,7 +1265,7 @@ function renderTarjetasTerritorios() {
                 <div class="terr-card-head">
                     <div>
                         <div class="terr-card-title">Territorio ${t.numero}</div>
-                        <div class="terr-card-sub">${t.nombre || 'Sin descripción'} · Vuelta #${t.ciclo_actual}</div>
+                        <div class="terr-card-sub">${t.nombre || 'Sin descripción'} · Vuelta #${t.ciclo_actual}${t.fecha_inicio ? ' · Inicio: ' + String(t.fecha_inicio).split('T')[0] : ''}${t.fecha_cierre ? ' · Cierre: ' + String(t.fecha_cierre).split('T')[0] : ''}</div>
                     </div>
                     ${badgeEstado}
                 </div>
@@ -1413,12 +1413,14 @@ async function cargarBitacoraTerritorios() {
         const tbody = document.getElementById('tablaBitacoraTerritorios');
         if (!tbody) return;
         if (cacheBitacoraTerr.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#8f8f8f;">No hay registros en la bitácora todavía.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:24px; color:#8f8f8f;">No hay registros en la bitácora todavía.</td></tr>';
             return;
         }
         tbody.innerHTML = '';
         cacheBitacoraTerr.forEach(b => {
-            const fechaStr = String(b.fecha).split('T')[0];
+            const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '-';
+            const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (b.estado_territorio === 'CIERRE' ? fechaStr : '');
+            const fechaCierreHtml = fechaCierreRaw ? `<span class="badge badge-si">${fechaCierreRaw}</span>` : '<span style="color:#8f8f8f; font-size:0.8rem;">En curso</span>';
             const badgeManz = b.estado_manzanas === 'COMPLETO'
                 ? '<span class="badge badge-si">COMPLETO</span>'
                 : '<span class="badge badge-no">INCOMPLETO</span>';
@@ -1432,6 +1434,7 @@ async function cargarBitacoraTerritorios() {
             tbody.innerHTML += `
                 <tr>
                     <td>${fechaStr}</td>
+                    <td>${fechaCierreHtml}</td>
                     <td><strong>Territorio ${b.territorio_numero}</strong></td>
                     <td><span class="badge badge-gray">Vuelta #${b.ciclo}</span></td>
                     <td>Manz. <strong>${b.manzanas}</strong></td>
@@ -1524,6 +1527,8 @@ async function resetFormBitacora() {
     manzanasSeleccionadasSet.clear();
     infoManzanasActual = null;
     document.getElementById('bitFecha').value = new Date().toISOString().split('T')[0];
+    const fcEl = document.getElementById('bitFechaCierre');
+    if (fcEl) fcEl.value = '';
 
     if (cacheTurnos.length === 0) await cargarTurnosData();
     if (cacheConductores.length === 0) await cargarConductoresData();
@@ -1553,6 +1558,8 @@ async function editarBitacora(id) {
     await resetFormBitacora();
     document.getElementById('bitacoraId').value = obj.id;
     document.getElementById('bitFecha').value = String(obj.fecha).split('T')[0];
+    const fcEl = document.getElementById('bitFechaCierre');
+    if (fcEl) fcEl.value = obj.fecha_cierre ? String(obj.fecha_cierre).split('T')[0] : '';
     if (obj.turno_id) document.getElementById('bitTurnoSelect').value = obj.turno_id;
     if (obj.conductor_id) document.getElementById('bitConductorSelect').value = obj.conductor_id;
     document.getElementById('bitTerritorioSelect').value = obj.territorio_id;
@@ -1648,6 +1655,17 @@ function sugerirEstadoTerritorio() {
     }
     if (compSet.size >= total) selEstTerr.value = 'CIERRE';
     else selEstTerr.value = 'INICIO';
+    sincronizarFechaCierreBitacora();
+}
+
+function sincronizarFechaCierreBitacora() {
+    const selEstTerr = document.getElementById('bitEstadoTerritorio');
+    const fcEl = document.getElementById('bitFechaCierre');
+    const fiEl = document.getElementById('bitFecha');
+    if (!selEstTerr || !fcEl) return;
+    if (selEstTerr.value === 'CIERRE' && !fcEl.value) {
+        fcEl.value = (fiEl && fiEl.value) ? fiEl.value : new Date().toISOString().split('T')[0];
+    }
 }
 
 document.getElementById('formTerritorio')?.addEventListener('submit', async (e) => {
@@ -1720,6 +1738,7 @@ document.getElementById('formBitacora')?.addEventListener('submit', async (e) =>
 
     const payload = {
         fecha: document.getElementById('bitFecha').value,
+        fecha_cierre: document.getElementById('bitFechaCierre')?.value || null,
         territorio_id: document.getElementById('bitTerritorioSelect').value,
         manzanas: Array.from(manzanasSeleccionadasSet).sort((a, b) => a - b).join(', '),
         estado_manzanas: document.getElementById('bitEstadoManzanas').value,
