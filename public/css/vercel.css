@@ -611,3 +611,27 @@ html[data-theme="dark"] .manzana-chip.selected { background: #ededed; color: #00
 html[data-theme="dark"] .manzana-chip.selected small { color: #333; }
 html[data-theme="dark"] .manzana-chip.incompleto:not(.selected) { background: #2b1d07; border-color: #935f10; color: #f5a623; }
 html[data-theme="dark"] .manzana-chip.disabled { background: #161616; border-color: #222; color: #555; }
+
+
+/* Paginación de Tarjetas de Territorios */
+.terr-pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+.terr-page-info { font-size: 0.8rem; color: var(--text-muted, #666); font-weight: 500; }
+.terr-page-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.terr-page-btn {
+    min-width: 32px; height: 32px; padding: 0 10px;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; color: #171717; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease;
+}
+.terr-page-btn:hover:not(:disabled) { border-color: #171717; background: #f5f5f5; }
+.terr-page-btn.active { background: #171717; color: #fff; border-color: #171717; }
+.terr-page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+html[data-theme="dark"] .terr-page-info { color: #a1a1a1; }
+html[data-theme="dark"] .terr-page-btn { background: #111; border-color: var(--border); color: #ededed; }
+html[data-theme="dark"] .terr-page-btn:hover:not(:disabled) { background: #1f1f1f; border-color: #ededed; }
+html[data-theme="dark"] .terr-page-btn.active { background: #ededed; color: #000; border-color: #ededed; }

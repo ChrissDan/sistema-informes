@@ -1239,15 +1239,36 @@ async function cargarTerritoriosData() {
     } catch (e) { console.error(e); }
 }
 
+const TERR_POR_PAGINA = 8;
+let paginaActualTerritorios = 1;
+
+function cambiarPaginaTerritorios(nuevaPag) {
+    const totalPaginas = Math.max(1, Math.ceil(cacheTerritorios.length / TERR_POR_PAGINA));
+    if (nuevaPag < 1 || nuevaPag > totalPaginas) return;
+    paginaActualTerritorios = nuevaPag;
+    renderTarjetasTerritorios();
+}
+
 function renderTarjetasTerritorios() {
     const cont = document.getElementById('gridTarjetasTerritorios');
+    const pagCont = document.getElementById('paginacionTarjetasTerritorios');
     if (!cont) return;
     if (cacheTerritorios.length === 0) {
         cont.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:#8f8f8f;">No hay territorios registrados aún. Usa el botón "Nuevo Territorio" para empezar.</div>';
+        if (pagCont) pagCont.innerHTML = '';
         return;
     }
+    const total = cacheTerritorios.length;
+    const totalPaginas = Math.max(1, Math.ceil(total / TERR_POR_PAGINA));
+    if (paginaActualTerritorios > totalPaginas) paginaActualTerritorios = totalPaginas;
+    if (paginaActualTerritorios < 1) paginaActualTerritorios = 1;
+
+    const inicioIdx = (paginaActualTerritorios - 1) * TERR_POR_PAGINA;
+    const finIdx = Math.min(inicioIdx + TERR_POR_PAGINA, total);
+    const paginaItems = cacheTerritorios.slice(inicioIdx, finIdx);
+
     cont.innerHTML = '';
-    cacheTerritorios.forEach(t => {
+    paginaItems.forEach(t => {
         let pills = '';
         const det = t.manzanas_detalle || {};
         for (let m = 1; m <= t.cantidad_manzanas; m++) {
@@ -1286,6 +1307,22 @@ function renderTarjetasTerritorios() {
             </div>
         `;
     });
+
+    if (pagCont) {
+        if (totalPaginas <= 1) {
+            pagCont.innerHTML = `<div class="terr-page-info">Mostrando ${total} de ${total} territorios</div><div></div>`;
+        } else {
+            let btnsHtml = `<button type="button" class="terr-page-btn" onclick="cambiarPaginaTerritorios(${paginaActualTerritorios - 1})" ${paginaActualTerritorios === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`;
+            for (let p = 1; p <= totalPaginas; p++) {
+                btnsHtml += `<button type="button" class="terr-page-btn ${p === paginaActualTerritorios ? 'active' : ''}" onclick="cambiarPaginaTerritorios(${p})">${p}</button>`;
+            }
+            btnsHtml += `<button type="button" class="terr-page-btn" onclick="cambiarPaginaTerritorios(${paginaActualTerritorios + 1})" ${paginaActualTerritorios === totalPaginas ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
+            pagCont.innerHTML = `
+                <div class="terr-page-info">Mostrando territorios <strong>${inicioIdx + 1}–${finIdx}</strong> de <strong>${total}</strong> (Página ${paginaActualTerritorios} de ${totalPaginas})</div>
+                <div class="terr-page-controls">${btnsHtml}</div>
+            `;
+        }
+    }
 }
 
 function renderTablaCatalogoTerritorios() {
