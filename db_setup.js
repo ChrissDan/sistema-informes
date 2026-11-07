@@ -116,7 +116,6 @@ const tables = [
         conductor_nombre VARCHAR(150) NOT NULL,
         estado_territorio ENUM('INICIO','EN CURSO','CIERRE') NOT NULL DEFAULT 'INICIO',
         ciclo INT NOT NULL DEFAULT 1,
-        notas TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         KEY idx_terr_ciclo (territorio_id, ciclo)
     )`

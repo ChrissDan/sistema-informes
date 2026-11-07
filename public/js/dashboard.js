@@ -1260,14 +1260,20 @@ function renderTarjetasTerritorios() {
             ? '<span class="badge badge-si">CIERRE (100%)</span>'
             : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO (En curso)</span>' : '<span class="badge badge-gray">SIN INICIAR</span>');
 
+        const vComp = t.vueltas_completas || 0;
+        const vIncomp = t.vueltas_incompletas || 0;
         cont.innerHTML += `
             <div class="terr-card">
                 <div class="terr-card-head">
                     <div>
                         <div class="terr-card-title">Territorio ${t.numero}</div>
-                        <div class="terr-card-sub">${t.nombre || 'Sin descripción'} · Vuelta #${t.ciclo_actual}${t.fecha_inicio ? ' · Inicio: ' + String(t.fecha_inicio).split('T')[0] : ''}${t.fecha_cierre ? ' · Cierre: ' + String(t.fecha_cierre).split('T')[0] : ''}</div>
+                        <div class="terr-card-sub">${t.nombre ? t.nombre + ' · ' : ''}${t.fecha_inicio ? 'Inicio: ' + String(t.fecha_inicio).split('T')[0] : 'Sin registros'}${t.fecha_cierre ? ' · Cierre: ' + String(t.fecha_cierre).split('T')[0] : ''}</div>
                     </div>
                     ${badgeEstado}
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 6px 0;">
+                    <span class="badge badge-si" style="font-size:0.72rem;">Vueltas completas: ${vComp}</span>
+                    <span class="badge ${vIncomp > 0 ? 'badge-no' : 'badge-gray'}" style="font-size:0.72rem;">Vueltas incompletas: ${vIncomp}</span>
                 </div>
                 <div>
                     <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom:4px;">
@@ -1303,7 +1309,7 @@ function renderTablaCatalogoTerritorios() {
                 <td><strong>Territorio ${t.numero}</strong></td>
                 <td>${t.nombre || '-'}</td>
                 <td>Manzanas 1 a ${t.cantidad_manzanas} (${t.cantidad_manzanas} en total)</td>
-                <td>Vuelta #${t.ciclo_actual}</td>
+                <td><span class="badge badge-si">Completas: ${t.vueltas_completas || 0}</span> <span class="badge ${(t.vueltas_incompletas || 0) > 0 ? 'badge-no' : 'badge-gray'}">Incompletas: ${t.vueltas_incompletas || 0}</span></td>
                 <td>${t.completadas}/${t.cantidad_manzanas} (${t.porcentaje}%)</td>
                 <td>${badge}</td>
                 <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
@@ -1573,7 +1579,6 @@ async function editarBitacora(id) {
     });
     document.getElementById('bitEstadoManzanas').value = obj.estado_manzanas;
     document.getElementById('bitEstadoTerritorio').value = obj.estado_territorio;
-    document.getElementById('formBitacora').notas.value = obj.notas || '';
     abrirModal('bitacora', id);
 }
 
@@ -1746,8 +1751,7 @@ document.getElementById('formBitacora')?.addEventListener('submit', async (e) =>
         turno_nombre: turnoNombre,
         conductor_id: selCond.value || null,
         conductor_nombre: condNombre,
-        estado_territorio: document.getElementById('bitEstadoTerritorio').value,
-        notas: e.target.notas.value || ''
+        estado_territorio: document.getElementById('bitEstadoTerritorio').value
     };
 
     const id = document.getElementById('bitacoraId').value;

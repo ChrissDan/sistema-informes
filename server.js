@@ -621,8 +621,23 @@ app.get('/api/territorios', soloGlobal, async (req, res) => {
 
         const resultado = territorios.map(t => {
             const regsT = bitacora.filter(b => b.territorio_id === t.id);
-            const maxCiclo = regsT.reduce((m, r) => Math.max(m, r.ciclo || 1), 1);
-            const regsCiclo = regsT.filter(b => (b.ciclo || 1) === maxCiclo);
+            const maxCiclo = regsT.length > 0 ? regsT.reduce((m, r) => Math.max(m, r.ciclo || 1), 1) : 0;
+            const regsCiclo = maxCiclo > 0 ? regsT.filter(b => (b.ciclo || 1) === maxCiclo) : [];
+
+            // Contabilizar vueltas completas (con fecha_cierre) e incompletas (sin fecha_cierre)
+            const ciclosMap = {};
+            regsT.forEach(r => {
+                const cNum = r.ciclo || 1;
+                if (!ciclosMap[cNum]) ciclosMap[cNum] = [];
+                ciclosMap[cNum].push(r);
+            });
+            let vueltasCompletas = 0;
+            let vueltasIncompletas = 0;
+            Object.values(ciclosMap).forEach(lista => {
+                const tieneFechaCierre = lista.some(r => Boolean(r.fecha_cierre));
+                if (tieneFechaCierre) vueltasCompletas++;
+                else vueltasIncompletas++;
+            });
 
             const estadoPorManzana = {};
             let estadoTerritorioActual = 'SIN INICIAR';
@@ -651,6 +666,8 @@ app.get('/api/territorios', soloGlobal, async (req, res) => {
             return {
                 ...t,
                 ciclo_actual: maxCiclo,
+                vueltas_completas: vueltasCompletas,
+                vueltas_incompletas: vueltasIncompletas,
                 completadas,
                 incompletas,
                 porcentaje,
@@ -799,7 +816,7 @@ app.get('/api/territorios/bitacora', soloGlobal, async (req, res) => {
 });
 
 app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
-    const { fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, notas } = req.body;
+    const { fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
     const listaManz = parseManzanasList(manzanas);
     if (!fecha || !territorio_id || listaManz.length === 0) {
         return res.status(400).json({ ok: false, msg: 'Debes indicar la fecha de inicio, el territorio y al menos una manzana.' });
@@ -828,15 +845,15 @@ app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
         const fechaCierreFinal = fecha_cierre ? fecha_cierre : (estadoFinalTerr === 'CIERRE' ? fecha : null);
         const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
-            'INSERT INTO bitacora_territorios (fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo, notas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [fecha, fechaCierreFinal, t.id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual, notas || null]
+            'INSERT INTO bitacora_territorios (fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [fecha, fechaCierreFinal, t.id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual]
         );
         res.json({ ok: true, ciclo: cicloActual });
     } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
-    const { fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, notas } = req.body;
+    const { fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
     const listaManz = parseManzanasList(manzanas);
     if (!fecha || !territorio_id || listaManz.length === 0) {
         return res.status(400).json({ ok: false, msg: 'Debes indicar la fecha de inicio, el territorio y al menos una manzana.' });
@@ -855,8 +872,8 @@ app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
         const fechaCierreFinal = fecha_cierre ? fecha_cierre : (estadoFinalTerr === 'CIERRE' ? fecha : null);
         const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
-            'UPDATE bitacora_territorios SET fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=?, notas=? WHERE id=?',
-            [fecha, fechaCierreFinal, territorio_id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, notas || null, req.params.id]
+            'UPDATE bitacora_territorios SET fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=? WHERE id=?',
+            [fecha, fechaCierreFinal, territorio_id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, req.params.id]
         );
         res.json({ ok: true });
     } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
