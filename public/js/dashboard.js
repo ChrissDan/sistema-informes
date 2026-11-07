@@ -1222,16 +1222,7 @@ async function cargarTerritoriosData() {
         const countEl = document.getElementById('countTerrCatalogo');
         if (countEl) countEl.textContent = cacheTerritorios.length;
 
-        // Llenar filtro de bitácora
-        const filtro = document.getElementById('filtroBitacoraTerritorio');
-        if (filtro) {
-            const valPrev = filtro.value;
-            filtro.innerHTML = '<option value="">(Todos los territorios)</option>';
-            cacheTerritorios.forEach(t => {
-                filtro.innerHTML += `<option value="${t.id}">Territorio ${t.numero} ${t.nombre ? '- ' + t.nombre : ''}</option>`;
-            });
-            filtro.value = valPrev;
-        }
+        poblarOpcionesFiltrosBitacora();
 
         renderTarjetasTerritorios();
         renderTablaCatalogoTerritorios();
@@ -1446,50 +1437,130 @@ async function cargarTurnosData() {
     } catch (e) { console.error(e); }
 }
 
+function poblarOpcionesFiltrosBitacora() {
+    const selTerr = document.getElementById('fBitTerritorio');
+    if (selTerr) {
+        const prev = selTerr.value;
+        const nums = cacheTerritorios.length
+            ? cacheTerritorios.map(t => String(t.numero))
+            : Array.from(new Set(cacheBitacoraTerr.map(b => String(b.territorio_numero)))).sort((a, b) => Number(a) - Number(b));
+        selTerr.innerHTML = '<option value="">Todos</option>' + nums.map(n => `<option value="${n}">Territorio ${n}</option>`).join('');
+        selTerr.value = prev;
+    }
+
+    const selCiclo = document.getElementById('fBitCiclo');
+    if (selCiclo) {
+        const prev = selCiclo.value;
+        const ciclos = Array.from(new Set(cacheBitacoraTerr.map(b => b.ciclo || 1))).sort((a, b) => a - b);
+        selCiclo.innerHTML = '<option value="">Todas</option>' + ciclos.map(c => `<option value="${c}">Vuelta #${c}</option>`).join('');
+        selCiclo.value = prev;
+    }
+
+    const selTurno = document.getElementById('fBitTurno');
+    if (selTurno) {
+        const prev = selTurno.value;
+        const turnos = Array.from(new Set(cacheBitacoraTerr.map(b => (b.turno_nombre || '').trim()).filter(Boolean))).sort();
+        selTurno.innerHTML = '<option value="">Todos</option>' + turnos.map(t => `<option value="${t}">${t}</option>`).join('');
+        selTurno.value = prev;
+    }
+
+    const selCond = document.getElementById('fBitConductor');
+    if (selCond) {
+        const prev = selCond.value;
+        const conds = Array.from(new Set(cacheBitacoraTerr.map(b => (b.conductor_nombre || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        selCond.innerHTML = '<option value="">Todos</option>' + conds.map(c => `<option value="${c}">${c}</option>`).join('');
+        selCond.value = prev;
+    }
+}
+
+function limpiarFiltrosBitacora() {
+    ['fBitFechaIni', 'fBitFechaFin', 'fBitTerritorio', 'fBitCiclo', 'fBitManzanas', 'fBitEstManz', 'fBitTurno', 'fBitConductor', 'fBitEstTerr'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    renderTablaBitacoraFiltrada();
+}
+
 async function cargarBitacoraTerritorios() {
     try {
-        const fTerr = document.getElementById('filtroBitacoraTerritorio')?.value || '';
-        const url = fTerr ? `/api/territorios/bitacora?territorio_id=${fTerr}` : '/api/territorios/bitacora';
-        const res = await fetch(url);
+        const res = await fetch('/api/territorios/bitacora');
         cacheBitacoraTerr = await res.json();
-
-        const tbody = document.getElementById('tablaBitacoraTerritorios');
-        if (!tbody) return;
-        if (cacheBitacoraTerr.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:24px; color:#8f8f8f;">No hay registros en la bitácora todavía.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = '';
-        cacheBitacoraTerr.forEach(b => {
-            const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '-';
-            const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (b.estado_territorio === 'CIERRE' ? fechaStr : '');
-            const fechaCierreHtml = fechaCierreRaw ? `<span class="badge badge-si">${fechaCierreRaw}</span>` : '<span style="color:#8f8f8f; font-size:0.8rem;">En curso</span>';
-            const badgeManz = b.estado_manzanas === 'COMPLETO'
-                ? '<span class="badge badge-si">COMPLETO</span>'
-                : '<span class="badge badge-no">INCOMPLETO</span>';
-            const badgeTerr = b.estado_territorio === 'CIERRE'
-                ? '<span class="badge badge-si">CIERRE</span>'
-                : (b.estado_territorio === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : '<span class="badge badge-grp">INICIO</span>');
-            const acciones = isAdmin
-                ? `<button class="btn-action btn-edit" onclick="editarBitacora(${b.id})" title="Editar registro"><i class="fa-solid fa-pen-to-square"></i></button>
-                   <button class="btn-action btn-del" onclick="eliminar('territorios/bitacora', ${b.id})" title="Eliminar registro"><i class="fa-solid fa-trash-can"></i></button>`
-                : '-';
-            tbody.innerHTML += `
-                <tr>
-                    <td>${fechaStr}</td>
-                    <td>${fechaCierreHtml}</td>
-                    <td><strong>Territorio ${b.territorio_numero}</strong></td>
-                    <td><span class="badge badge-gray">Vuelta #${b.ciclo}</span></td>
-                    <td>Manz. <strong>${b.manzanas}</strong></td>
-                    <td>${badgeManz}</td>
-                    <td>${b.turno_nombre}</td>
-                    <td>${b.conductor_nombre}</td>
-                    <td>${badgeTerr}</td>
-                    <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
-                </tr>
-            `;
-        });
+        poblarOpcionesFiltrosBitacora();
+        renderTablaBitacoraFiltrada();
     } catch (e) { console.error(e); }
+}
+
+function renderTablaBitacoraFiltrada() {
+    const tbody = document.getElementById('tablaBitacoraTerritorios');
+    if (!tbody) return;
+
+    const fFechaIni = (document.getElementById('fBitFechaIni')?.value || '').trim().toLowerCase();
+    const fFechaFin = (document.getElementById('fBitFechaFin')?.value || '').trim().toLowerCase();
+    const fTerr = document.getElementById('fBitTerritorio')?.value || '';
+    const fCiclo = document.getElementById('fBitCiclo')?.value || '';
+    const fManz = (document.getElementById('fBitManzanas')?.value || '').trim().toLowerCase();
+    const fEstManz = document.getElementById('fBitEstManz')?.value || '';
+    const fTurno = document.getElementById('fBitTurno')?.value || '';
+    const fCond = document.getElementById('fBitConductor')?.value || '';
+    const fEstTerr = document.getElementById('fBitEstTerr')?.value || '';
+
+    const filtrados = cacheBitacoraTerr.filter(b => {
+        const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '-';
+        const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (b.estado_territorio === 'CIERRE' ? fechaStr : '');
+        const textoCierre = fechaCierreRaw || 'en curso';
+
+        if (fFechaIni && !fechaStr.toLowerCase().includes(fFechaIni)) return false;
+        if (fFechaFin && !textoCierre.toLowerCase().includes(fFechaFin)) return false;
+        if (fTerr && String(b.territorio_numero) !== String(fTerr)) return false;
+        if (fCiclo && String(b.ciclo || 1) !== String(fCiclo)) return false;
+        if (fManz) {
+            const listaM = String(b.manzanas || '').split(',').map(s => s.trim());
+            const coincideExacto = listaM.includes(fManz);
+            const coincideSub = String(b.manzanas || '').toLowerCase().includes(fManz);
+            if (!coincideExacto && !coincideSub) return false;
+        }
+        if (fEstManz && b.estado_manzanas !== fEstManz) return false;
+        if (fTurno && (b.turno_nombre || '').trim() !== fTurno) return false;
+        if (fCond && (b.conductor_nombre || '').trim() !== fCond) return false;
+        if (fEstTerr && b.estado_territorio !== fEstTerr) return false;
+        return true;
+    });
+
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:24px; color:#8f8f8f;">No se encontraron registros con los filtros seleccionados.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    filtrados.forEach(b => {
+        const fechaStr = b.fecha ? String(b.fecha).split('T')[0] : '-';
+        const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (b.estado_territorio === 'CIERRE' ? fechaStr : '');
+        const fechaCierreHtml = fechaCierreRaw ? `<span class="badge badge-si">${fechaCierreRaw}</span>` : '<span style="color:#8f8f8f; font-size:0.8rem;">En curso</span>';
+        const badgeManz = b.estado_manzanas === 'COMPLETO'
+            ? '<span class="badge badge-si">COMPLETO</span>'
+            : '<span class="badge badge-no">INCOMPLETO</span>';
+        const badgeTerr = b.estado_territorio === 'CIERRE'
+            ? '<span class="badge badge-si">CIERRE</span>'
+            : (b.estado_territorio === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : '<span class="badge badge-grp">INICIO</span>');
+        const acciones = isAdmin
+            ? `<button class="btn-action btn-edit" onclick="editarBitacora(${b.id})" title="Editar registro"><i class="fa-solid fa-pen-to-square"></i></button>
+               <button class="btn-action btn-del" onclick="eliminar('territorios/bitacora', ${b.id})" title="Eliminar registro"><i class="fa-solid fa-trash-can"></i></button>`
+            : '-';
+        tbody.innerHTML += `
+            <tr>
+                <td>${fechaStr}</td>
+                <td>${fechaCierreHtml}</td>
+                <td><strong>Territorio ${b.territorio_numero}</strong></td>
+                <td><span class="badge badge-gray">Vuelta #${b.ciclo}</span></td>
+                <td>Manz. <strong>${b.manzanas}</strong></td>
+                <td>${badgeManz}</td>
+                <td>${b.turno_nombre}</td>
+                <td>${b.conductor_nombre}</td>
+                <td>${badgeTerr}</td>
+                <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
+            </tr>
+        `;
+    });
 }
 
 // Formularios y modales de Territorios

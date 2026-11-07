@@ -635,3 +635,15 @@ html[data-theme="dark"] .terr-page-info { color: #a1a1a1; }
 html[data-theme="dark"] .terr-page-btn { background: #111; border-color: var(--border); color: #ededed; }
 html[data-theme="dark"] .terr-page-btn:hover:not(:disabled) { background: #1f1f1f; border-color: #ededed; }
 html[data-theme="dark"] .terr-page-btn.active { background: #ededed; color: #000; border-color: #ededed; }
+
+/* Filtros por columna en cabecera de Bitácora */
+.bit-header-filter-row th { vertical-align: top; padding: 10px 8px; }
+.bit-col-filter {
+    margin-top: 6px; width: 100%; min-width: 85px; height: 28px !important;
+    padding: 2px 6px !important; font-size: 0.74rem !important; font-weight: 500;
+    border-radius: 5px !important; border: 1px solid var(--border) !important;
+    background: #fff; color: #171717;
+}
+html[data-theme="dark"] .bit-col-filter {
+    background: #111; color: #ededed; border-color: var(--border) !important;
+}

@@ -813,7 +813,7 @@ app.get('/api/territorios/bitacora', soloGlobal, async (req, res) => {
         let sql = 'SELECT b.*, t.numero as territorio_numero, t.nombre as territorio_nombre, t.cantidad_manzanas FROM bitacora_territorios b JOIN territorios t ON b.territorio_id = t.id WHERE 1=1';
         const params = [];
         if (territorio_id) { sql += ' AND b.territorio_id = ?'; params.push(territorio_id); }
-        sql += ' ORDER BY b.fecha DESC, b.id DESC LIMIT 250';
+        sql += ' ORDER BY b.fecha DESC, b.id DESC LIMIT 2000';
         const [rows] = await pool.query(sql, params);
         res.json(rows);
     } catch (error) { res.status(500).json({ error: error.message }); }

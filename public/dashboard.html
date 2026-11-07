@@ -593,26 +593,68 @@
                     <div class="card">
                         <div class="card-header-flex">
                             <h3><i class="fa-solid fa-list-check"></i> Bitácora de Predicación</h3>
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <select id="filtroBitacoraTerritorio" onchange="cargarBitacoraTerritorios()" style="width:auto; min-width:180px;">
-                                    <option value="">(Todos los territorios)</option>
-                                </select>
-                            </div>
+                            <button type="button" class="btn-cancel" style="padding:5px 10px; font-size:0.78rem;" onclick="limpiarFiltrosBitacora()">
+                                <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros
+                            </button>
                         </div>
                         <div class="table-container">
                             <table>
                                 <thead>
-                                    <tr>
-                                        <th>Fecha Inicio</th>
-                                        <th>Fecha Cierre</th>
-                                        <th>Territorio</th>
-                                        <th>Vuelta</th>
-                                        <th>Manzanas Predicadas</th>
-                                        <th>Estado Manzanas</th>
-                                        <th>Turno</th>
-                                        <th>Conductor</th>
-                                        <th>Estado Territorio</th>
-                                        <th class="admin-only">Acción</th>
+                                    <tr class="bit-header-filter-row">
+                                        <th>
+                                            <div>Fecha Inicio</div>
+                                            <input type="text" id="fBitFechaIni" class="bit-col-filter" placeholder="YYYY-MM-DD..." oninput="renderTablaBitacoraFiltrada()">
+                                        </th>
+                                        <th>
+                                            <div>Fecha Cierre</div>
+                                            <input type="text" id="fBitFechaFin" class="bit-col-filter" placeholder="Fecha o En curso..." oninput="renderTablaBitacoraFiltrada()">
+                                        </th>
+                                        <th>
+                                            <div>Territorio</div>
+                                            <select id="fBitTerritorio" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()">
+                                                <option value="">Todos</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <div>Vuelta</div>
+                                            <select id="fBitCiclo" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()">
+                                                <option value="">Todas</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <div>Manzanas Predicadas</div>
+                                            <input type="text" id="fBitManzanas" class="bit-col-filter" placeholder="Ej: 1, 2..." oninput="renderTablaBitacoraFiltrada()">
+                                        </th>
+                                        <th>
+                                            <div>Estado Manzanas</div>
+                                            <select id="fBitEstManz" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()">
+                                                <option value="">Todos</option>
+                                                <option value="COMPLETO">COMPLETO</option>
+                                                <option value="INCOMPLETO">INCOMPLETO</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <div>Turno</div>
+                                            <select id="fBitTurno" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()">
+                                                <option value="">Todos</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <div>Conductor</div>
+                                            <select id="fBitConductor" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()">
+                                                <option value="">Todos</option>
+                                            </select>
+                                        </th>
+                                        <th>
+                                            <div>Estado Territorio</div>
+                                            <select id="fBitEstTerr" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()">
+                                                <option value="">Todos</option>
+                                                <option value="INICIO">INICIO</option>
+                                                <option value="AVANCE">AVANCE</option>
+                                                <option value="CIERRE">CIERRE</option>
+                                            </select>
+                                        </th>
+                                        <th class="admin-only" style="vertical-align:top;">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaBitacoraTerritorios"></tbody>
