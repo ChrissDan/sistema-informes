@@ -603,11 +603,19 @@
                                     <tr class="bit-header-filter-row">
                                         <th>
                                             <div>Fecha Inicio</div>
-                                            <input type="date" id="fBitFechaIni" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()" oninput="renderTablaBitacoraFiltrada()">
+                                            <div class="bit-date-filter-wrap">
+                                                <i class="fa-regular fa-calendar bit-date-filter-icon"></i>
+                                                <input type="text" id="fBitFechaIni" class="bit-col-filter bit-date-range-input" placeholder="Rango de fechas..." inputmode="none" autocomplete="off" readonly data-vcal="range" data-from="" data-to="">
+                                                <button type="button" class="bit-date-clear-btn" id="fBitFechaIniClear" title="Limpiar filtro" style="display:none;" onclick="limpiarRangoFechaBitacora('fBitFechaIni', event)"><i class="fa-solid fa-xmark"></i></button>
+                                            </div>
                                         </th>
                                         <th>
                                             <div>Fecha Cierre</div>
-                                            <input type="date" id="fBitFechaFin" class="bit-col-filter" onchange="renderTablaBitacoraFiltrada()" oninput="renderTablaBitacoraFiltrada()">
+                                            <div class="bit-date-filter-wrap">
+                                                <i class="fa-regular fa-calendar bit-date-filter-icon"></i>
+                                                <input type="text" id="fBitFechaFin" class="bit-col-filter bit-date-range-input" placeholder="Rango de fechas..." inputmode="none" autocomplete="off" readonly data-vcal="range" data-from="" data-to="">
+                                                <button type="button" class="bit-date-clear-btn" id="fBitFechaFinClear" title="Limpiar filtro" style="display:none;" onclick="limpiarRangoFechaBitacora('fBitFechaFin', event)"><i class="fa-solid fa-xmark"></i></button>
+                                            </div>
                                         </th>
                                         <th>
                                             <div>Territorio</div>
@@ -826,7 +834,7 @@
 
             <div style="grid-column: span 1;">
                 <label>Fecha Registro:</label>
-                <input type="date" name="fecha_ingreso" required>
+                <input type="text" class="vcal-single-input" name="fecha_ingreso" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required>
             </div>
 
             <div style="grid-column: span 2; margin-top:10px;">
@@ -881,11 +889,11 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Fecha de Nacimiento</label>
-                        <input type="date" name="fecha_nacimiento">
+                        <input type="text" class="vcal-single-input" name="fecha_nacimiento" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Fecha de Bautismo</label>
-                        <input type="date" name="fecha_bautismo">
+                        <input type="text" class="vcal-single-input" name="fecha_bautismo" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single">
                     </div>
                 </div>
 
@@ -1039,11 +1047,11 @@
             <input type="hidden" name="id" id="bitacoraId">
             <div class="col-span-1">
                 <label>Fecha de Inicio</label>
-                <input type="date" name="fecha" id="bitFecha" required>
+                <input type="text" class="vcal-single-input" name="fecha" id="bitFecha" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required>
             </div>
             <div class="col-span-1">
                 <label>Fecha de Cierre <span style="font-weight:400; color:#8f8f8f; font-size:0.75rem;">(Marca todo y cierra)</span></label>
-                <input type="date" name="fecha_cierre" id="bitFechaCierre" onchange="alCambiarFechaCierreBitacora()">
+                <input type="text" class="vcal-single-input" name="fecha_cierre" id="bitFechaCierre" placeholder="En curso (sin cierre)" inputmode="none" autocomplete="off" data-vcal="single" onchange="alCambiarFechaCierreBitacora()">
             </div>
             <div class="col-span-1">
                 <label>Turno de Predicación</label>
