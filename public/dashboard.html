@@ -1132,8 +1132,8 @@
                 <i class="fa-regular fa-calendar-check"></i> 2. Fechas y Asignación del Turno
             </div>
             <div class="col-span-2">
-                <label>Fecha de Registro <span class="label-hint-badge">Automática · Hoy</span></label>
-                <input type="text" name="fecha_registro" id="bitFechaRegistro" readonly data-locked="1">
+                <label>Fecha de Registro <span class="label-hint">(Se carga hoy · Editable)</span></label>
+                <input type="text" class="vcal-single-input" name="fecha_registro" id="bitFechaRegistro" placeholder="Seleccionar fecha..." inputmode="none" autocomplete="off" data-vcal="single" required>
             </div>
             <div class="col-span-1">
                 <label>Fecha de Inicio <span id="bitFechaHint" class="label-hint-badge"></span></label>
