@@ -1274,12 +1274,16 @@ function renderTarjetasTerritorios() {
 
         const vComp = t.vueltas_completas || 0;
         const vIncomp = t.vueltas_incompletas || 0;
+        const fechasCardHtml = t.fecha_inicio
+            ? `<div>Inicio: <strong>${String(t.fecha_inicio).split('T')[0]}</strong></div>
+               <div>Cierre: <strong>${t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : 'En curso'}</strong></div>`
+            : `<div>Sin registros</div>`;
         cont.innerHTML += `
             <div class="terr-card">
                 <div class="terr-card-head">
                     <div>
-                        <div class="terr-card-title">Territorio ${t.numero}</div>
-                        <div class="terr-card-sub">${t.nombre ? t.nombre + ' · ' : ''}${t.fecha_inicio ? 'Inicio: ' + String(t.fecha_inicio).split('T')[0] : 'Sin registros'}${t.fecha_cierre ? ' · Cierre: ' + String(t.fecha_cierre).split('T')[0] : ''}</div>
+                        <div class="terr-card-title">Territorio ${t.numero}${t.nombre ? ' · ' + t.nombre : ''}</div>
+                        <div class="terr-card-sub" style="margin-top:3px; line-height:1.45;">${fechasCardHtml}</div>
                     </div>
                     ${badgeEstado}
                 </div>

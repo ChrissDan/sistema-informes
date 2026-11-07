@@ -546,7 +546,7 @@ html[data-theme="dark"] .key-btn:active { background: #2c2c2c !important; }
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 .terr-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
-.terr-card-head { display: flex; justify-content: space-between; align-items: center; }
+.terr-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .terr-card-title { font-weight: 600; font-size: 0.95rem; color: #000; }
 .terr-card-sub { font-size: 0.78rem; color: #666; }
 
