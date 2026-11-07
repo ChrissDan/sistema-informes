@@ -570,11 +570,16 @@
                 <div id="subview-terr-resumen" class="terr-subview active">
                     <div class="card">
                         <div class="card-header-flex">
-                            <h3><i class="fa-solid fa-chart-simple"></i> Porcentaje de Cobertura por Territorio (Vuelta Actual)</h3>
+                            <div>
+                                <h3><i class="fa-solid fa-calendar-week"></i> Estado de la Última Semana y Asistente del Programa de Predicación</h3>
+                                <div id="subtituloSemanaTerritorios" style="font-size:0.78rem; color:#71717a; margin-top:3px;">Cargando resumen semanal...</div>
+                            </div>
+                            <button type="button" class="btn-cancel" style="padding:6px 12px; font-size:0.78rem;" onclick="copiarResumenProgramaPredicacion()">
+                                <i class="fa-brands fa-whatsapp" style="color:#16a34a; font-size:0.9rem;"></i> Copiar datos para Programa
+                            </button>
                         </div>
-                        <div style="position: relative; height: 260px; width: 100%;">
-                            <canvas id="graficaTerritorios"></canvas>
-                        </div>
+
+                        <div id="panelPlanificadorTerritorios" class="terr-planner-layout"></div>
                     </div>
 
                     <div class="card">

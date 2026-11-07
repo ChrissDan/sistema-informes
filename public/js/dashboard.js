@@ -1354,34 +1354,277 @@ function renderTablaCatalogoTerritorios() {
     });
 }
 
-function renderGraficaTerritorios() {
-    const canvas = document.getElementById('graficaTerritorios');
-    if (!canvas) return;
-    if (chartTerritoriosInstance) chartTerritoriosInstance.destroy();
-    const labels = cacheTerritorios.length ? cacheTerritorios.map(t => 'T-' + t.numero) : ['Sin territorios'];
-    const valores = cacheTerritorios.length ? cacheTerritorios.map(t => t.porcentaje) : [0];
-    const dark = typeof isDarkTheme === 'function' && isDarkTheme();
+let ultimoTextoResumenPrograma = '';
 
-    chartTerritoriosInstance = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: '% Cobertura (Vuelta Actual)',
-                data: valores,
-                backgroundColor: valores.map(p => p >= 100 ? '#10b981' : (dark ? '#ededed' : '#171717')),
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, max: 100, grid: { color: dark ? '#242424' : '#e2e8f0' } },
-                x: { grid: { display: false } }
-            }
+function obtenerManzanasFaltantesTerritorio(t) {
+    const det = t.manzanas_detalle || {};
+    const faltantes = [];
+    const aMedias = [];
+    for (let m = 1; m <= t.cantidad_manzanas; m++) {
+        if (det[m] !== 'COMPLETO') {
+            faltantes.push(m);
+            if (det[m] === 'INCOMPLETO') aMedias.push(m);
         }
+    }
+    return { faltantes, aMedias };
+}
+
+function renderGraficaTerritorios() {
+    const panel = document.getElementById('panelPlanificadorTerritorios');
+    const subEl = document.getElementById('subtituloSemanaTerritorios');
+    if (!panel) return;
+
+    const hoy = new Date();
+    const hoyStr = vcalFormatYMD(hoy);
+    const hace7 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 7);
+    const hace7Str = vcalFormatYMD(hace7);
+
+    if (subEl) {
+        subEl.innerHTML = `Semana actual: <strong>${formatearFechaCortaEs(hace7Str)}</strong> al <strong>${formatearFechaCortaEs(hoyStr)}</strong> · Guía para armar el reparto del <strong>Jueves</strong> (Vie–Dom) y del <strong>Domingo</strong> (Lun–Jue).`;
+    }
+
+    // 1. Movimientos de la última semana (a partir del día actual hacia atrás 7 días)
+    const regsUltimaSemana = cacheBitacoraTerr.filter(b => {
+        const fReg = b.fecha_registro ? String(b.fecha_registro).split('T')[0] : '';
+        const fFin = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : '';
+        const fIni = b.fecha ? String(b.fecha).split('T')[0] : '';
+        const fechaRef = fFin || fIni || fReg;
+        return (fechaRef >= hace7Str && fechaRef <= hoyStr) || (fIni >= hace7Str && fIni <= hoyStr) || (fFin >= hace7Str && fFin <= hoyStr);
+    });
+
+    const mostrandoRecientesFallback = regsUltimaSemana.length === 0 && cacheBitacoraTerr.length > 0;
+    const listaSemanaMostrar = mostrandoRecientesFallback ? cacheBitacoraTerr.slice(0, 6) : regsUltimaSemana;
+
+    let htmlUltimaSemana = '';
+    if (listaSemanaMostrar.length === 0) {
+        htmlUltimaSemana = `<div style="color:#71717a; font-size:0.78rem; padding:10px 4px;">Sin registros en la bitácora aún.</div>`;
+    } else {
+        if (mostrandoRecientesFallback) {
+            htmlUltimaSemana += `<div style="font-size:0.72rem; color:#d97706; background:#fffbeb; border:1px solid #fde68a; padding:5px 8px; border-radius:6px;">Sin actividad en los últimos 7 días (${hace7Str} a ${hoyStr}). Mostrando los últimos territorios trabajados:</div>`;
+        }
+        listaSemanaMostrar.forEach(b => {
+            const fIni = b.fecha ? String(b.fecha).split('T')[0] : '-';
+            const fFin = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : '';
+            const terrObj = cacheTerritorios.find(t => String(t.id) === String(b.territorio_id) || String(t.numero) === String(b.territorio_numero));
+            const badge = b.estado_territorio === 'INICIO - CIERRE'
+                ? '<span class="badge badge-si">INICIO - CIERRE</span>'
+                : (b.estado_territorio === 'CIERRE'
+                    ? '<span class="badge badge-si">CIERRE</span>'
+                    : (b.estado_territorio === 'AVANCE' ? '<span class="badge badge-no">AVANCE</span>' : '<span class="badge badge-grp">INICIO</span>'));
+            let extraPend = '';
+            if (terrObj && (terrObj.estado_actual === 'INICIO' || terrObj.estado_actual === 'AVANCE')) {
+                const { faltantes } = obtenerManzanasFaltantesTerritorio(terrObj);
+                if (faltantes.length > 0) extraPend = ` · <strong style="color:#d97706;">Faltan manz: ${faltantes.join(', ')}</strong>`;
+            }
+            htmlUltimaSemana += `
+                <div class="terr-planner-item">
+                    <div class="terr-planner-item-main">
+                        <div class="terr-planner-item-title">Territorio ${b.territorio_numero} <span style="font-weight:400; color:#71717a;">(Manz. ${b.manzanas})</span></div>
+                        <div class="terr-planner-item-sub">${fFin ? `Cerrado: ${fFin}` : `Iniciado: ${fIni}`} · ${b.conductor_nombre || '-'}${extraPend}</div>
+                    </div>
+                    ${badge}
+                </div>
+            `;
+        });
+    }
+
+    // 2. Territorios EN CURSO (Incompletos que tienen prioridad para terminarse)
+    const enCursoList = cacheTerritorios.filter(t => t.estado_actual === 'INICIO' || t.estado_actual === 'AVANCE');
+    let htmlEnCurso = '';
+    if (enCursoList.length === 0) {
+        htmlEnCurso = `<div style="color:#16a34a; font-size:0.78rem; padding:10px 4px;"><i class="fa-solid fa-circle-check"></i> ¡Todos los territorios iniciados están cerrados al 100%!</div>`;
+    } else {
+        enCursoList.forEach(t => {
+            const { faltantes, aMedias } = obtenerManzanasFaltantesTerritorio(t);
+            const fIni = t.fecha_inicio ? String(t.fecha_inicio).split('T')[0] : '-';
+            htmlEnCurso += `
+                <div class="terr-planner-item">
+                    <div class="terr-planner-item-main">
+                        <div class="terr-planner-item-title">Territorio ${t.numero} <span style="font-weight:500; color:#d97706;">(Faltan manz: ${faltantes.join(', ') || 'ninguna'})</span></div>
+                        <div class="terr-planner-item-sub">Iniciado: ${fIni} · Avance: ${t.completadas}/${t.cantidad_manzanas} (${t.porcentaje}%)${aMedias.length ? ` · A medias: ${aMedias.join(', ')}` : ''}</div>
+                    </div>
+                    <span class="badge ${t.estado_actual === 'AVANCE' ? 'badge-no' : 'badge-grp'}">${t.estado_actual}</span>
+                </div>
+            `;
+        });
+    }
+
+    // 3. Siguientes territorios recomendados para iniciar nueva vuelta (Sin iniciar primero, luego cierre más antiguo)
+    const disponiblesParaIniciar = cacheTerritorios
+        .filter(t => t.estado_actual !== 'INICIO' && t.estado_actual !== 'AVANCE')
+        .slice()
+        .sort((a, b) => {
+            const aSin = a.estado_actual === 'SIN INICIAR' ? 0 : 1;
+            const bSin = b.estado_actual === 'SIN INICIAR' ? 0 : 1;
+            if (aSin !== bSin) return aSin - bSin;
+            const fA = a.fecha_cierre ? String(a.fecha_cierre).split('T')[0] : '0000-00-00';
+            const fB = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : '0000-00-00';
+            if (fA !== fB) return fA.localeCompare(fB);
+            return (a.vueltas_completas || 0) - (b.vueltas_completas || 0);
+        });
+
+    const topRecomendados = disponiblesParaIniciar.slice(0, 8);
+    let htmlRecomendados = '';
+    topRecomendados.forEach((t, idx) => {
+        const ultCierre = t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : 'Nunca predicado';
+        htmlRecomendados += `
+            <div class="terr-planner-item">
+                <div class="terr-planner-item-main">
+                    <div class="terr-planner-item-title">#${idx + 1} · Territorio ${t.numero} <span style="font-weight:400; color:#71717a;">(Manz. 1 a ${t.cantidad_manzanas})</span></div>
+                    <div class="terr-planner-item-sub">Últ. cierre: <strong>${ultCierre}</strong> · Vueltas comp.: ${t.vueltas_completas || 0}</div>
+                </div>
+                <span class="badge badge-gray">${t.cantidad_manzanas} manz.</span>
+            </div>
+        `;
+    });
+
+    // 4. Armar cola priorizada de asignaciones para los bloques del Jueves (Vie, Sáb, Dom) y Domingo (Lun, Mar, Mié, Jue)
+    const colaSugerencias = [
+        ...enCursoList.map(t => {
+            const { faltantes } = obtenerManzanasFaltantesTerritorio(t);
+            return {
+                etiqueta: `Territorio ${t.numero}`,
+                detalle: `Terminar manz: ${faltantes.join(', ')}`,
+                tipo: 'CONTINUAR (En curso)',
+                badgeCls: 'badge-no'
+            };
+        }),
+        ...disponiblesParaIniciar.slice(0, 10).map(t => ({
+            etiqueta: `Territorio ${t.numero}`,
+            detalle: `Manzanas 1 a ${t.cantidad_manzanas}`,
+            tipo: t.estado_actual === 'SIN INICIAR' ? 'NUEVO (Sin iniciar)' : `INICIAR (Últ: ${t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : '-'})`,
+            badgeCls: 'badge-si'
+        }))
+    ];
+
+    // Calcular fechas próximas para Viernes, Sábado, Domingo y Lunes, Martes, Miércoles, Jueves
+    function proxFechaDiaSemana(targetDow) {
+        // targetDow: 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
+        const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        const diff = (targetDow - d.getDay() + 7) % 7;
+        d.setDate(d.getDate() + diff);
+        return d;
+    }
+
+    const dVie = proxFechaDiaSemana(5);
+    const dSab = new Date(dVie.getFullYear(), dVie.getMonth(), dVie.getDate() + 1);
+    const dDom = new Date(dVie.getFullYear(), dVie.getMonth(), dVie.getDate() + 2);
+
+    const dLun = proxFechaDiaSemana(1);
+    const dMar = new Date(dLun.getFullYear(), dLun.getMonth(), dLun.getDate() + 1);
+    const dMie = new Date(dLun.getFullYear(), dLun.getMonth(), dLun.getDate() + 2);
+    const dJue = new Date(dLun.getFullYear(), dLun.getMonth(), dLun.getDate() + 3);
+
+    const diasBloqueJueves = [
+        { nombre: 'Viernes', fecha: vcalFormatYMD(dVie), sug: colaSugerencias[0] },
+        { nombre: 'Sábado', fecha: vcalFormatYMD(dSab), sug: colaSugerencias[1] },
+        { nombre: 'Domingo', fecha: vcalFormatYMD(dDom), sug: colaSugerencias[2] }
+    ];
+
+    const diasBloqueDomingo = [
+        { nombre: 'Lunes', fecha: vcalFormatYMD(dLun), sug: colaSugerencias[3] || colaSugerencias[0] },
+        { nombre: 'Martes', fecha: vcalFormatYMD(dMar), sug: colaSugerencias[4] || colaSugerencias[1] },
+        { nombre: 'Miércoles', fecha: vcalFormatYMD(dMie), sug: colaSugerencias[5] || colaSugerencias[2] },
+        { nombre: 'Jueves', fecha: vcalFormatYMD(dJue), sug: colaSugerencias[6] || colaSugerencias[3] }
+    ];
+
+    const dowHoy = hoy.getDay(); // 3=Mié, 4=Jue -> preparando bloque Jueves; 0=Dom, 6=Sáb -> preparando bloque Domingo
+    const esTurnoJueves = (dowHoy === 3 || dowHoy === 4 || dowHoy === 5);
+
+    const renderFilasDias = (listaDias) => listaDias.map(d => `
+        <div class="terr-schedule-day-row">
+            <div class="terr-schedule-day-name">
+                <span>${d.nombre}</span>
+                <small>${formatearFechaCortaEs(d.fecha)}</small>
+            </div>
+            <div class="terr-schedule-day-sug">
+                ${d.sug ? `<div><strong>${d.sug.etiqueta}</strong> · <span>${d.sug.detalle}</span></div><span class="badge ${d.sug.badgeCls}">${d.sug.tipo}</span>` : '<span style="color:#71717a;">Sin sugerencia</span>'}
+            </div>
+        </div>
+    `).join('');
+
+    // Preparar texto para copiar a portapapeles / WhatsApp
+    ultimoTextoResumenPrograma = [
+        `📋 *RESUMEN PARA PROGRAMA DE PREDICACIÓN (${hoyStr})*`,
+        ``,
+        `⚠️ *1. TERRITORIOS EN CURSO (Prioridad para terminar):*`,
+        ...(enCursoList.length
+            ? enCursoList.map(t => {
+                const { faltantes } = obtenerManzanasFaltantesTerritorio(t);
+                return `• *Territorio ${t.numero}*: Faltan manzanas ${faltantes.join(', ')} (Iniciado: ${String(t.fecha_inicio).split('T')[0]})`;
+            })
+            : [`• Ninguno pendiente (todos cerrados)`]),
+        ``,
+        `🆕 *2. PRÓXIMOS TERRITORIOS SUGERIDOS (Más antiguos / Sin iniciar):*`,
+        ...topRecomendados.slice(0, 6).map(t => `• *Territorio ${t.numero}* (Manz. 1 a ${t.cantidad_manzanas}) — Últ. cierre: ${t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : 'Sin iniciar'}`),
+        ``,
+        `📅 *REPARTO DEL JUEVES (Viernes, Sábado y Domingo):*`,
+        ...diasBloqueJueves.map(d => `• *${d.nombre} (${d.fecha})*: ${d.sug ? `${d.sug.etiqueta} (${d.sug.detalle})` : '-'}`),
+        ``,
+        `📅 *REPARTO DEL DOMINGO (Lunes, Martes, Miércoles y Jueves):*`,
+        ...diasBloqueDomingo.map(d => `• *${d.nombre} (${d.fecha})*: ${d.sug ? `${d.sug.etiqueta} (${d.sug.detalle})` : '-'}`)
+    ].join('\n');
+
+    panel.innerHTML = `
+        <div class="terr-planner-top-grid">
+            <div class="terr-planner-box">
+                <div class="terr-planner-box-head">
+                    <div class="terr-planner-box-title"><i class="fa-solid fa-clock-rotate-left"></i> Últimos Territorios (Última Semana)</div>
+                    <span class="badge badge-gray">${regsUltimaSemana.length} en 7 días</span>
+                </div>
+                <div class="terr-planner-list">${htmlUltimaSemana}</div>
+            </div>
+
+            <div class="terr-planner-box">
+                <div class="terr-planner-box-head">
+                    <div class="terr-planner-box-title"><i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i> Prioridad 1: En Curso (Por Terminar)</div>
+                    <span class="badge ${enCursoList.length > 0 ? 'badge-no' : 'badge-si'}">${enCursoList.length} abiertos</span>
+                </div>
+                <div class="terr-planner-list">${htmlEnCurso}</div>
+            </div>
+
+            <div class="terr-planner-box">
+                <div class="terr-planner-box-head">
+                    <div class="terr-planner-box-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:#0284c7;"></i> Prioridad 2: Siguientes a Iniciar</div>
+                    <span class="badge badge-grp">Por antigüedad</span>
+                </div>
+                <div class="terr-planner-list">${htmlRecomendados}</div>
+            </div>
+        </div>
+
+        <div class="terr-schedule-grid">
+            <div class="terr-schedule-card ${esTurnoJueves ? 'is-active-block' : ''}">
+                <div class="terr-schedule-head">
+                    <div>
+                        <div class="terr-schedule-title"><i class="fa-solid fa-calendar-day"></i> Reparto del Jueves → Viernes, Sábado y Domingo</div>
+                        <div class="terr-schedule-sub">Propuesta automática priorizando territorios inconclusos y los más antiguos</div>
+                    </div>
+                    <span class="badge ${esTurnoJueves ? 'badge-si' : 'badge-gray'}">3 días (Vie–Dom)</span>
+                </div>
+                <div class="terr-schedule-days">${renderFilasDias(diasBloqueJueves)}</div>
+            </div>
+
+            <div class="terr-schedule-card ${!esTurnoJueves ? 'is-active-block' : ''}">
+                <div class="terr-schedule-head">
+                    <div>
+                        <div class="terr-schedule-title"><i class="fa-solid fa-calendar-week"></i> Reparto del Domingo → Lunes, Martes, Miércoles y Jueves</div>
+                        <div class="terr-schedule-sub">Continuación sugerida para los 4 días de predicación entre semana</div>
+                    </div>
+                    <span class="badge ${!esTurnoJueves ? 'badge-si' : 'badge-gray'}">4 días (Lun–Jue)</span>
+                </div>
+                <div class="terr-schedule-days">${renderFilasDias(diasBloqueDomingo)}</div>
+            </div>
+        </div>
+    `;
+}
+
+function copiarResumenProgramaPredicacion() {
+    if (!ultimoTextoResumenPrograma) renderGraficaTerritorios();
+    if (!ultimoTextoResumenPrograma) return;
+    navigator.clipboard.writeText(ultimoTextoResumenPrograma).then(() => {
+        Toast.fire({ icon: 'success', title: 'Resumen del programa copiado al portapapeles' });
+    }).catch(() => {
+        Swal.fire('Resumen para Programa', `<pre style="text-align:left; font-size:0.78rem; white-space:pre-wrap;">${ultimoTextoResumenPrograma}</pre>`, 'info');
     });
 }
 
@@ -1524,6 +1767,7 @@ async function cargarBitacoraTerritorios() {
         cacheBitacoraTerr = await res.json();
         poblarOpcionesFiltrosBitacora();
         renderTablaBitacoraFiltrada();
+        renderGraficaTerritorios();
     } catch (e) { console.error(e); }
 }
 

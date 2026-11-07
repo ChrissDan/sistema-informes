@@ -1132,3 +1132,202 @@ html[data-theme="dark"] .form-check-pill input[type="checkbox"] {
 html[data-theme="dark"] .form-submit-row {
     border-top-color: #27272a;
 }
+
+/* ==========================================================================
+   PANEL DE ÚLTIMA SEMANA Y ASISTENTE DE PROGRAMA DE PREDICACIÓN
+   ========================================================================== */
+.terr-planner-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.terr-planner-top-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 14px;
+}
+.terr-planner-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 15px 16px;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.terr-planner-box-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.terr-planner-box-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #09090b;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.terr-planner-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.terr-planner-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #e4e4e7;
+    font-size: 0.78rem;
+}
+.terr-planner-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.terr-planner-item-title {
+    font-weight: 700;
+    color: #09090b;
+    font-size: 0.82rem;
+}
+.terr-planner-item-sub {
+    color: #52525b;
+    font-size: 0.74rem;
+}
+
+.terr-schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+}
+.terr-schedule-card {
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 15px 16px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.terr-schedule-card.is-active-block {
+    border-color: #09090b;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+.terr-schedule-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.terr-schedule-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #09090b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.terr-schedule-sub {
+    font-size: 0.73rem;
+    color: #71717a;
+    margin-top: 2px;
+}
+.terr-schedule-days {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.terr-schedule-day-row {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    background: #f8fafc;
+    border: 1px solid #e4e4e7;
+    font-size: 0.78rem;
+}
+.terr-schedule-day-name {
+    font-weight: 700;
+    color: #18181b;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+.terr-schedule-day-name small {
+    font-weight: 500;
+    color: #71717a;
+    font-size: 0.68rem;
+}
+.terr-schedule-day-sug {
+    color: #27272a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Modo oscuro para el Planificador Semanal */
+html[data-theme="dark"] .terr-planner-box {
+    background: #0f0f12;
+    border-color: #27272a;
+}
+html[data-theme="dark"] .terr-planner-box-head {
+    border-bottom-color: #27272a;
+}
+html[data-theme="dark"] .terr-planner-box-title {
+    color: #f4f4f5;
+}
+html[data-theme="dark"] .terr-planner-item {
+    background: #16161a;
+    border-color: #27272a;
+}
+html[data-theme="dark"] .terr-planner-item-title {
+    color: #f4f4f5;
+}
+html[data-theme="dark"] .terr-planner-item-sub {
+    color: #a1a1aa;
+}
+html[data-theme="dark"] .terr-schedule-card {
+    background: #0c0c0e;
+    border-color: #27272a;
+}
+html[data-theme="dark"] .terr-schedule-card.is-active-block {
+    border-color: #ededed;
+}
+html[data-theme="dark"] .terr-schedule-head {
+    border-bottom-color: #27272a;
+}
+html[data-theme="dark"] .terr-schedule-title {
+    color: #f4f4f5;
+}
+html[data-theme="dark"] .terr-schedule-sub {
+    color: #a1a1aa;
+}
+html[data-theme="dark"] .terr-schedule-day-row {
+    background: #141417;
+    border-color: #27272a;
+}
+html[data-theme="dark"] .terr-schedule-day-name {
+    color: #f4f4f5;
+}
+html[data-theme="dark"] .terr-schedule-day-name small {
+    color: #a1a1aa;
+}
+html[data-theme="dark"] .terr-schedule-day-sug {
+    color: #e4e4e7;
+}
