@@ -1679,6 +1679,25 @@ function editarTurno(id) {
     abrirModal('turno', id);
 }
 
+function aplicarEstadoInputFechaInicioBitacora(fechaInicioCiclo = null) {
+    const fEl = document.getElementById('bitFecha');
+    const hintEl = document.getElementById('bitFechaHint');
+    if (!fEl) return;
+    if (fechaInicioCiclo) {
+        fEl.value = fechaInicioCiclo;
+        fEl.readOnly = true;
+        fEl.dataset.locked = '1';
+        if (hintEl) hintEl.textContent = `(Iniciado el ${fechaInicioCiclo})`;
+    } else {
+        if (fEl.dataset.locked === '1' || !fEl.value) {
+            fEl.value = new Date().toISOString().split('T')[0];
+        }
+        fEl.readOnly = false;
+        fEl.dataset.locked = '';
+        if (hintEl) hintEl.textContent = '';
+    }
+}
+
 async function resetFormBitacora() {
     const f = document.getElementById('formBitacora');
     if (!f) return;
@@ -1686,7 +1705,7 @@ async function resetFormBitacora() {
     document.getElementById('bitacoraId').value = '';
     manzanasSeleccionadasSet.clear();
     infoManzanasActual = null;
-    document.getElementById('bitFecha').value = new Date().toISOString().split('T')[0];
+    aplicarEstadoInputFechaInicioBitacora(null);
     const fcEl = document.getElementById('bitFechaCierre');
     if (fcEl) fcEl.value = '';
 
@@ -1744,6 +1763,7 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
     manzanasSeleccionadasSet.clear();
     grid.innerHTML = '';
     if (!terrId) {
+        aplicarEstadoInputFechaInicioBitacora(null);
         info.textContent = 'Selecciona un territorio para ver sus manzanas (1 a N)...';
         return;
     }
@@ -1753,6 +1773,14 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
         const res = await fetch(`/api/territorios/${terrId}/manzanas${q}`);
         const data = await res.json();
         infoManzanasActual = data;
+        if (!editId) {
+            aplicarEstadoInputFechaInicioBitacora(data.fecha_inicio_ciclo || null);
+        } else {
+            const fEl = document.getElementById('bitFecha');
+            const hintEl = document.getElementById('bitFechaHint');
+            if (fEl) { fEl.readOnly = false; fEl.dataset.locked = ''; }
+            if (hintEl) hintEl.textContent = '';
+        }
         const total = data.territorio.cantidad_manzanas;
         const map = data.manzanas || {};
         const compCount = Object.values(map).filter(v => v === 'COMPLETO').length;
@@ -2028,7 +2056,7 @@ function asegurarVCalPopover() {
 }
 
 function abrirVCal(inputEl) {
-    if (!inputEl || inputEl.disabled) return;
+    if (!inputEl || inputEl.disabled || inputEl.dataset.locked === '1') return;
     const pop = asegurarVCalPopover();
     const mode = inputEl.dataset.vcal === 'range' ? 'range' : 'single';
     vcalState.activeInput = inputEl;

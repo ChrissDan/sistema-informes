@@ -610,7 +610,8 @@ async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId =
         }
         if (r.estado_territorio === 'CIERRE' || Boolean(r.fecha_cierre)) cerradoExplicito = true;
     }
-    return { estadoPorManzana, cerradoExplicito, registrosCount: rows.length };
+    const fechaInicioCiclo = rows.length > 0 && rows[0].fecha ? String(rows[0].fecha).split('T')[0] : null;
+    return { estadoPorManzana, cerradoExplicito, registrosCount: rows.length, fechaInicioCiclo };
 }
 
 // Catálogo de Territorios + Progreso del ciclo actual
@@ -727,7 +728,7 @@ app.get('/api/territorios/:id/manzanas', soloGlobal, async (req, res) => {
             const [maxRow] = await pool.query('SELECT COALESCE(MAX(ciclo), 1) as ciclo FROM bitacora_territorios WHERE territorio_id = ?', [t.id]);
             ciclo = maxRow[0].ciclo || 1;
         }
-        const { estadoPorManzana, cerradoExplicito, registrosCount } = await calcularEstadoManzanasCiclo(pool, t.id, ciclo, exclude_id || null);
+        const { estadoPorManzana, cerradoExplicito, registrosCount, fechaInicioCiclo } = await calcularEstadoManzanasCiclo(pool, t.id, ciclo, exclude_id || null);
         const completadas = Object.values(estadoPorManzana).filter(v => v === 'COMPLETO').length;
         const cicloTerminado = !exclude_id && registrosCount > 0 && cerradoExplicito;
         res.json({
@@ -735,6 +736,7 @@ app.get('/api/territorios/:id/manzanas', soloGlobal, async (req, res) => {
             ciclo: cicloTerminado ? ciclo + 1 : ciclo,
             nueva_vuelta: cicloTerminado,
             registros_en_ciclo: cicloTerminado ? 0 : registrosCount,
+            fecha_inicio_ciclo: cicloTerminado ? null : fechaInicioCiclo,
             manzanas: cicloTerminado ? {} : estadoPorManzana
         });
     } catch (error) { res.status(500).json({ error: error.message }); }
