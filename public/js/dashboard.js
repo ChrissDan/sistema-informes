@@ -2094,12 +2094,11 @@ function renderTablaProgramaPreview() {
     }
 }
 
-async function generarBlobImagenPrograma() {
+function generarCanvasPrograma(scale = 2) {
     if (programaFilas.length === 0) return null;
     const { rangoTexto, mesVertical } = obtenerInfoCabeceraPrograma();
     const mostrarGrupo = Boolean(document.getElementById('progMostrarColGrupo')?.checked);
 
-    const scale = 2;
     const cols = mostrarGrupo
         ? [
             { key: 'mes', title: 'MES', w: 46 },
@@ -2292,7 +2291,234 @@ async function generarBlobImagenPrograma() {
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, totalW, totalH);
 
+    return canvas;
+}
+
+async function generarBlobImagenPrograma() {
+    const canvas = generarCanvasPrograma(2);
+    if (!canvas) return null;
     return new Promise(resolve => canvas.toBlob(blob => resolve(blob), 'image/png'));
+}
+
+function construirPDFProgramaA4Doc() {
+    const canvas = generarCanvasPrograma(3);
+    if (!canvas) return null;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgData = canvas.toDataURL('image/png');
+
+    // Hoja A4: 210mm × 297mm
+    const pageW = 210;
+    const pageH = 297;
+    const marginTop = 6;
+    const marginBottom = 6;
+    const marginSide = 8;
+    const gapBetween = 6;
+
+    const usableW = pageW - marginSide * 2; // 194mm
+    const usableH = pageH - marginTop - marginBottom; // 285mm
+    const slotH = (usableH - gapBetween * 2) / 3; // ~91mm por copia
+
+    const aspect = canvas.width / canvas.height;
+    let drawW = usableW;
+    let drawH = drawW / aspect;
+    if (drawH > slotH) {
+        drawH = slotH;
+        drawW = drawH * aspect;
+    }
+
+    const drawX = (pageW - drawW) / 2;
+
+    for (let i = 0; i < 3; i++) {
+        const slotTop = marginTop + i * (slotH + gapBetween);
+        const drawY = slotTop + (slotH - drawH) / 2;
+        doc.addImage(imgData, 'PNG', drawX, drawY, drawW, drawH, undefined, 'FAST');
+
+        if (i < 2) {
+            const cutY = slotTop + slotH + gapBetween / 2;
+            doc.setDrawColor(160, 160, 160);
+            doc.setLineWidth(0.25);
+            doc.setLineDashPattern([2, 2], 0);
+            doc.line(marginSide, cutY, pageW - marginSide, cutY);
+            doc.setLineDashPattern([], 0);
+        }
+    }
+
+    return doc;
+}
+
+async function descargarPDFProgramaA4TresCopias() {
+    if (programaFilas.length === 0) {
+        Swal.fire('Programa vacío', 'Primero agrega al menos una fila al programa.', 'warning');
+        return;
+    }
+    try {
+        const doc = construirPDFProgramaA4Doc();
+        if (!doc) return;
+        const { rangoTexto } = obtenerInfoCabeceraPrograma();
+        const safeName = rangoTexto.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]+/g, '_');
+        doc.save(`Programa_Servicio_${safeName}_A4_3copias.pdf`);
+        Toast.fire({ icon: 'success', title: 'PDF A4 (3 programas por hoja) descargado' });
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'No se pudo generar el PDF en formato A4.', 'error');
+    }
+}
+
+function imprimirProgramaA4TresCopias() {
+    if (programaFilas.length === 0) {
+        Swal.fire('Programa vacío', 'Primero agrega al menos una fila al programa.', 'warning');
+        return;
+    }
+    const canvas = generarCanvasPrograma(3);
+    if (!canvas) return;
+    const imgData = canvas.toDataURL('image/png');
+    const { rangoTexto } = obtenerInfoCabeceraPrograma();
+
+    const win = window.open('', '_blank');
+    if (!win) {
+        Swal.fire('Ventana bloqueada', 'Permite las ventanas emergentes en el navegador para abrir la vista de impresión.', 'warning');
+        return;
+    }
+
+    win.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Imprimir Programa A4 (3 Copias) - ${rangoTexto}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 5mm 7mm;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            background: #e4e4e7;
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 58px 12px 24px;
+        }
+        .print-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: #18181b;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+        }
+        .print-toolbar-title {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .print-toolbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .print-btn {
+            background: #ffffff;
+            color: #18181b;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .print-btn-close {
+            background: #27272a;
+            color: #e4e4e7;
+            border: 1px solid #3f3f46;
+        }
+        .a4-sheet {
+            width: 210mm;
+            height: 286mm;
+            background: #ffffff;
+            padding: 4mm 6mm;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .prog-slot {
+            width: 100%;
+            height: 31.8%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .prog-slot img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+        .cut-line {
+            width: 100%;
+            border-top: 1px dashed #a1a1aa;
+            position: relative;
+            height: 0;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .print-toolbar {
+                display: none !important;
+            }
+            .a4-sheet {
+                width: 100%;
+                height: 286mm;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-toolbar">
+        <div class="print-toolbar-title">Hoja A4 · 3 Programas del Servicio del Campo (${rangoTexto})</div>
+        <div class="print-toolbar-actions">
+            <button class="print-btn" onclick="if(window.opener && window.opener.descargarPDFProgramaA4TresCopias){ window.opener.descargarPDFProgramaA4TresCopias(); }" style="background:#dc2626; color:#fff;">📄 Descargar PDF A4</button>
+            <button class="print-btn" onclick="window.print()">🖨️ Imprimir Hoja A4</button>
+            <button class="print-btn print-btn-close" onclick="window.close()">Cerrar</button>
+        </div>
+    </div>
+    <div class="a4-sheet">
+        <div class="prog-slot"><img src="${imgData}" alt="Programa 1"></div>
+        <div class="cut-line"></div>
+        <div class="prog-slot"><img src="${imgData}" alt="Programa 2"></div>
+        <div class="cut-line"></div>
+        <div class="prog-slot"><img src="${imgData}" alt="Programa 3"></div>
+    </div>
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 250);
+        };
+    <\/script>
+</body>
+</html>`);
+    win.document.close();
 }
 
 function construirTextoWhatsAppPrograma() {
