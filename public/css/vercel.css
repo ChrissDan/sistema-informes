@@ -1331,3 +1331,147 @@ html[data-theme="dark"] .terr-schedule-day-name small {
 html[data-theme="dark"] .terr-schedule-day-sug {
     color: #e4e4e7;
 }
+
+/* ==========================================================================
+   TABLA OFICIAL "PROGRAMA DEL SERVICIO DEL CAMPO" (ESTILO IMAGEN)
+   ========================================================================== */
+.modal-box.modal-wide {
+    max-width: 920px !important;
+}
+.prog-preview-scroll {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #d4d4d8;
+    background: #ffffff;
+    padding: 8px;
+}
+.prog-sheet {
+    min-width: 720px;
+    background: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    border: 2px solid #000000;
+}
+.prog-sheet-banner {
+    background: #000000;
+    color: #ffffff;
+    text-align: center;
+    padding: 10px 14px;
+    border-bottom: 2px solid #ffffff;
+    font-weight: 700;
+    font-size: 1.02rem;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+}
+.prog-sheet-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+    background: #ffffff !important;
+}
+.prog-sheet-table th {
+    position: static !important;
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 1px solid #ffffff !important;
+    text-align: center !important;
+    padding: 7px 8px !important;
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em;
+}
+.prog-sheet-table td {
+    border: 1px solid #000000 !important;
+    padding: 7px 10px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    color: #000000 !important;
+    background: #ffffff;
+    font-size: 0.9rem !important;
+    line-height: 1.25;
+}
+.prog-sheet-table tr:hover td {
+    background: #ffffff;
+}
+.prog-cell-mes {
+    background: #000000 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    width: 38px;
+    padding: 8px 4px !important;
+    line-height: 1.35 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.05em;
+}
+.prog-cell-dia {
+    font-weight: 700 !important;
+    color: #000000 !important;
+    width: 96px;
+}
+.prog-dia-viernes { background: #fed7aa !important; }
+.prog-dia-sabado { background: #fecdd3 !important; }
+.prog-dia-domingo { background: #e9d5ff !important; }
+.prog-dia-lunes { background: #bfdbfe !important; }
+.prog-dia-martes { background: #bae6fd !important; }
+.prog-dia-miercoles { background: #dcfce7 !important; }
+.prog-dia-jueves { background: #fef08a !important; }
+
+.prog-conductor-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #e5e7eb;
+    color: #111827;
+    border-radius: 14px;
+    padding: 5px 12px;
+    min-height: 32px;
+    margin: 0 auto;
+    max-width: 220px;
+}
+.prog-conductor-text {
+    flex: 1;
+    text-align: center;
+    font-size: 0.84rem;
+    line-height: 1.2;
+}
+.prog-conductor-caret {
+    font-size: 0.65rem;
+    color: #111827;
+}
+
+.prog-rows-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+.prog-row-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: #f4f4f5;
+    border: 1px solid #d4d4d8;
+    font-size: 0.74rem;
+    color: #18181b;
+}
+.prog-row-chip button {
+    padding: 0 !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 0 !important;
+    border-radius: 4px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #ef4444 !important;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+html[data-theme="dark"] .prog-row-chip {
+    background: #18181b;
+    border-color: #27272a;
+    color: #f4f4f5;
+}

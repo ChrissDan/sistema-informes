@@ -574,8 +574,8 @@
                                 <h3><i class="fa-solid fa-calendar-week"></i> Estado de la Última Semana y Asistente del Programa de Predicación</h3>
                                 <div id="subtituloSemanaTerritorios" style="font-size:0.78rem; color:#71717a; margin-top:3px;">Cargando resumen semanal...</div>
                             </div>
-                            <button type="button" class="btn-cancel" style="padding:6px 12px; font-size:0.78rem;" onclick="copiarResumenProgramaPredicacion()">
-                                <i class="fa-brands fa-whatsapp" style="color:#16a34a; font-size:0.9rem;"></i> Copiar datos para Programa
+                            <button type="button" class="btn-primary" style="padding:7px 14px; font-size:0.82rem;" onclick="abrirModalPrograma()">
+                                <i class="fa-solid fa-calendar-plus"></i> Programa
                             </button>
                         </div>
 
@@ -1183,6 +1183,144 @@
                 </button>
             </div>
         </form>
+
+        <!-- FORMULARIO / CONSTRUCTOR: PROGRAMA DEL SERVICIO DEL CAMPO -->
+        <div id="formProgramaPredicacion" class="form-layout" style="display:none;">
+            <div class="col-span-2 form-section-title" style="justify-content:space-between; flex-wrap:wrap;">
+                <span><i class="fa-solid fa-calendar-week"></i> 1. Duración del Programa (Inicio y Fin)</span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="btn-cancel btn-mini-chip" onclick="aplicarRangoRapidoPrograma('finde')">
+                        <i class="fa-solid fa-bolt"></i> Vie – Dom
+                    </button>
+                    <button type="button" class="btn-cancel btn-mini-chip" onclick="aplicarRangoRapidoPrograma('semana')">
+                        <i class="fa-solid fa-bolt"></i> Dom – Jue
+                    </button>
+                </div>
+            </div>
+            <div class="col-span-1">
+                <label>Fecha de Inicio del Programa</label>
+                <input type="text" class="vcal-single-input" id="progFechaIni" placeholder="Fecha inicio..." inputmode="none" autocomplete="off" data-vcal="single" onchange="actualizarCabeceraPrograma()">
+            </div>
+            <div class="col-span-1">
+                <label>Fecha de Fin del Programa</label>
+                <input type="text" class="vcal-single-input" id="progFechaFin" placeholder="Fecha fin..." inputmode="none" autocomplete="off" data-vcal="single" onchange="actualizarCabeceraPrograma()">
+            </div>
+
+            <div class="col-span-2 form-section-title">
+                <i class="fa-solid fa-plus-circle"></i> 2. Agregar Turno / Salida al Programa
+            </div>
+            <div class="col-span-1">
+                <label>Día</label>
+                <select id="progDia">
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <label>Turno y Hora <span class="label-hint">(Elige turno o ajusta hora)</span></label>
+                <div style="display:grid; grid-template-columns: 1fr 115px; gap:6px;">
+                    <select id="progTurno" onchange="alCambiarTurnoPrograma()"></select>
+                    <input type="text" id="progHora" placeholder="Ej: 8:20 am" list="listaHorasPrograma">
+                </div>
+                <datalist id="listaHorasPrograma">
+                    <option value="8:20 am"></option>
+                    <option value="8:30 am"></option>
+                    <option value="9:00 am"></option>
+                    <option value="10:50 am"></option>
+                    <option value="3:30 pm"></option>
+                    <option value="3:50 pm"></option>
+                    <option value="4:00 pm"></option>
+                    <option value="6:30 pm"></option>
+                </datalist>
+            </div>
+
+            <div class="col-span-1">
+                <label>Grupo</label>
+                <select id="progGrupo">
+                    <option value="T">Todos (T)</option>
+                    <option value="1">Grupo 1</option>
+                    <option value="2">Grupo 2</option>
+                    <option value="3">Grupo 3</option>
+                    <option value="4">Grupo 4</option>
+                    <option value="5">Grupo 5</option>
+                    <option value="6">Grupo 6</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <label>Punto de Reunión</label>
+                <input type="text" id="progPunto" placeholder="Ej: Plaza Umachiri (15) / Salón del Reino" list="listaPuntosReunion">
+                <datalist id="listaPuntosReunion"></datalist>
+            </div>
+
+            <div class="col-span-1">
+                <label>Territorio Principal</label>
+                <select id="progTerritorio" onchange="cargarManzanasProgramaSelect()"></select>
+            </div>
+            <div class="col-span-1">
+                <label>2° Territorio <span class="label-hint">(Opcional, ej: T: 32, 33)</span></label>
+                <select id="progTerritorio2"></select>
+            </div>
+
+            <div class="col-span-2" id="progManzanasWrap" style="display:none;">
+                <div class="manzanas-header-bar">
+                    <label style="margin:0;">Manzanas específicas <span class="label-hint">(Opcional: deja sin marcar para todo el territorio, o marca ej. Mz: 1)</span></label>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarManzanasPendientesPrograma()">Marcar faltantes</button>
+                        <button type="button" class="btn-cancel btn-mini-chip" onclick="limpiarManzanasPrograma()">Todo el territorio</button>
+                    </div>
+                </div>
+                <div id="progManzanasGrid" class="manzanas-chips-grid"></div>
+            </div>
+
+            <div class="col-span-2">
+                <label>Conductor <span class="label-hint">(Puedes elegir de la lista o agregar teléfono opcional)</span></label>
+                <div style="display:grid; grid-template-columns: 1fr 160px; gap:8px;">
+                    <select id="progConductor"></select>
+                    <input type="text" id="progConductorTel" placeholder="Tel. opc. (ej: 956713954)">
+                </div>
+            </div>
+
+            <div class="col-span-2" style="display:flex; gap:8px; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <label class="form-check-pill" style="margin:0;">
+                    <input type="checkbox" id="progMostrarColGrupo" checked onchange="renderTablaProgramaPreview()">
+                    Mostrar columna "GRUPO" en la tabla
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-cancel" onclick="limpiarFilasPrograma()" style="padding:8px 12px; font-size:0.8rem;">
+                        <i class="fa-solid fa-trash-can"></i> Vaciar tabla
+                    </button>
+                    <button type="button" class="btn-primary" id="btnAgregarFilaProg" onclick="agregarFilaPrograma()" style="padding:8px 16px; font-size:0.84rem;">
+                        <i class="fa-solid fa-plus"></i> Agregar al Programa
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-span-2 form-section-title" style="margin-top:10px;">
+                <i class="fa-solid fa-table"></i> 3. Vista Previa del Programa del Servicio del Campo
+            </div>
+
+            <div class="col-span-2">
+                <div id="progTablaPreviewWrap" class="prog-preview-scroll"></div>
+                <div id="progFilasAdminList" class="prog-rows-chips"></div>
+            </div>
+
+            <div class="col-span-2 form-submit-row" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                <button type="button" class="btn-cancel" onclick="copiarTextoProgramaWhatsApp()" style="flex:1; min-width:150px;">
+                    <i class="fa-regular fa-file-lines"></i> Copiar Texto
+                </button>
+                <button type="button" class="btn-primary" onclick="copiarImagenProgramaPortapapeles()" style="flex:1; min-width:170px;">
+                    <i class="fa-regular fa-copy"></i> Copiar Tabla (Imagen)
+                </button>
+                <button type="button" class="btn-primary" onclick="compartirProgramaWhatsApp()" style="flex:1; min-width:190px; background:#16a34a; border-color:#16a34a; color:#fff;">
+                    <i class="fa-brands fa-whatsapp" style="font-size:1rem;"></i> Compartir por WhatsApp
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
