@@ -1205,7 +1205,7 @@ let cacheConductores = [];
 let cacheTurnos = [];
 let cacheBitacoraTerr = [];
 let chartTerritoriosInstance = null;
-let manzanasSeleccionadasSet = new Set();
+let manzanasEstadoSeleccionadoMap = new Map();
 let infoManzanasActual = null;
 
 function mostrarSubTabTerritorio(tab) {
@@ -2746,6 +2746,36 @@ async function cargarBitacoraTerritorios() {
     } catch (e) { console.error(e); }
 }
 
+function parseDetalleManzanasRowCliente(b) {
+    const map = {};
+    if (b && b.manzanas_detalle) {
+        try {
+            const parsed = typeof b.manzanas_detalle === 'string' ? JSON.parse(b.manzanas_detalle) : b.manzanas_detalle;
+            if (parsed && typeof parsed === 'object') {
+                for (const [k, v] of Object.entries(parsed)) {
+                    const num = parseInt(k, 10);
+                    if (!isNaN(num) && num >= 1) {
+                        map[num] = v === 'COMPLETO' ? 'COMPLETO' : 'INCOMPLETO';
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+    if (Object.keys(map).length === 0 && b && b.manzanas) {
+        const estDef = b.estado_manzanas === 'INCOMPLETO' ? 'INCOMPLETO' : 'COMPLETO';
+        String(b.manzanas).split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n) && n >= 1).forEach(m => {
+            map[m] = estDef;
+        });
+    }
+    const completas = [];
+    const incompletas = [];
+    Object.keys(map).map(Number).sort((a, b) => a - b).forEach(m => {
+        if (map[m] === 'COMPLETO') completas.push(m);
+        else incompletas.push(m);
+    });
+    return { map, completas, incompletas };
+}
+
 function renderTablaBitacoraFiltrada() {
     const tbody = document.getElementById('tablaBitacoraTerritorios');
     if (!tbody) return;
@@ -2799,7 +2829,11 @@ function renderTablaBitacoraFiltrada() {
             const coincideSub = String(b.manzanas || '').toLowerCase().includes(fManz);
             if (!coincideExacto && !coincideSub) return false;
         }
-        if (fEstManz && b.estado_manzanas !== fEstManz) return false;
+        if (fEstManz) {
+            const { completas, incompletas } = parseDetalleManzanasRowCliente(b);
+            if (fEstManz === 'COMPLETO' && completas.length === 0 && b.estado_manzanas !== 'COMPLETO') return false;
+            if (fEstManz === 'INCOMPLETO' && incompletas.length === 0 && b.estado_manzanas !== 'INCOMPLETO') return false;
+        }
         if (fTurno && (b.turno_nombre || '').trim() !== fTurno) return false;
         if (fCond && (b.conductor_nombre || '').trim() !== fCond) return false;
         if (fEstTerr && b.estado_territorio !== fEstTerr) return false;
@@ -2818,9 +2852,20 @@ function renderTablaBitacoraFiltrada() {
         const fechaCierreRaw = b.fecha_cierre ? String(b.fecha_cierre).split('T')[0] : (esCierreEst ? fechaStr : '');
         const fechaRegStr = b.fecha_registro ? String(b.fecha_registro).split('T')[0] : (fechaCierreRaw || fechaStr);
         const fechaCierreHtml = fechaCierreRaw ? `<span class="badge badge-si">${fechaCierreRaw}</span>` : '<span style="color:#8f8f8f; font-size:0.8rem;">En curso</span>';
-        const badgeManz = b.estado_manzanas === 'COMPLETO'
-            ? '<span class="badge badge-si">COMPLETO</span>'
-            : '<span class="badge badge-no">INCOMPLETO</span>';
+        const { completas, incompletas } = parseDetalleManzanasRowCliente(b);
+        let badgeManz = '';
+        if (completas.length > 0 && incompletas.length > 0) {
+            badgeManz = `
+                <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
+                    <span class="badge badge-si">COMPLETO (Mz. ${completas.join(', ')})</span>
+                    <span class="badge badge-no">INCOMPLETO (Mz. ${incompletas.join(', ')})</span>
+                </div>
+            `;
+        } else if (incompletas.length > 0 || b.estado_manzanas === 'INCOMPLETO') {
+            badgeManz = '<span class="badge badge-no">INCOMPLETO</span>';
+        } else {
+            badgeManz = '<span class="badge badge-si">COMPLETO</span>';
+        }
         const badgeTerr = b.estado_territorio === 'INICIO - CIERRE'
             ? '<span class="badge badge-si">INICIO - CIERRE</span>'
             : (b.estado_territorio === 'CIERRE'
@@ -2965,7 +3010,7 @@ async function resetFormBitacora() {
     if (!f) return;
     f.reset();
     document.getElementById('bitacoraId').value = '';
-    manzanasSeleccionadasSet.clear();
+    manzanasEstadoSeleccionadoMap.clear();
     infoManzanasActual = null;
     const fRegEl = document.getElementById('bitFechaRegistro');
     if (fRegEl) fRegEl.value = vcalTodayStr();
@@ -2993,6 +3038,47 @@ async function resetFormBitacora() {
 
     document.getElementById('bitInfoTerritorio').textContent = 'Selecciona un territorio para ver sus manzanas (1 a N)...';
     document.getElementById('bitManzanasGrid').innerHTML = '';
+    actualizarResumenSeleccionManzanas();
+}
+
+function aplicarEstadoVisualChipManzana(m, chipEl, estadoSel) {
+    if (!chipEl) return;
+    const stPrevio = (!infoManzanasActual?.nueva_vuelta && infoManzanasActual?.manzanas) ? infoManzanasActual.manzanas[m] : null;
+    if (estadoSel === 'INCOMPLETO') {
+        chipEl.className = 'manzana-chip selected-incompleto';
+        chipEl.innerHTML = `<span>Manz. ${m}</span><small>◐ Incompleta</small>`;
+    } else if (estadoSel === 'COMPLETO') {
+        chipEl.className = 'manzana-chip selected-completo';
+        chipEl.innerHTML = `<span>Manz. ${m}</span><small>✔ Completa</small>`;
+    } else {
+        chipEl.className = 'manzana-chip' + (stPrevio === 'INCOMPLETO' ? ' incompleto' : '');
+        chipEl.innerHTML = `<span>Manz. ${m}</span><small>${stPrevio === 'INCOMPLETO' ? 'A medias' : 'Disponible'}</small>`;
+    }
+}
+
+function actualizarResumenSeleccionManzanas() {
+    const resEl = document.getElementById('bitResumenSeleccionManzanas');
+    if (!resEl) return;
+    if (manzanasEstadoSeleccionadoMap.size === 0) {
+        resEl.style.display = 'none';
+        resEl.innerHTML = '';
+        return;
+    }
+    const completas = [];
+    const incompletas = [];
+    Array.from(manzanasEstadoSeleccionadoMap.keys()).sort((a, b) => a - b).forEach(m => {
+        if (manzanasEstadoSeleccionadoMap.get(m) === 'COMPLETO') completas.push(m);
+        else incompletas.push(m);
+    });
+    const badges = [];
+    if (incompletas.length > 0) {
+        badges.push(`<span class="badge badge-no">◐ Incompletas: Manz. ${incompletas.join(', ')}</span>`);
+    }
+    if (completas.length > 0) {
+        badges.push(`<span class="badge badge-si">✔ Completas: Manz. ${completas.join(', ')}</span>`);
+    }
+    resEl.style.display = 'flex';
+    resEl.innerHTML = `<span style="font-weight:600; color:#52525b;">Seleccionadas:</span> ${badges.join(' ')}`;
 }
 
 async function editarBitacora(id) {
@@ -3010,13 +3096,16 @@ async function editarBitacora(id) {
     document.getElementById('bitTerritorioSelect').value = obj.territorio_id;
     await cargarSelectorManzanasBitacora(obj.id, obj.ciclo);
 
-    const prevManz = String(obj.manzanas).split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n));
-    prevManz.forEach(m => {
-        manzanasSeleccionadasSet.add(m);
-        const chip = document.querySelector(`#bitManzanasGrid .manzana-chip[data-manzana="${m}"]`);
-        if (chip) chip.classList.add('selected');
+    const { map } = parseDetalleManzanasRowCliente(obj);
+    Object.entries(map).forEach(([mStr, est]) => {
+        const m = parseInt(mStr, 10);
+        if (!isNaN(m)) {
+            manzanasEstadoSeleccionadoMap.set(m, est);
+            const chip = document.querySelector(`#bitManzanasGrid .manzana-chip[data-manzana="${m}"]`);
+            if (chip) aplicarEstadoVisualChipManzana(m, chip, est);
+        }
     });
-    document.getElementById('bitEstadoManzanas').value = obj.estado_manzanas;
+    actualizarResumenSeleccionManzanas();
     document.getElementById('bitEstadoTerritorio').value = obj.estado_territorio;
     abrirModal('bitacora', id);
 }
@@ -3026,8 +3115,9 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
     const grid = document.getElementById('bitManzanasGrid');
     const info = document.getElementById('bitInfoTerritorio');
     const editId = excludeBitacoraId || document.getElementById('bitacoraId').value || '';
-    manzanasSeleccionadasSet.clear();
+    manzanasEstadoSeleccionadoMap.clear();
     grid.innerHTML = '';
+    actualizarResumenSeleccionManzanas();
     if (!terrId) {
         aplicarEstadoInputFechaInicioBitacora(null);
         info.textContent = 'Selecciona un territorio para ver sus manzanas (1 a N)...';
@@ -3052,9 +3142,9 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
         const compCount = Object.values(map).filter(v => v === 'COMPLETO').length;
 
         if (data.nueva_vuelta) {
-            info.innerHTML = `<strong>¡Nueva vuelta (#${data.ciclo})!</strong> El recorrido anterior se completó al 100%. Todas las manzanas (1 a ${total}) están disponibles nuevamente.`;
+            info.innerHTML = `<strong>¡Nueva vuelta (#${data.ciclo})!</strong> El recorrido anterior se completó al 100%. Haz <strong>1 clic</strong> para marcar manzana <strong>Incompleta</strong> y <strong>2 clics</strong> para <strong>Completa</strong>.`;
         } else {
-            info.innerHTML = `<strong>Territorio ${data.territorio.numero}</strong> · Vuelta #${data.ciclo} · Completadas: <strong>${compCount} de ${total}</strong> manzanas. Las manzanas ya completas están bloqueadas.`;
+            info.innerHTML = `<strong>Territorio ${data.territorio.numero}</strong> · Vuelta #${data.ciclo} · Completadas: <strong>${compCount} de ${total}</strong>. Haz <strong>1 clic = Incompleta</strong> · <strong>2 clics = Completa</strong>.`;
         }
 
         for (let m = 1; m <= total; m++) {
@@ -3064,16 +3154,15 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
                 chip.className = 'manzana-chip disabled';
                 chip.innerHTML = `<span>Manz. ${m}</span><small>✔ Completa</small>`;
             } else {
-                chip.className = 'manzana-chip' + (st === 'INCOMPLETO' ? ' incompleto' : '');
                 chip.dataset.manzana = m;
-                chip.innerHTML = `<span>Manz. ${m}</span><small>${st === 'INCOMPLETO' ? 'A medias' : 'Disponible'}</small>`;
+                aplicarEstadoVisualChipManzana(m, chip, null);
                 chip.addEventListener('click', () => toggleChipManzana(m, chip));
             }
             grid.appendChild(chip);
         }
         const fcEl = document.getElementById('bitFechaCierre');
         if (!editId && fcEl && fcEl.value) {
-            seleccionarTodasManzanasDisp(true);
+            seleccionarTodasManzanasDisp('COMPLETO');
         } else {
             sugerirEstadoTerritorio();
         }
@@ -3081,32 +3170,49 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
 }
 
 function toggleChipManzana(m, chipEl) {
-    if (manzanasSeleccionadasSet.has(m)) {
-        manzanasSeleccionadasSet.delete(m);
-        chipEl.classList.remove('selected');
+    const actual = manzanasEstadoSeleccionadoMap.get(m);
+    let siguiente = null;
+    if (!actual) {
+        siguiente = 'INCOMPLETO'; // 1er clic: Incompleta
+    } else if (actual === 'INCOMPLETO') {
+        siguiente = 'COMPLETO';   // 2do clic: Completa
     } else {
-        manzanasSeleccionadasSet.add(m);
-        chipEl.classList.add('selected');
+        siguiente = null;         // 3er clic: Desmarcar
     }
+
+    if (siguiente) {
+        manzanasEstadoSeleccionadoMap.set(m, siguiente);
+    } else {
+        manzanasEstadoSeleccionadoMap.delete(m);
+    }
+    aplicarEstadoVisualChipManzana(m, chipEl, siguiente);
+    actualizarResumenSeleccionManzanas();
     sugerirEstadoTerritorio();
 }
 
-function seleccionarTodasManzanasDisp(marcar) {
+function seleccionarTodasManzanasDisp(modo) {
+    const estadoObjetivo = (modo === 'COMPLETO' || modo === true)
+        ? 'COMPLETO'
+        : (modo === 'INCOMPLETO' ? 'INCOMPLETO' : null);
+
     document.querySelectorAll('#bitManzanasGrid .manzana-chip:not(.disabled)').forEach(chip => {
         const m = parseInt(chip.dataset.manzana, 10);
-        if (marcar) { manzanasSeleccionadasSet.add(m); chip.classList.add('selected'); }
-        else { manzanasSeleccionadasSet.delete(m); chip.classList.remove('selected'); }
+        if (estadoObjetivo) {
+            manzanasEstadoSeleccionadoMap.set(m, estadoObjetivo);
+        } else {
+            manzanasEstadoSeleccionadoMap.delete(m);
+        }
+        aplicarEstadoVisualChipManzana(m, chip, estadoObjetivo);
     });
+    actualizarResumenSeleccionManzanas();
     sugerirEstadoTerritorio();
 }
 
 function alCambiarFechaCierreBitacora() {
     const fcEl = document.getElementById('bitFechaCierre');
-    const selEstManz = document.getElementById('bitEstadoManzanas');
     if (fcEl && fcEl.value) {
-        // Si se coloca fecha de cierre, marcar todas las manzanas disponibles automáticamente (flexible para desmarcar)
-        if (selEstManz) selEstManz.value = 'COMPLETO';
-        seleccionarTodasManzanasDisp(true);
+        // Si se coloca fecha de cierre, marcar todas las manzanas disponibles como COMPLETAS automáticamente
+        seleccionarTodasManzanasDisp('COMPLETO');
     }
     sugerirEstadoTerritorio();
 }
@@ -3197,8 +3303,8 @@ document.getElementById('formTurno')?.addEventListener('submit', async (e) => {
 
 document.getElementById('formBitacora')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (manzanasSeleccionadasSet.size === 0) {
-        Swal.fire('Faltan manzanas', 'Selecciona al menos una manzana predicada en este turno.', 'warning');
+    if (manzanasEstadoSeleccionadoMap.size === 0) {
+        Swal.fire('Faltan manzanas', 'Selecciona al menos una manzana predicada en este turno (1 clic = Incompleta, 2 clics = Completa).', 'warning');
         return;
     }
     const selTurno = document.getElementById('bitTurnoSelect');
@@ -3206,13 +3312,23 @@ document.getElementById('formBitacora')?.addEventListener('submit', async (e) =>
     const turnoNombre = selTurno.options[selTurno.selectedIndex]?.getAttribute('data-nombre') || selTurno.value;
     const condNombre = selCond.options[selCond.selectedIndex]?.getAttribute('data-nombre') || selCond.value;
 
+    const listaOrdenada = Array.from(manzanasEstadoSeleccionadoMap.keys()).sort((a, b) => a - b);
+    const manzanasDetalleObj = {};
+    let tieneIncompletas = false;
+    listaOrdenada.forEach(m => {
+        const est = manzanasEstadoSeleccionadoMap.get(m);
+        manzanasDetalleObj[m] = est;
+        if (est === 'INCOMPLETO') tieneIncompletas = true;
+    });
+
     const payload = {
         fecha_registro: document.getElementById('bitFechaRegistro')?.value || vcalTodayStr(),
         fecha: document.getElementById('bitFecha').value,
         fecha_cierre: document.getElementById('bitFechaCierre')?.value || null,
         territorio_id: document.getElementById('bitTerritorioSelect').value,
-        manzanas: Array.from(manzanasSeleccionadasSet).sort((a, b) => a - b).join(', '),
-        estado_manzanas: document.getElementById('bitEstadoManzanas').value,
+        manzanas: listaOrdenada.join(', '),
+        estado_manzanas: tieneIncompletas ? 'INCOMPLETO' : 'COMPLETO',
+        manzanas_detalle: manzanasDetalleObj,
         turno_id: selTurno.value || null,
         turno_nombre: turnoNombre,
         conductor_id: selCond.value || null,

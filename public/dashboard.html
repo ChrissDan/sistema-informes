@@ -1119,10 +1119,13 @@
             </div>
             <div class="col-span-2">
                 <div class="manzanas-header-bar">
-                    <label style="margin:0;">Manzanas Predicadas en el Turno <span class="label-hint">(Haz clic para marcar)</span></label>
-                    <div style="display:flex; gap:6px;">
-                        <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarTodasManzanasDisp(true)">
-                            <i class="fa-solid fa-check-double"></i> Marcar disponibles
+                    <label style="margin:0;">Manzanas Predicadas <span class="label-hint">(1 clic = Incompleta · 2 clics = Completa)</span></label>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarTodasManzanasDisp('INCOMPLETO')">
+                            <i class="fa-solid fa-circle-half-stroke"></i> Todas incompletas
+                        </button>
+                        <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarTodasManzanasDisp('COMPLETO')">
+                            <i class="fa-solid fa-check-double"></i> Todas completas
                         </button>
                         <button type="button" class="btn-cancel btn-mini-chip" onclick="seleccionarTodasManzanasDisp(false)">
                             <i class="fa-solid fa-eraser"></i> Limpiar
@@ -1131,6 +1134,7 @@
                 </div>
                 <div id="bitInfoTerritorio" class="terr-bitacora-info">Selecciona un territorio para ver sus manzanas (1 a N)...</div>
                 <div id="bitManzanasGrid" class="manzanas-chips-grid"></div>
+                <div id="bitResumenSeleccionManzanas" class="manzanas-selection-summary" style="display:none;"></div>
             </div>
 
             <div class="col-span-2 form-section-title">
@@ -1158,16 +1162,9 @@
             </div>
 
             <div class="col-span-2 form-section-title">
-                <i class="fa-solid fa-flag-checkered"></i> 3. Estado del Registro
+                <i class="fa-solid fa-flag-checkered"></i> 3. Estado del Territorio
             </div>
-            <div class="col-span-1">
-                <label>Estado de las Manzanas Marcadas</label>
-                <select name="estado_manzanas" id="bitEstadoManzanas" required onchange="sugerirEstadoTerritorio()">
-                    <option value="COMPLETO">COMPLETO (Terminadas)</option>
-                    <option value="INCOMPLETO">INCOMPLETO (A medias)</option>
-                </select>
-            </div>
-            <div class="col-span-1">
+            <div class="col-span-2">
                 <label>Estado del Territorio</label>
                 <select name="estado_territorio" id="bitEstadoTerritorio" required>
                     <option value="INICIO">INICIO (Nueva vuelta)</option>

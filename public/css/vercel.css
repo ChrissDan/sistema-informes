@@ -582,11 +582,43 @@ html[data-theme="dark"] .key-btn:active { background: #2c2c2c !important; }
 .manzana-chip:hover:not(.disabled) { border-color: #000; }
 .manzana-chip.selected { background: #000; color: #fff; border-color: #000; }
 .manzana-chip.selected small { color: #ccc; }
-.manzana-chip.incompleto:not(.selected) { background: #fff8e6; border-color: #f5a623; color: #92400e; }
-.manzana-chip.incompleto:not(.selected) small { color: #b45309; }
+.manzana-chip.selected-incompleto {
+    background: #f59e0b !important;
+    color: #ffffff !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.28);
+}
+.manzana-chip.selected-incompleto small {
+    color: #fffbeb !important;
+    font-weight: 700 !important;
+}
+.manzana-chip.selected-completo {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    border-color: #15803d !important;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.28);
+}
+.manzana-chip.selected-completo small {
+    color: #dcfce7 !important;
+    font-weight: 700 !important;
+}
+.manzana-chip.incompleto:not(.selected):not(.selected-incompleto):not(.selected-completo) { background: #fff8e6; border-color: #f5a623; color: #92400e; }
+.manzana-chip.incompleto:not(.selected):not(.selected-incompleto):not(.selected-completo) small { color: #b45309; }
 .manzana-chip.disabled {
     background: #f2f2f2; border-color: var(--border); color: #a3a3a3;
     cursor: not-allowed; opacity: 0.7;
+}
+.manzanas-selection-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #fafafa;
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
 }
 
 /* Modo oscuro para Territorios */
@@ -609,8 +641,9 @@ html[data-theme="dark"] .manzana-chip small { color: #8f8f8f; }
 html[data-theme="dark"] .manzana-chip:hover:not(.disabled) { border-color: #ededed; }
 html[data-theme="dark"] .manzana-chip.selected { background: #ededed; color: #000; border-color: #ededed; }
 html[data-theme="dark"] .manzana-chip.selected small { color: #333; }
-html[data-theme="dark"] .manzana-chip.incompleto:not(.selected) { background: #2b1d07; border-color: #935f10; color: #f5a623; }
+html[data-theme="dark"] .manzana-chip.incompleto:not(.selected):not(.selected-incompleto):not(.selected-completo) { background: #2b1d07; border-color: #935f10; color: #f5a623; }
 html[data-theme="dark"] .manzana-chip.disabled { background: #161616; border-color: #222; color: #555; }
+html[data-theme="dark"] .manzanas-selection-summary { background: #111114; border-color: #27272a; color: #e4e4e7; }
 
 
 /* Paginación de Tarjetas de Territorios */

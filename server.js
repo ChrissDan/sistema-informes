@@ -594,6 +594,63 @@ function parseManzanasList(str) {
     return String(str).split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n) && n >= 1);
 }
 
+function parseManzanasDetalleRow(r) {
+    const map = {};
+    if (r && r.manzanas_detalle) {
+        try {
+            const parsed = typeof r.manzanas_detalle === 'string' ? JSON.parse(r.manzanas_detalle) : r.manzanas_detalle;
+            if (parsed && typeof parsed === 'object') {
+                for (const [k, v] of Object.entries(parsed)) {
+                    const num = parseInt(k, 10);
+                    if (!isNaN(num) && num >= 1) {
+                        map[num] = v === 'COMPLETO' ? 'COMPLETO' : 'INCOMPLETO';
+                    }
+                }
+                if (Object.keys(map).length > 0) return map;
+            }
+        } catch (e) {}
+    }
+    const nums = parseManzanasList(r?.manzanas);
+    const estDefault = r?.estado_manzanas === 'INCOMPLETO' ? 'INCOMPLETO' : 'COMPLETO';
+    for (const m of nums) {
+        map[m] = estDefault;
+    }
+    return map;
+}
+
+function normalizarPayloadManzanas(manzanas, estado_manzanas, manzanas_detalle) {
+    const detalleMap = {};
+    if (manzanas_detalle) {
+        try {
+            const parsed = typeof manzanas_detalle === 'string' ? JSON.parse(manzanas_detalle) : manzanas_detalle;
+            if (parsed && typeof parsed === 'object') {
+                for (const [k, v] of Object.entries(parsed)) {
+                    const num = parseInt(k, 10);
+                    if (!isNaN(num) && num >= 1) {
+                        detalleMap[num] = v === 'COMPLETO' ? 'COMPLETO' : 'INCOMPLETO';
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+    const listaDesdeStr = parseManzanasList(manzanas);
+    if (Object.keys(detalleMap).length === 0 && listaDesdeStr.length > 0) {
+        const estDef = estado_manzanas === 'INCOMPLETO' ? 'INCOMPLETO' : 'COMPLETO';
+        listaDesdeStr.forEach(m => { detalleMap[m] = estDef; });
+    }
+    const listaManz = Object.keys(detalleMap).map(Number).sort((a, b) => a - b);
+    const tieneIncompletas = listaManz.some(m => detalleMap[m] === 'INCOMPLETO');
+    const estadoResumen = tieneIncompletas ? 'INCOMPLETO' : 'COMPLETO';
+    const detalleOrdenado = {};
+    listaManz.forEach(m => { detalleOrdenado[m] = detalleMap[m]; });
+    return {
+        listaManz,
+        manzStr: listaManz.join(', '),
+        estadoResumen,
+        detalleJson: JSON.stringify(detalleOrdenado)
+    };
+}
+
 function formatearFechaYMD(val) {
     if (!val) return null;
     if (val instanceof Date) {
@@ -606,7 +663,7 @@ function formatearFechaYMD(val) {
 }
 
 async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId = null) {
-    let sql = 'SELECT id, fecha, fecha_cierre, manzanas, estado_manzanas, estado_territorio FROM bitacora_territorios WHERE territorio_id = ? AND ciclo = ?';
+    let sql = 'SELECT id, fecha, fecha_cierre, manzanas, estado_manzanas, manzanas_detalle, estado_territorio FROM bitacora_territorios WHERE territorio_id = ? AND ciclo = ?';
     const params = [territorio_id, ciclo];
     if (excludeId) { sql += ' AND id != ?'; params.push(excludeId); }
     sql += ' ORDER BY fecha ASC, id ASC';
@@ -614,9 +671,10 @@ async function calcularEstadoManzanasCiclo(db, territorio_id, ciclo, excludeId =
     const estadoPorManzana = {};
     let cerradoExplicito = false;
     for (const r of rows) {
-        const nums = parseManzanasList(r.manzanas);
-        for (const m of nums) {
-            if (r.estado_manzanas === 'COMPLETO') estadoPorManzana[m] = 'COMPLETO';
+        const detRow = parseManzanasDetalleRow(r);
+        for (const [mStr, estM] of Object.entries(detRow)) {
+            const m = Number(mStr);
+            if (estM === 'COMPLETO') estadoPorManzana[m] = 'COMPLETO';
             else if (estadoPorManzana[m] !== 'COMPLETO') estadoPorManzana[m] = 'INCOMPLETO';
         }
         if (r.estado_territorio === 'CIERRE' || r.estado_territorio === 'INICIO - CIERRE' || Boolean(r.fecha_cierre)) cerradoExplicito = true;
@@ -654,10 +712,11 @@ app.get('/api/territorios', soloGlobal, async (req, res) => {
             const estadoPorManzana = {};
             let estadoTerritorioActual = 'SIN INICIAR';
             for (const r of regsCiclo) {
-                const nums = parseManzanasList(r.manzanas);
-                for (const m of nums) {
+                const detRow = parseManzanasDetalleRow(r);
+                for (const [mStr, estM] of Object.entries(detRow)) {
+                    const m = Number(mStr);
                     if (m <= t.cantidad_manzanas) {
-                        if (r.estado_manzanas === 'COMPLETO') estadoPorManzana[m] = 'COMPLETO';
+                        if (estM === 'COMPLETO') estadoPorManzana[m] = 'COMPLETO';
                         else if (estadoPorManzana[m] !== 'COMPLETO') estadoPorManzana[m] = 'INCOMPLETO';
                     }
                 }
@@ -839,8 +898,8 @@ app.get('/api/territorios/bitacora', soloGlobal, async (req, res) => {
 });
 
 app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
-    const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
-    const listaManz = parseManzanasList(manzanas);
+    const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, manzanas_detalle, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
+    const { listaManz, manzStr, estadoResumen, detalleJson } = normalizarPayloadManzanas(manzanas, estado_manzanas, manzanas_detalle);
     if (!fecha || !territorio_id || listaManz.length === 0) {
         return res.status(400).json({ ok: false, msg: 'Debes indicar la fecha de inicio, el territorio y al menos una manzana.' });
     }
@@ -867,18 +926,17 @@ app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
         const estadoFinalTerr = estado_territorio || 'INICIO';
         const esCierre = estadoFinalTerr === 'CIERRE' || estadoFinalTerr === 'INICIO - CIERRE';
         const fechaCierreFinal = fecha_cierre ? fecha_cierre : (esCierre ? fecha : null);
-        const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
-            'INSERT INTO bitacora_territorios (fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [fechaRegFinal, fecha, fechaCierreFinal, t.id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual]
+            'INSERT INTO bitacora_territorios (fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, manzanas_detalle, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [fechaRegFinal, fecha, fechaCierreFinal, t.id, manzStr, estadoResumen, detalleJson, turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual]
         );
         res.json({ ok: true, ciclo: cicloActual });
     } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
 });
 
 app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
-    const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
-    const listaManz = parseManzanasList(manzanas);
+    const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, manzanas_detalle, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
+    const { listaManz, manzStr, estadoResumen, detalleJson } = normalizarPayloadManzanas(manzanas, estado_manzanas, manzanas_detalle);
     if (!fecha || !territorio_id || listaManz.length === 0) {
         return res.status(400).json({ ok: false, msg: 'Debes indicar la fecha de inicio, el territorio y al menos una manzana.' });
     }
@@ -896,10 +954,9 @@ app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
         const estadoFinalTerr = estado_territorio || 'INICIO';
         const esCierre = estadoFinalTerr === 'CIERRE' || estadoFinalTerr === 'INICIO - CIERRE';
         const fechaCierreFinal = fecha_cierre ? fecha_cierre : (esCierre ? fecha : null);
-        const manzStr = listaManz.sort((a, b) => a - b).join(', ');
         await pool.query(
-            'UPDATE bitacora_territorios SET fecha_registro=?, fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=? WHERE id=?',
-            [fechaRegFinal, fecha, fechaCierreFinal, territorio_id, manzStr, estado_manzanas || 'COMPLETO', turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, req.params.id]
+            'UPDATE bitacora_territorios SET fecha_registro=?, fecha=?, fecha_cierre=?, territorio_id=?, manzanas=?, estado_manzanas=?, manzanas_detalle=?, turno_id=?, turno_nombre=?, conductor_id=?, conductor_nombre=?, estado_territorio=? WHERE id=?',
+            [fechaRegFinal, fecha, fechaCierreFinal, territorio_id, manzStr, estadoResumen, detalleJson, turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, req.params.id]
         );
         res.json({ ok: true });
     } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
@@ -932,7 +989,10 @@ app.get('/api/territorios/s13', soloGlobal, async (req, res) => {
                 const manzComp = new Set();
                 let cerrado = false;
                 lista.forEach(r => {
-                    if (r.estado_manzanas === 'COMPLETO') parseManzanasList(r.manzanas).forEach(m => manzComp.add(m));
+                    const detRow = parseManzanasDetalleRow(r);
+                    for (const [mStr, estM] of Object.entries(detRow)) {
+                        if (estM === 'COMPLETO') manzComp.add(Number(mStr));
+                    }
                     if (r.estado_territorio === 'CIERRE' || r.estado_territorio === 'INICIO - CIERRE' || Boolean(r.fecha_cierre)) cerrado = true;
                 });
                 const terminado = cerrado || manzComp.size >= t.cantidad_manzanas;

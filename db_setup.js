@@ -111,6 +111,7 @@ const tables = [
         territorio_id INT NOT NULL,
         manzanas VARCHAR(255) NOT NULL,
         estado_manzanas ENUM('COMPLETO','INCOMPLETO') NOT NULL DEFAULT 'COMPLETO',
+        manzanas_detalle TEXT DEFAULT NULL,
         turno_id INT DEFAULT NULL,
         turno_nombre VARCHAR(80) NOT NULL,
         conductor_id INT DEFAULT NULL,
