@@ -1508,3 +1508,626 @@ html[data-theme="dark"] .prog-row-chip {
     border-color: #27272a;
     color: #f4f4f5;
 }
+
+/* ========================================================
+   MAPA INTERACTIVO DE TERRITORIOS (CONGREGACIÓN UMACHIRI)
+   ======================================================== */
+.mapa-dashboard-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 16px;
+    align-items: start;
+}
+@media (max-width: 1100px) {
+    .mapa-dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+}
+.mapa-card-main {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+}
+.mapa-header-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.mapa-header-title h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary, #09090b);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mapa-header-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+.mapa-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color, #e4e4e7);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-secondary, #71717a);
+}
+.mapa-stat-pill b {
+    color: var(--text-primary, #09090b);
+    font-weight: 700;
+}
+.pill-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot-verde { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
+.dot-ambar { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); }
+.dot-rojo { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
+.dot-gris { background: #94a3b8; }
+
+.mapa-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.mapa-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.mapa-search-wrap i {
+    position: absolute;
+    left: 9px;
+    font-size: 0.75rem;
+    color: #a1a1aa;
+    pointer-events: none;
+}
+.mapa-search-wrap select {
+    padding: 6px 10px 6px 28px;
+    font-size: 0.78rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #d4d4d8);
+    background: var(--bg-card, #fff);
+    color: var(--text-primary, #18181b);
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 155px;
+}
+.mapa-color-toggle {
+    display: inline-flex;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    border-radius: 7px;
+    padding: 2px;
+}
+html[data-theme="dark"] .mapa-color-toggle {
+    background: #18181b;
+    border-color: #27272a;
+}
+.mapa-toggle-btn {
+    padding: 5px 9px;
+    border-radius: 5px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: #71717a;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+}
+.mapa-toggle-btn.active {
+    background: #ffffff;
+    color: #18181b;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+html[data-theme="dark"] .mapa-toggle-btn.active {
+    background: #27272a;
+    color: #f4f4f5;
+}
+
+/* Contenedor del Viewport SVG */
+.mapa-viewport-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    min-height: 460px;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+.mapa-viewport-container.is-dragging {
+    cursor: grabbing;
+}
+.mapa-viewport-container:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    border: none;
+}
+.mapa-stage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.svg-mapa-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Controles de Zoom Flotantes */
+.mapa-zoom-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+}
+.mapa-zoom-controls button {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f8fafc;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.15s ease;
+}
+.mapa-zoom-controls button:hover {
+    background: #0284c7;
+    border-color: #38bdf8;
+    transform: scale(1.06);
+}
+
+/* Leyenda Flotante */
+.mapa-floating-legend {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
+    padding: 8px 12px;
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+.legend-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.legend-item {
+    font-size: 0.68rem;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1.4;
+}
+.legend-color-box {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.box-verde { background: #22c55e; border: 1px solid #16a34a; }
+.box-ambar { background: #f59e0b; border: 1px solid #d97706; }
+.box-rojo { background: #ef4444; border: 1px solid #dc2626; }
+.box-gris { background: rgba(148, 163, 184, 0.4); border: 1px solid #94a3b8; }
+
+/* Polígonos SVG de los Territorios */
+.terr-map-group {
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+.terr-manzana-shape {
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.15s ease, filter 0.15s ease;
+}
+
+/* Modo Estados */
+.color-mode-estado .state-inicio .terr-manzana-shape {
+    fill: rgba(34, 197, 94, 0.52);
+    stroke: #16a34a;
+    stroke-width: 0.85px;
+}
+.color-mode-estado .state-avance .terr-manzana-shape {
+    fill: rgba(245, 158, 11, 0.52);
+    stroke: #d97706;
+    stroke-width: 0.85px;
+}
+.color-mode-estado .state-cierre .terr-manzana-shape {
+    fill: rgba(239, 68, 68, 0.58);
+    stroke: #dc2626;
+    stroke-width: 0.85px;
+}
+.color-mode-estado .state-sin-iniciar .terr-manzana-shape {
+    fill: rgba(148, 163, 184, 0.08);
+    stroke: rgba(148, 163, 184, 0.35);
+    stroke-width: 0.45px;
+}
+
+/* Modo Original */
+.color-mode-original .terr-manzana-shape {
+    fill: transparent;
+    stroke: rgba(15, 23, 42, 0.18);
+    stroke-width: 0.4px;
+}
+
+/* Hover en Territorio */
+.terr-map-group:hover .terr-manzana-shape {
+    stroke: #ffffff !important;
+    stroke-width: 1.8px !important;
+    fill-opacity: 0.88 !important;
+    filter: drop-shadow(0 0 3px rgba(0,0,0,0.6));
+}
+
+/* Seleccionado */
+.terr-map-group.selected .terr-manzana-shape {
+    stroke: #38bdf8 !important;
+    stroke-width: 2.2px !important;
+    fill-opacity: 0.85 !important;
+    filter: drop-shadow(0 0 6px #0284c7);
+}
+
+/* Insignias de Número de Territorio */
+.terr-badge {
+    pointer-events: none;
+    transition: transform 0.15s ease;
+}
+.terr-badge-circle {
+    transition: all 0.15s ease;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+.terr-badge-text {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 7.5px;
+    font-weight: 800;
+    text-anchor: middle;
+    dominant-baseline: central;
+    user-select: none;
+}
+.color-mode-estado .state-inicio .terr-badge-circle { fill: #22c55e; stroke: #ffffff; stroke-width: 0.9px; }
+.color-mode-estado .state-inicio .terr-badge-text { fill: #ffffff; }
+.color-mode-estado .state-avance .terr-badge-circle { fill: #f59e0b; stroke: #ffffff; stroke-width: 0.9px; }
+.color-mode-estado .state-avance .terr-badge-text { fill: #ffffff; }
+.color-mode-estado .state-cierre .terr-badge-circle { fill: #ef4444; stroke: #ffffff; stroke-width: 0.9px; }
+.color-mode-estado .state-cierre .terr-badge-text { fill: #ffffff; }
+.color-mode-estado .state-sin-iniciar .terr-badge-circle { fill: #ffffff; stroke: #64748b; stroke-width: 0.9px; }
+.color-mode-estado .state-sin-iniciar .terr-badge-text { fill: #1e293b; }
+
+.color-mode-original .terr-badge-circle { fill: rgba(255,255,255,0.92); stroke: #334155; stroke-width: 0.8px; }
+.color-mode-original .terr-badge-text { fill: #0f172a; }
+
+.terr-map-group:hover .terr-badge,
+.terr-map-group.selected .terr-badge {
+    transform: scale(1.35);
+}
+.terr-map-group.selected .terr-badge-circle {
+    stroke: #38bdf8 !important;
+    stroke-width: 1.4px !important;
+}
+
+/* Tooltip Flotante del Mapa */
+.mapa-floating-tooltip {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: #f8fafc;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    max-width: 250px;
+    font-size: 0.78rem;
+    transition: opacity 0.12s ease;
+}
+.mapa-tt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.mapa-tt-num {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #38bdf8;
+}
+.mapa-tt-badge {
+    padding: 2px 7px;
+    border-radius: 9999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.mapa-tt-badge.badge-inicio { background: #22c55e; color: #fff; }
+.mapa-tt-badge.badge-avance { background: #f59e0b; color: #fff; }
+.mapa-tt-badge.badge-cierre { background: #ef4444; color: #fff; }
+.mapa-tt-badge.badge-sin-iniciar { background: #64748b; color: #fff; }
+.mapa-tt-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.35;
+    color: #cbd5e1;
+}
+.mapa-tt-body b {
+    color: #f8fafc;
+}
+.mapa-tt-footer {
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    font-size: 0.68rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Panel Lateral Inspector de Territorio */
+.mapa-inspector-card {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 670px;
+    overflow-y: auto;
+}
+.inspector-empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: #71717a;
+}
+.inspector-empty-state .empty-icon {
+    font-size: 2.2rem;
+    color: #a1a1aa;
+    margin-bottom: 12px;
+}
+.inspector-empty-state h4 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: var(--text-primary, #18181b);
+}
+.inspector-empty-state p {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 0 0 16px 0;
+}
+.inspector-empty-state .empty-tips {
+    font-size: 0.72rem;
+    padding: 8px 10px;
+    background: var(--bg-hover, #f4f4f5);
+    border-radius: 6px;
+    text-align: left;
+    color: #52525b;
+}
+html[data-theme="dark"] .inspector-empty-state .empty-tips {
+    background: #18181b;
+    color: #a1a1aa;
+}
+
+/* Contenido del Inspector cuando hay territorio seleccionado */
+.insp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color, #e4e4e7);
+}
+.insp-terr-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary, #09090b);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.insp-badge {
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.insp-progress-box {
+    background: var(--bg-hover, #f4f4f5);
+    border: 1px solid var(--border-color, #e4e4e7);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+html[data-theme="dark"] .insp-progress-box {
+    background: #18181b;
+    border-color: #27272a;
+}
+.insp-prog-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text-secondary, #71717a);
+}
+.insp-prog-row b {
+    color: var(--text-primary, #18181b);
+}
+.insp-bar-outer {
+    width: 100%;
+    height: 7px;
+    background: #e4e4e7;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+html[data-theme="dark"] .insp-bar-outer {
+    background: #27272a;
+}
+.insp-bar-inner {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.insp-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.insp-info-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e4e4e7);
+    border-radius: 7px;
+    padding: 8px 10px;
+}
+html[data-theme="dark"] .insp-info-card {
+    background: #121214;
+    border-color: #27272a;
+}
+.insp-info-label {
+    font-size: 0.68rem;
+    color: #71717a;
+    margin-bottom: 2px;
+}
+.insp-info-val {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary, #18181b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.insp-manzanas-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.insp-section-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--text-secondary, #71717a);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.insp-manzanas-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+.insp-mz-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+.insp-mz-chip.chip-completo {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: #15803d;
+}
+html[data-theme="dark"] .insp-mz-chip.chip-completo {
+    color: #4ade80;
+}
+.insp-mz-chip.chip-incompleto {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #b45309;
+}
+html[data-theme="dark"] .insp-mz-chip.chip-incompleto {
+    color: #fbbf24;
+}
+.insp-mz-chip.chip-pendiente {
+    background: #f4f4f5;
+    border-color: #e4e4e7;
+    color: #71717a;
+}
+html[data-theme="dark"] .insp-mz-chip.chip-pendiente {
+    background: #18181b;
+    border-color: #27272a;
+    color: #a1a1aa;
+}
+
+.insp-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+.insp-hist-item {
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--bg-hover, #f4f4f5);
+    border: 1px solid var(--border-color, #e4e4e7);
+    font-size: 0.72rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+html[data-theme="dark"] .insp-hist-item {
+    background: #18181b;
+    border-color: #27272a;
+}
+.insp-hist-top {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-primary, #18181b);
+    font-weight: 600;
+}
+.insp-hist-bot {
+    color: #71717a;
+    font-size: 0.68rem;
+}

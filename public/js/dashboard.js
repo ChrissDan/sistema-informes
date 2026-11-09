@@ -1215,6 +1215,9 @@ function mostrarSubTabTerritorio(tab) {
     const view = document.getElementById('subview-terr-' + tab);
     if (btn) btn.classList.add('active');
     if (view) view.classList.add('active');
+    if (tab === 'mapa') {
+        renderMapaInteractivoTerritorios();
+    }
 }
 
 async function cargarVistaTerritorios() {
@@ -1224,6 +1227,7 @@ async function cargarVistaTerritorios() {
         cargarTurnosData(),
         cargarBitacoraTerritorios()
     ]);
+    renderMapaInteractivoTerritorios();
 }
 
 async function cargarTerritoriosData() {
@@ -1238,6 +1242,7 @@ async function cargarTerritoriosData() {
         renderTarjetasTerritorios();
         renderTablaCatalogoTerritorios();
         renderGraficaTerritorios();
+        renderMapaInteractivoTerritorios();
     } catch (e) { console.error(e); }
 }
 
@@ -2743,6 +2748,7 @@ async function cargarBitacoraTerritorios() {
         poblarOpcionesFiltrosBitacora();
         renderTablaBitacoraFiltrada();
         renderGraficaTerritorios();
+        renderMapaInteractivoTerritorios();
     } catch (e) { console.error(e); }
 }
 
@@ -3822,5 +3828,521 @@ window.addEventListener('resize', () => {
         posicionarVCal(vcalState.activeInput);
     }
 });
+
+/* ========================================================
+   MÓDULO: MAPA INTERACTIVO DE TERRITORIOS (UMACHIRI)
+   ======================================================== */
+let mapaModoColor = 'estado'; // 'estado' o 'original'
+let mapaTerritorioSeleccionado = null;
+let mapaZoomScale = 1;
+let mapaPanX = 0;
+let mapaPanY = 0;
+let mapaIsDragging = false;
+let mapaDragStartX = 0;
+let mapaDragStartY = 0;
+let mapaDidDrag = false;
+let mapaEventsInitialized = false;
+
+function aplicarTransformMapa() {
+    const group = document.getElementById('mapaViewportGroup');
+    if (group) {
+        group.setAttribute('transform', `translate(${mapaPanX}, ${mapaPanY}) scale(${mapaZoomScale})`);
+    }
+}
+
+function initMapaInteractivoEvents() {
+    if (mapaEventsInitialized) return;
+    const container = document.getElementById('mapaViewportContainer');
+    const svg = document.getElementById('svgMapaUmachiri');
+    if (!container || !svg) return;
+    mapaEventsInitialized = true;
+
+    // Rueda del ratón para Zoom centrado en el cursor
+    container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = svg.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const scaleFactor = e.deltaY < 0 ? 1.15 : 0.87;
+        const newScale = Math.min(7.5, Math.max(0.75, mapaZoomScale * scaleFactor));
+        if (newScale === mapaZoomScale) return;
+
+        const svgScaleX = 1293 / rect.width;
+        const svgScaleY = 642 / rect.height;
+        const ptX = (mouseX * svgScaleX - mapaPanX) / mapaZoomScale;
+        const ptY = (mouseY * svgScaleY - mapaPanY) / mapaZoomScale;
+
+        mapaZoomScale = newScale;
+        mapaPanX = mouseX * svgScaleX - ptX * mapaZoomScale;
+        mapaPanY = mouseY * svgScaleY - ptY * mapaZoomScale;
+
+        aplicarTransformMapa();
+    }, { passive: false });
+
+    // Arrastre con Mouse (Pan)
+    container.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        mapaIsDragging = true;
+        mapaDidDrag = false;
+        mapaDragStartX = e.clientX;
+        mapaDragStartY = e.clientY;
+        container.classList.add('is-dragging');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!mapaIsDragging) return;
+        const rect = svg.getBoundingClientRect();
+        const svgScaleX = 1293 / (rect.width || 1293);
+        const svgScaleY = 642 / (rect.height || 642);
+
+        const dx = (e.clientX - mapaDragStartX) * svgScaleX;
+        const dy = (e.clientY - mapaDragStartY) * svgScaleY;
+
+        if (Math.hypot(e.clientX - mapaDragStartX, e.clientY - mapaDragStartY) > 4) {
+            mapaDidDrag = true;
+        }
+
+        mapaPanX += dx;
+        mapaPanY += dy;
+        mapaDragStartX = e.clientX;
+        mapaDragStartY = e.clientY;
+
+        aplicarTransformMapa();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (mapaIsDragging) {
+            mapaIsDragging = false;
+            container.classList.remove('is-dragging');
+        }
+    });
+
+    // Touch support (1 dedo pan, 2 dedos pinch zoom)
+    let initialTouchDist = null;
+    let initialTouchScale = 1;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            mapaIsDragging = true;
+            mapaDidDrag = false;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            mapaIsDragging = false;
+            initialTouchDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            initialTouchScale = mapaZoomScale;
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && mapaIsDragging) {
+            const rect = svg.getBoundingClientRect();
+            const svgScaleX = 1293 / (rect.width || 1293);
+            const svgScaleY = 642 / (rect.height || 642);
+            const dx = (e.touches[0].clientX - touchStartX) * svgScaleX;
+            const dy = (e.touches[0].clientY - touchStartY) * svgScaleY;
+            if (Math.hypot(dx, dy) > 4) mapaDidDrag = true;
+            mapaPanX += dx;
+            mapaPanY += dy;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            aplicarTransformMapa();
+        } else if (e.touches.length === 2 && initialTouchDist) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            const factor = dist / initialTouchDist;
+            mapaZoomScale = Math.min(7.5, Math.max(0.75, initialTouchScale * factor));
+            aplicarTransformMapa();
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchend', () => {
+        mapaIsDragging = false;
+        initialTouchDist = null;
+    }, { passive: true });
+}
+
+function zoomMapa(factor) {
+    const centerSvgX = 1293 / 2;
+    const centerSvgY = 642 / 2;
+    const ptX = (centerSvgX - mapaPanX) / mapaZoomScale;
+    const ptY = (centerSvgY - mapaPanY) / mapaZoomScale;
+
+    mapaZoomScale = Math.min(7.5, Math.max(0.75, mapaZoomScale * factor));
+    mapaPanX = centerSvgX - ptX * mapaZoomScale;
+    mapaPanY = centerSvgY - ptY * mapaZoomScale;
+
+    aplicarTransformMapa();
+}
+
+function resetZoomMapa() {
+    mapaZoomScale = 1;
+    mapaPanX = 0;
+    mapaPanY = 0;
+    aplicarTransformMapa();
+}
+
+function togglePantallaCompletaMapa() {
+    const container = document.getElementById('mapaViewportContainer');
+    if (!container) return;
+    if (!document.fullscreenElement) {
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+    }
+}
+
+function cambiarModoColorMapa(modo) {
+    mapaModoColor = modo;
+    const btnEstado = document.getElementById('btnModoColorEstado');
+    const btnOriginal = document.getElementById('btnModoColorOriginal');
+    if (btnEstado) btnEstado.classList.toggle('active', modo === 'estado');
+    if (btnOriginal) btnOriginal.classList.toggle('active', modo === 'original');
+
+    const svg = document.getElementById('svgMapaUmachiri');
+    if (svg) {
+        svg.classList.toggle('color-mode-estado', modo === 'estado');
+        svg.classList.toggle('color-mode-original', modo === 'original');
+    }
+}
+
+function enfocarTerritorioDesdeSelect(numero) {
+    if (!numero) return;
+    if (!window.MAPA_UMACHIRI_DATA) return;
+    const tData = window.MAPA_UMACHIRI_DATA.find(d => String(d.numero) === String(numero));
+    if (!tData) return;
+
+    mapaZoomScale = 2.4;
+    mapaPanX = -(tData.cx * mapaZoomScale - 1293 / 2);
+    mapaPanY = -(tData.cy * mapaZoomScale - 642 / 2);
+    aplicarTransformMapa();
+
+    seleccionarTerritorioEnMapa(numero);
+}
+
+function renderMapaInteractivoTerritorios() {
+    if (!window.MAPA_UMACHIRI_DATA || !Array.isArray(window.MAPA_UMACHIRI_DATA)) return;
+    const overlay = document.getElementById('mapaTerritoriosOverlay');
+    const svg = document.getElementById('svgMapaUmachiri');
+    if (!overlay || !svg) return;
+
+    initMapaInteractivoEvents();
+
+    svg.classList.toggle('color-mode-estado', mapaModoColor === 'estado');
+    svg.classList.toggle('color-mode-original', mapaModoColor === 'original');
+
+    let inicioCount = 0;
+    let avanceCount = 0;
+    let terminadoCount = 0;
+    let sinIniciarCount = 0;
+
+    let html = '';
+    const select = document.getElementById('selectBuscarTerritorioMapa');
+    const optionsHtml = ['<option value="">Buscar territorio...</option>'];
+
+    window.MAPA_UMACHIRI_DATA.forEach(td => {
+        const numStr = String(td.numero);
+        const tLive = cacheTerritorios.find(t => String(t.numero) === numStr);
+        const estado = tLive ? (tLive.estado_actual || 'SIN INICIAR') : 'SIN INICIAR';
+
+        let stateClass = 'state-sin-iniciar';
+        if (estado === 'INICIO') {
+            stateClass = 'state-inicio';
+            inicioCount++;
+        } else if (estado === 'AVANCE') {
+            stateClass = 'state-avance';
+            avanceCount++;
+        } else if (estado === 'CIERRE' || estado === 'INICIO - CIERRE') {
+            stateClass = 'state-cierre';
+            terminadoCount++;
+        } else {
+            sinIniciarCount++;
+        }
+
+        const isSelected = (mapaTerritorioSeleccionado && String(mapaTerritorioSeleccionado) === numStr);
+        const pathsStr = td.paths.map(d => `<path d="${d}" class="terr-manzana-shape" />`).join('');
+
+        html += `
+        <g class="terr-map-group ${stateClass} ${isSelected ? 'selected' : ''}" data-num="${td.numero}">
+            <g class="terr-paths">${pathsStr}</g>
+            <g class="terr-badge" transform="translate(${td.cx}, ${td.cy})">
+                <circle r="7.5" class="terr-badge-circle" />
+                <text class="terr-badge-text">${td.numero}</text>
+            </g>
+        </g>`;
+
+        optionsHtml.push(`<option value="${td.numero}" ${isSelected ? 'selected' : ''}>T: ${td.numero} - ${estado}</option>`);
+    });
+
+    overlay.innerHTML = html;
+
+    if (select) select.innerHTML = optionsHtml.join('');
+
+    const totalEl = document.getElementById('mapaTotalCount');
+    const iniEl = document.getElementById('mapaInicioCount');
+    const avEl = document.getElementById('mapaAvanceCount');
+    const terEl = document.getElementById('mapaTerminadoCount');
+    const sinEl = document.getElementById('mapaSinIniciarCount');
+    if (totalEl) totalEl.textContent = window.MAPA_UMACHIRI_DATA.length;
+    if (iniEl) iniEl.textContent = inicioCount;
+    if (avEl) avEl.textContent = avanceCount;
+    if (terEl) terEl.textContent = terminadoCount;
+    if (sinEl) sinEl.textContent = sinIniciarCount;
+
+    const groups = overlay.querySelectorAll('.terr-map-group');
+    const tooltip = document.getElementById('mapaTooltip');
+
+    groups.forEach(g => {
+        const num = g.getAttribute('data-num');
+        const tLive = cacheTerritorios.find(t => String(t.numero) === num);
+
+        g.addEventListener('mouseenter', (e) => {
+            if (!tooltip) return;
+            const estado = tLive ? (tLive.estado_actual || 'SIN INICIAR') : 'SIN INICIAR';
+            let badgeClass = 'badge-sin-iniciar';
+            let estadoLabel = 'Sin Iniciar';
+            if (estado === 'INICIO') { badgeClass = 'badge-inicio'; estadoLabel = 'Inicio'; }
+            else if (estado === 'AVANCE') { badgeClass = 'badge-avance'; estadoLabel = 'Avance'; }
+            else if (estado === 'CIERRE' || estado === 'INICIO - CIERRE') { badgeClass = 'badge-cierre'; estadoLabel = 'Terminado'; }
+
+            const porcentaje = tLive ? (tLive.porcentaje || 0) : 0;
+            const completas = tLive ? (tLive.completadas || 0) : 0;
+            const totalMz = tLive ? (tLive.cantidad_manzanas || 0) : 0;
+            const vuelta = tLive ? (tLive.ciclo_actual || 1) : 1;
+            const fIni = tLive?.fecha_inicio ? formatearFechaVisual(tLive.fecha_inicio) : null;
+            const fFin = tLive?.fecha_cierre ? formatearFechaVisual(tLive.fecha_cierre) : null;
+
+            tooltip.innerHTML = `
+                <div class="mapa-tt-header">
+                    <span class="mapa-tt-num">Territorio ${num}</span>
+                    <span class="mapa-tt-badge ${badgeClass}">${estadoLabel}</span>
+                </div>
+                <div class="mapa-tt-body">
+                    <div><b>Vuelta:</b> ${vuelta}</div>
+                    <div><b>Cobertura:</b> ${porcentaje}% (${completas}/${totalMz} mz)</div>
+                    ${fIni ? `<div><b>Inicio:</b> ${fIni}</div>` : ''}
+                    ${fFin ? `<div><b>Cierre:</b> ${fFin}</div>` : ''}
+                </div>
+                <div class="mapa-tt-footer"><i class="fa-solid fa-arrow-pointer"></i> Clic para ver detalles</div>
+            `;
+            tooltip.style.display = 'block';
+            posicionarTooltipMapa(e, tooltip);
+        });
+
+        g.addEventListener('mousemove', (e) => {
+            if (tooltip && tooltip.style.display === 'block') {
+                posicionarTooltipMapa(e, tooltip);
+            }
+        });
+
+        g.addEventListener('mouseleave', () => {
+            if (tooltip) tooltip.style.display = 'none';
+        });
+
+        g.addEventListener('click', () => {
+            if (mapaDidDrag) return;
+            seleccionarTerritorioEnMapa(num);
+        });
+    });
+
+    if (mapaTerritorioSeleccionado) {
+        seleccionarTerritorioEnMapa(mapaTerritorioSeleccionado);
+    }
+}
+
+function posicionarTooltipMapa(e, tooltip) {
+    const pad = 14;
+    let x = e.clientX + pad;
+    let y = e.clientY + pad;
+    const ttRect = tooltip.getBoundingClientRect();
+    if (x + ttRect.width > window.innerWidth - 10) {
+        x = e.clientX - ttRect.width - pad;
+    }
+    if (y + ttRect.height > window.innerHeight - 10) {
+        y = e.clientY - ttRect.height - pad;
+    }
+    tooltip.style.left = `${Math.max(10, x)}px`;
+    tooltip.style.top = `${Math.max(10, y)}px`;
+}
+
+function seleccionarTerritorioEnMapa(numero) {
+    mapaTerritorioSeleccionado = String(numero);
+
+    const overlay = document.getElementById('mapaTerritoriosOverlay');
+    if (overlay) {
+        overlay.querySelectorAll('.terr-map-group').forEach(g => {
+            const isSel = (g.getAttribute('data-num') === mapaTerritorioSeleccionado);
+            g.classList.toggle('selected', isSel);
+        });
+    }
+
+    const select = document.getElementById('selectBuscarTerritorioMapa');
+    if (select && select.value !== mapaTerritorioSeleccionado) {
+        select.value = mapaTerritorioSeleccionado;
+    }
+
+    const t = cacheTerritorios.find(item => String(item.numero) === mapaTerritorioSeleccionado);
+    const emptyState = document.getElementById('inspectorEmptyState');
+    const content = document.getElementById('inspectorContent');
+    if (!content) return;
+
+    if (!t) {
+        if (emptyState) emptyState.style.display = 'block';
+        content.style.display = 'none';
+        return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.gap = '12px';
+
+    const estado = t.estado_actual || 'SIN INICIAR';
+    let badgeClass = 'badge-sin-iniciar';
+    let estadoLabel = 'Sin Iniciar';
+    let barColor = '#64748b';
+    if (estado === 'INICIO') { badgeClass = 'badge-inicio'; estadoLabel = 'Inicio'; barColor = '#22c55e'; }
+    else if (estado === 'AVANCE') { badgeClass = 'badge-avance'; estadoLabel = 'Avance'; barColor = '#f59e0b'; }
+    else if (estado === 'CIERRE' || estado === 'INICIO - CIERRE') { badgeClass = 'badge-cierre'; estadoLabel = 'Terminado'; barColor = '#ef4444'; }
+
+    const totalMz = t.cantidad_manzanas || 0;
+    const compCount = t.completadas || 0;
+    const incompCount = t.incompletas || 0;
+    const pct = t.porcentaje || 0;
+
+    const estadoPorMz = t.estadoPorManzana || {};
+    let chipsHtml = '';
+    for (let m = 1; m <= totalMz; m++) {
+        const estM = estadoPorMz[m] || 'PENDIENTE';
+        let chipClass = 'chip-pendiente';
+        let icon = '<i class="fa-regular fa-circle" style="font-size:0.6rem;"></i>';
+        if (estM === 'COMPLETO') {
+            chipClass = 'chip-completo';
+            icon = '<i class="fa-solid fa-check"></i>';
+        } else if (estM === 'INCOMPLETO') {
+            chipClass = 'chip-incompleto';
+            icon = '<i class="fa-solid fa-circle-half-stroke"></i>';
+        }
+        chipsHtml += `<span class="insp-mz-chip ${chipClass}">${icon} Mz ${m}</span>`;
+    }
+
+    const histTerr = (cacheBitacoraTerr || [])
+        .filter(b => b.territorio_id === t.id)
+        .slice()
+        .reverse()
+        .slice(0, 5);
+
+    let histHtml = '';
+    if (histTerr.length > 0) {
+        histHtml = histTerr.map(h => {
+            const fReg = h.fecha ? formatearFechaVisual(h.fecha) : '-';
+            const cond = h.conductor_nombre || 'Sin conductor';
+            const turno = h.turno_nombre || '';
+            const mzs = h.manzanas || 'Sin manzanas';
+            return `
+            <div class="insp-hist-item">
+                <div class="insp-hist-top">
+                    <span><i class="fa-regular fa-calendar"></i> ${fReg}</span>
+                    <span style="color:var(--primary); font-weight:700;">${h.estado_territorio || 'REGISTRO'}</span>
+                </div>
+                <div class="insp-hist-bot">
+                    <b>${cond}</b> ${turno ? '• ' + turno : ''} • Mz: ${mzs}
+                </div>
+            </div>`;
+        }).join('');
+    } else {
+        histHtml = `<div style="font-size:0.75rem; color:#a1a1aa; padding:6px 0;">No hay registros en la bitácora para este territorio.</div>`;
+    }
+
+    content.innerHTML = `
+        <div class="insp-header">
+            <div class="insp-terr-title">
+                <i class="fa-solid fa-map-pin" style="color:var(--primary);"></i> Territorio ${t.numero}
+            </div>
+            <span class="insp-badge ${badgeClass}">${estadoLabel}</span>
+        </div>
+
+        <div class="insp-progress-box">
+            <div class="insp-prog-row">
+                <span>Cobertura Vuelta ${t.ciclo_actual || 1}</span>
+                <b>${pct}%</b>
+            </div>
+            <div class="insp-bar-outer">
+                <div class="insp-bar-inner" style="width:${pct}%; background:${barColor};"></div>
+            </div>
+            <div class="insp-prog-row" style="font-size:0.7rem;">
+                <span>${compCount} de ${totalMz} completas</span>
+                ${incompCount > 0 ? `<span style="color:#f59e0b;">${incompCount} incompletas</span>` : ''}
+            </div>
+        </div>
+
+        <div class="insp-info-grid">
+            <div class="insp-info-card">
+                <div class="insp-info-label">Fecha Inicio</div>
+                <div class="insp-info-val">${t.fecha_inicio ? formatearFechaVisual(t.fecha_inicio) : 'No iniciada'}</div>
+            </div>
+            <div class="insp-info-card">
+                <div class="insp-info-label">Fecha Cierre</div>
+                <div class="insp-info-val">${t.fecha_cierre ? formatearFechaVisual(t.fecha_cierre) : (estado === 'CIERRE' ? 'Cerrado' : 'Pendiente')}</div>
+            </div>
+            <div class="insp-info-card">
+                <div class="insp-info-label">Vueltas Completas</div>
+                <div class="insp-info-val">${t.vueltas_completas || 0}</div>
+            </div>
+            <div class="insp-info-card">
+                <div class="insp-info-label">Total Manzanas</div>
+                <div class="insp-info-val">${totalMz} manzanas</div>
+            </div>
+        </div>
+
+        <div class="insp-manzanas-section">
+            <div class="insp-section-title">
+                <span>Estado de Manzanas</span>
+                <span style="font-weight:500; font-size:0.68rem;">Vuelta ${t.ciclo_actual || 1}</span>
+            </div>
+            <div class="insp-manzanas-grid">
+                ${chipsHtml}
+            </div>
+        </div>
+
+        <div class="insp-manzanas-section">
+            <div class="insp-section-title">
+                <span>Últimos Movimientos</span>
+                <span style="font-weight:500; font-size:0.68rem;">Bitácora</span>
+            </div>
+            <div class="insp-history-list">
+                ${histHtml}
+            </div>
+        </div>
+
+        <div style="margin-top:4px;">
+            <button type="button" class="btn-primary" style="width:100%; font-size:0.82rem; padding:8px 12px;" onclick="abrirModalBitacoraDesdeMapa('${t.id}', '${t.numero}')">
+                <i class="fa-solid fa-pen-to-square"></i> Registrar Avance en Bitácora
+            </button>
+        </div>
+    `;
+}
+
+function abrirModalBitacoraDesdeMapa(terrId, terrNum) {
+    abrirModal('bitacora');
+    const select = document.getElementById('bitTerritorioSelect');
+    if (select) {
+        select.value = terrId;
+        if (typeof cargarSelectorManzanasBitacora === 'function') {
+            cargarSelectorManzanasBitacora();
+        } else {
+            select.dispatchEvent(new Event('change'));
+        }
+    }
+}
 
 showView('dashboard');

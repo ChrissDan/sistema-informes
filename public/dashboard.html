@@ -540,8 +540,11 @@
             <div id="view-territorios" class="section-view">
                 <div class="terr-toolbar">
                     <div class="terr-subtabs">
-                        <button type="button" class="terr-tab active" id="tab-terr-resumen" onclick="mostrarSubTabTerritorio('resumen')">
-                            <i class="fa-solid fa-map-location-dot"></i> Avance y Bitácora
+                        <button type="button" class="terr-tab active" id="tab-terr-mapa" onclick="mostrarSubTabTerritorio('mapa')">
+                            <i class="fa-solid fa-map-location-dot"></i> Mapa Interactivo
+                        </button>
+                        <button type="button" class="terr-tab" id="tab-terr-resumen" onclick="mostrarSubTabTerritorio('resumen')">
+                            <i class="fa-solid fa-calendar-week"></i> Programa y Bitácora
                         </button>
                         <button type="button" class="terr-tab" id="tab-terr-catalogo" onclick="mostrarSubTabTerritorio('catalogo')">
                             <i class="fa-solid fa-layer-group"></i> Territorios (<span id="countTerrCatalogo">0</span>)
@@ -566,8 +569,96 @@
                     </div>
                 </div>
 
+                <!-- SUB-VISTA 0: MAPA INTERACTIVO -->
+                <div id="subview-terr-mapa" class="terr-subview active">
+                    <div class="mapa-dashboard-layout">
+                        <!-- Mapa Principal -->
+                        <div class="card mapa-card-main">
+                            <div class="mapa-header-toolbar">
+                                <div class="mapa-header-title">
+                                    <h3><i class="fa-solid fa-map"></i> Territorios de la Congregación Umachiri</h3>
+                                    <div class="mapa-header-stats" id="mapaStatsSummary">
+                                        <span class="mapa-stat-pill pill-total"><b id="mapaTotalCount">74</b> Territorios</span>
+                                        <span class="mapa-stat-pill pill-verde"><span class="pill-dot dot-verde"></span> <b id="mapaInicioCount">0</b> Inicio</span>
+                                        <span class="mapa-stat-pill pill-ambar"><span class="pill-dot dot-ambar"></span> <b id="mapaAvanceCount">0</b> Avance</span>
+                                        <span class="mapa-stat-pill pill-rojo"><span class="pill-dot dot-rojo"></span> <b id="mapaTerminadoCount">0</b> Terminados</span>
+                                        <span class="mapa-stat-pill pill-gris"><span class="pill-dot dot-gris"></span> <b id="mapaSinIniciarCount">0</b> Sin iniciar</span>
+                                    </div>
+                                </div>
+                                <div class="mapa-header-actions">
+                                    <div class="mapa-search-wrap">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <select id="selectBuscarTerritorioMapa" onchange="enfocarTerritorioDesdeSelect(this.value)">
+                                            <option value="">Buscar territorio...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mapa-color-toggle">
+                                        <button type="button" id="btnModoColorEstado" class="mapa-toggle-btn active" onclick="cambiarModoColorMapa('estado')" title="Colorear según el estado actual">
+                                            <i class="fa-solid fa-palette"></i> Por Estado
+                                        </button>
+                                        <button type="button" id="btnModoColorOriginal" class="mapa-toggle-btn" onclick="cambiarModoColorMapa('original')" title="Mostrar colores originales del mapa">
+                                            <i class="fa-regular fa-image"></i> Original
+                                        </button>
+                                    </div>
+                                    <button type="button" class="btn-cancel" style="padding:6px 10px; font-size:0.8rem;" onclick="resetZoomMapa()" title="Restablecer vista inicial">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                    <button type="button" class="btn-cancel" style="padding:6px 10px; font-size:0.8rem;" onclick="togglePantallaCompletaMapa()" title="Pantalla completa">
+                                        <i class="fa-solid fa-expand"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mapa-viewport-container" id="mapaViewportContainer">
+                                <div class="mapa-zoom-controls">
+                                    <button type="button" onclick="zoomMapa(1.3)" title="Acercar (Zoom +)"><i class="fa-solid fa-plus"></i></button>
+                                    <button type="button" onclick="zoomMapa(0.77)" title="Alejar (Zoom -)"><i class="fa-solid fa-minus"></i></button>
+                                    <button type="button" onclick="resetZoomMapa()" title="Restablecer centro"><i class="fa-solid fa-arrows-to-dot"></i></button>
+                                </div>
+
+                                <div class="mapa-floating-legend">
+                                    <div class="legend-title"><i class="fa-solid fa-circle-info"></i> Estado del Territorio</div>
+                                    <div class="legend-item"><span class="legend-color-box box-verde"></span> Recién empezado (Inicio)</div>
+                                    <div class="legend-item"><span class="legend-color-box box-ambar"></span> En recorrido (Avance)</div>
+                                    <div class="legend-item"><span class="legend-color-box box-rojo"></span> Terminado (Cierre)</div>
+                                    <div class="legend-item"><span class="legend-color-box box-gris"></span> Sin Iniciar</div>
+                                </div>
+
+                                <div id="mapaStage" class="mapa-stage">
+                                    <svg id="svgMapaUmachiri" viewBox="0 0 1293 642" class="svg-mapa-canvas" xmlns="http://www.w3.org/2000/svg">
+                                        <g id="mapaViewportGroup" transform="translate(0, 0) scale(1)">
+                                            <!-- Plano base en alta definición renderizado desde el PDF -->
+                                            <image href="assets/mapa_umachiri.png" x="0" y="0" width="1293" height="642" preserveAspectRatio="none" />
+                                            <!-- Polígonos interactivos de cada territorio -->
+                                            <g id="mapaTerritoriosOverlay"></g>
+                                        </g>
+                                    </svg>
+                                </div>
+
+                                <!-- Tooltip dinámico -->
+                                <div id="mapaTooltip" class="mapa-floating-tooltip" style="display:none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Lateral de Detalle del Territorio -->
+                        <div class="card mapa-inspector-card" id="panelDetalleTerritorioMapa">
+                            <div class="inspector-empty-state" id="inspectorEmptyState">
+                                <div class="empty-icon"><i class="fa-solid fa-hand-pointer"></i></div>
+                                <h4>Selecciona un Territorio</h4>
+                                <p>Pasa el mouse sobre cualquier territorio para ver su resumen rápido, o haz clic para ver sus detalles completos, manzanas y registrar su bitácora.</p>
+                                <div class="empty-tips">
+                                    <span><i class="fa-solid fa-mouse"></i> Usa la rueda del ratón para hacer zoom y arrastra para moverte por el mapa.</span>
+                                </div>
+                            </div>
+                            <div class="inspector-content" id="inspectorContent" style="display:none;">
+                                <!-- Se llena dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- SUB-VISTA 1: AVANCE Y BITÁCORA -->
-                <div id="subview-terr-resumen" class="terr-subview active">
+                <div id="subview-terr-resumen" class="terr-subview">
                     <div class="card">
                         <div class="card-header-flex">
                             <div>
@@ -1329,6 +1420,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/mapa_umachiri_data.js"></script>
     <script src="js/dashboard.js" defer></script>
 </body>
 
