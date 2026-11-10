@@ -33,7 +33,7 @@ form.addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
 
-    const email = emailInput.value;
+    const email = (emailInput.value || '').trim().toLowerCase();
     const password = document.getElementById('password').value;
 
     try {
