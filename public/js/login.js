@@ -95,11 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleKeypad = document.getElementById('toggleKeypad');
     const togglePassword = document.getElementById('togglePassword');
 
-    // 1. Mostrar teclado en pantalla automáticamente siempre (por defecto)
-    if (keypad) {
-        keypad.classList.add('active');
-    }
-
+    // 1. Abrir teclado en pantalla al presionar o hacer foco en el campo de contraseña
     passwordInput.addEventListener('focus', () => {
         if (keypad) keypad.classList.add('active');
     });
@@ -154,7 +150,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 5. Alternar ver/ocultar contraseña (Ojito)
+    // 5. Ocultar teclado en pantalla al hacer clic fuera de él
+    document.addEventListener('click', (e) => {
+        if (!keypad || !keypad.classList.contains('active')) return;
+        if (!keypad.contains(e.target) && e.target !== passwordInput && !passwordInput.contains(e.target) && e.target !== toggleKeypad && !toggleKeypad?.contains(e.target)) {
+            keypad.classList.remove('active');
+        }
+    });
+
+    // 6. Alternar ver/ocultar contraseña (Ojito)
     if (togglePassword) {
         togglePassword.addEventListener('click', function (e) {
             e.preventDefault();

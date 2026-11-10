@@ -658,26 +658,29 @@ input:checked ~ .switch-label {
 }
 
 .virtual-keypad {
-    position: absolute;
-    top: calc(100% + 5px); 
-    left: 50%;
-    transform: translateX(-50%); 
-    width: 100%;
-    max-width: 260px; /* Ancho del cuadro de fondo */
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 12px;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
     padding: 12px; 
-    z-index: 1000;
+    margin-top: 12px !important;
+    margin-bottom: 8px !important;
+    z-index: 10;
     display: none; 
     grid-template-columns: repeat(3, 1fr) !important; 
     gap: 8px !important; 
+    box-sizing: border-box !important;
 }
 
 .virtual-keypad.active {
     display: grid !important;
-    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .key-btn {
@@ -724,8 +727,8 @@ input:checked ~ .switch-label {
 .action-btn#keypad-del:hover { background: #ffedd5; border-color: #fed7aa; color: #f97316; }
 
 @keyframes popIn {
-    from { opacity: 0; transform: translate(-50%, 5px) scale(0.95); }
-    to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================================
