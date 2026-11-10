@@ -95,16 +95,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleKeypad = document.getElementById('toggleKeypad');
     const togglePassword = document.getElementById('togglePassword');
 
-    // 1. Alternar teclado virtual con el botón de calculadora/teclado
+    // 1. Mostrar teclado en pantalla automáticamente siempre (por defecto)
+    if (keypad) {
+        keypad.classList.add('active');
+    }
+
+    passwordInput.addEventListener('focus', () => {
+        if (keypad) keypad.classList.add('active');
+    });
+
+    passwordInput.addEventListener('click', (e) => {
+        if (keypad) keypad.classList.add('active');
+        e.stopPropagation();
+    });
+
+    // Alternar con el botón de calculadora/teclado si el usuario desea minimizarlo o abrirlo
     if (toggleKeypad && keypad) {
         toggleKeypad.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             keypad.classList.toggle('active');
             if (keypad.classList.contains('active')) {
-                setTimeout(() => {
-                    keypad.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                }, 150);
+                passwordInput.focus();
             }
         });
     }
@@ -139,19 +151,10 @@ document.addEventListener("DOMContentLoaded", () => {
             passwordInput.value = '';
             passwordInput.focus();
             passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-            if (keypad) keypad.classList.remove('active');
         });
     }
 
-    // 5. Ocultar teclado en pantalla al hacer clic fuera de él
-    document.addEventListener('click', (e) => {
-        if (!keypad) return;
-        if (!keypad.contains(e.target) && e.target !== toggleKeypad && !toggleKeypad?.contains(e.target)) {
-            keypad.classList.remove('active');
-        }
-    });
-
-    // 6. Alternar ver/ocultar contraseña (Ojito)
+    // 5. Alternar ver/ocultar contraseña (Ojito)
     if (togglePassword) {
         togglePassword.addEventListener('click', function (e) {
             e.preventDefault();

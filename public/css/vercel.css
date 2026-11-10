@@ -1508,3 +1508,60 @@ html[data-theme="dark"] .prog-row-chip {
     border-color: #27272a;
     color: #f4f4f5;
 }
+
+/* ========================================================
+   BOTONES Y ACCESO A BITÁCORA POR TERRITORIO
+   ======================================================== */
+.terr-clickable-btn {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.terr-clickable-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    border-color: var(--primary, #0284c7) !important;
+}
+.btn-terr-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(2, 132, 199, 0.08);
+    color: #0284c7;
+    border: 1px solid rgba(2, 132, 199, 0.25);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.terr-clickable-btn:hover .btn-terr-mini {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+}
+
+.terr-card {
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.terr-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    border-color: var(--primary, #0284c7);
+}
+.terr-card-btn-row {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color, #e4e4e7);
+}
+.btn-terr-card-action {
+    width: 100%;
+    font-size: 0.76rem !important;
+    padding: 6px 10px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 600;
+}

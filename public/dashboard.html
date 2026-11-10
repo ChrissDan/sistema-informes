@@ -554,10 +554,7 @@
                         </button>
                     </div>
                     <div class="terr-actions">
-                        <button type="button" class="btn-primary admin-only" onclick="abrirModal('bitacora')">
-                            <i class="fa-solid fa-pen-to-square"></i> Registrar Bitácora
-                        </button>
-                        <button type="button" class="btn-cancel admin-only" onclick="abrirModal('territorio')">
+                        <button type="button" class="btn-primary admin-only" onclick="abrirModal('territorio')">
                             <i class="fa-solid fa-plus"></i> Nuevo Territorio
                         </button>
                         <button type="button" class="btn-cancel" onclick="descargarS13PDF()">
@@ -1174,9 +1171,12 @@
                 </select>
             </div>
 
-            <div class="col-span-2 form-submit-row">
+            <div class="col-span-2 form-submit-row" style="display:flex; flex-direction:column; gap:8px;">
                 <button type="submit" class="btn-primary" style="width:100%" id="btnSaveBitacora">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar en Bitácora
+                </button>
+                <button type="button" class="btn-cancel" onclick="volverModalTerritorioDesdeFormBitacora()" style="width:100%">
+                    <i class="fa-solid fa-arrow-left"></i> Volver a la Bitácora del Territorio
                 </button>
             </div>
         </form>
