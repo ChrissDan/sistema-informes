@@ -771,23 +771,33 @@ input:checked ~ .switch-label {
 }
 
 /* =========================================
-   BOTÓN VER CONTRASEÑA (OJITO)
+   BOTONES VER CONTRASEÑA Y TECLADO VIRTUAL
    ========================================= */
 .input-icon-group .toggle-password {
     left: auto !important;
-    right: 16px !important;
+    right: 14px !important;
     cursor: pointer;
     pointer-events: auto;
     color: #94a3b8;
     transition: color 0.2s ease;
 }
 
-.input-icon-group .toggle-password:hover {
+.input-icon-group .toggle-keypad {
+    left: auto !important;
+    right: 42px !important;
+    cursor: pointer;
+    pointer-events: auto;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+}
+
+.input-icon-group .toggle-password:hover,
+.input-icon-group .toggle-keypad:hover {
     color: var(--primary); /* Se pinta de azul al pasar el mouse */
 }
 
-/* Espacio extra a la derecha para que la contraseña no pise el ojito */
+/* Espacio extra a la derecha para que la contraseña no pise los iconos */
 .input-icon-group input[type="password"],
 .input-icon-group input[type="text"] {
-    padding-right: 48px !important; 
+    padding-right: 70px !important; 
 }

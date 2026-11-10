@@ -63,12 +63,11 @@
                 </div>
                 
                 <div class="input-wrapper" style="position: relative;">
-                    <label>Contraseña</label>
+                    <label>Contraseña / PIN</label>
                     <div class="input-icon-group">
                         <i class="fa-solid fa-lock"></i>
-                        
-                        <input type="password" id="password" placeholder="••••••••" required readonly style="cursor: pointer; background-color: rgba(255, 255, 255, 0.6);">
-                        
+                        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                        <i class="fa-solid fa-calculator toggle-keypad" id="toggleKeypad" title="Abrir teclado en pantalla"></i>
                         <i class="fa-solid fa-eye toggle-password" id="togglePassword" title="Mostrar contraseña"></i>
                     </div>
 
