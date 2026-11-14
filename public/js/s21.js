@@ -3,11 +3,7 @@
 // --- GENERACIÓN MASIVA DE TARJETAS S-21 EN ZIP ---
 async function generarTarjetasMasivasZIP() {
     try {
-        const [fileHandle] = await window.showOpenFilePicker({
-            types: [{ description: 'Plantilla PDF', accept: { 'application/pdf': ['.pdf'] } }],
-            multiple: false
-        });
-        const file = await fileHandle.getFile();
+        const file = await elegirArchivoPDF();
         const plantillaBuffer = await file.arrayBuffer(); 
 
         Swal.fire({ 
@@ -132,11 +128,7 @@ async function rellenarPlantillaPersonalizada(plantillaBuffer, dataHistorial, pu
 // --- GENERACIÓN DE REPORTES TOTALES DE CONGREGACIÓN (S-21) ---
 async function descargarTotalesS21() {
     try {
-        const [fileHandle] = await window.showOpenFilePicker({
-            types: [{ description: 'Plantilla PDF', accept: { 'application/pdf': ['.pdf'] } }],
-            multiple: false
-        });
-        const file = await fileHandle.getFile();
+        const file = await elegirArchivoPDF();
         const plantillaBuffer = await file.arrayBuffer(); 
 
         Swal.fire({ title: 'Generando Totales...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });

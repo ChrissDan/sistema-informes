@@ -1,6 +1,20 @@
 // Base: escape HTML, token, tema, año de servicio, sesión/roles, navegación y modales
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
 // --- Escape de HTML para todo dato de usuario que se inserte con innerHTML ---
+// Selector de archivo PDF compatible con Android/iOS (showOpenFilePicker solo existe en Chrome de escritorio).
+// Debe llamarse directamente desde un clic del usuario. Si el usuario cancela, rechaza con AbortError.
+function elegirArchivoPDF() {
+    return new Promise((resolve, reject) => {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = 'application/pdf,.pdf';
+        inp.style.display = 'none'; document.body.appendChild(inp);
+        const limpiar = () => setTimeout(() => inp.remove(), 0);
+        inp.addEventListener('change', () => { limpiar(); inp.files[0] ? resolve(inp.files[0]) : reject(new DOMException('Cancelado', 'AbortError')); });
+        inp.addEventListener('cancel', () => { limpiar(); reject(new DOMException('Cancelado', 'AbortError')); });
+        inp.click();
+    });
+}
+
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 // --- AUTH: adjunta el token a cada llamada /api y cierra sesión si expira ---
 (function () {

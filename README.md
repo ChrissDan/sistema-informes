@@ -78,3 +78,18 @@ public/
 ### Migración de bases de datos existentes
 Si tu base ya existía antes del índice único de reuniones, ejecuta una vez: `node scripts/migrar_indice_reuniones.js`.
 Para cifrar con bcrypt las contraseñas heredadas en texto plano: `node scripts/migrar_passwords_bcrypt.js` (solo cuenta) y luego `node scripts/migrar_passwords_bcrypt.js --aplicar`.
+
+---
+
+## Despliegue en Vercel y app de Android
+
+### Vercel (arranque rápido, sin "dormirse")
+- `api/index.js` + `vercel.json` ejecutan la app de Express como función serverless; `public/` se sirve como estático desde la CDN. En local y en Render sigue valiendo `npm start`.
+- En el proyecto de Vercel define las variables de entorno: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET` (mín. 32 caracteres) y `TRUST_PROXY=1`.
+- Nota: el límite de intentos de login y la caché de sesión viven en memoria de cada instancia; en serverless el límite es por instancia (menos estricto).
+
+### PWA / Android
+- La web es una PWA instalable (`public/manifest.webmanifest`, `public/sw.js`, `public/icons/`). El service worker nunca guarda respuestas de `/api` y usa "red primero".
+- Instalar: Chrome en Android → menú ⋮ → *Instalar aplicación*.
+- APK / Google Play: en [pwabuilder.com](https://www.pwabuilder.com) ingresa la URL pública (HTTPS) y descarga el paquete de Android (Trusted Web Activity). Para Google Play se necesita cuenta de desarrollador y firmar el paquete.
+- Las plantillas PDF del S-21 se eligen con un selector de archivos estándar, compatible con el teléfono.

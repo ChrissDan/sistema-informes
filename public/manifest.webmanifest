@@ -1,0 +1,18 @@
+{
+  "name": "Informes Umachiri",
+  "short_name": "Informes",
+  "description": "Sistema de informes de servicio, publicadores, territorios y reportes de la congregación.",
+  "lang": "es",
+  "id": "/",
+  "start_url": "/dashboard.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

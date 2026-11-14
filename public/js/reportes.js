@@ -119,10 +119,7 @@ let fileHandleS21 = null;
 async function iniciarRellenadoTarjeta(id) { 
     publicadorIdSeleccionado = id; 
     try { 
-        [fileHandleS21] = await window.showOpenFilePicker({ 
-            types: [{ description: 'Documentos PDF (S-21)', accept: { 'application/pdf': ['.pdf'] } }], 
-            multiple: false 
-        }); 
+        fileHandleS21 = await elegirArchivoPDF(); // archivo PDF elegido (plantilla S-21)
         ejecutarProcesoModificacion(); 
     } catch (error) { 
         if (error.name !== 'AbortError') Swal.fire('Error', 'Tu navegador no soporta esta función.', 'error'); 
@@ -139,7 +136,7 @@ async function ejecutarProcesoModificacion() {
         const data = await res.json(); 
         
         // 2. Leemos la plantilla seleccionada
-        const file = await fileHandleS21.getFile(); 
+        const file = fileHandleS21; 
         const plantillaBuffer = await file.arrayBuffer(); 
         
         // 3. Llenamos usando la función maestra actualizada
