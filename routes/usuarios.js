@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../lib/db');
-const { msgErr, limpiarTelefono } = require('../lib/constantes');
+const { msgErr, limpiarTelefono, telefonoValido, MSG_TELEFONO } = require('../lib/constantes');
 const { soloAdmin, invalidarAuth } = require('../lib/auth');
 
 const router = express.Router();
@@ -28,6 +28,7 @@ function validarUsuario(b, { passwordObligatoria }) {
     const pidRaw = b.publicador_id;
     const publicador_id = (pidRaw === undefined || pidRaw === null || pidRaw === '') ? null : parseInt(pidRaw, 10);
     if (publicador_id !== null && (!Number.isInteger(publicador_id) || publicador_id < 1)) return { error: 'Publicador vinculado inválido.' };
+    if (b.telefono !== undefined && !telefonoValido(b.telefono)) return { error: MSG_TELEFONO };
     const telefono = b.telefono === undefined ? undefined : limpiarTelefono(b.telefono);
     return { nombre, correo, grupo, password, publicador_id, telefono };
 }

@@ -110,3 +110,7 @@ Una misma persona puede ser publicador, usuario del sistema y conductor. El **te
 - *Usuarios* se vincula con un publicador (`usuarios.publicador_id`) y *Conductores* también (`conductores.publicador_id`); en ambos el teléfono se lee y se guarda en el publicador vinculado. Si no hay vínculo, se guarda en el propio usuario/conductor.
 - En *Publicadores*, la casilla "Puede ser conductor del programa" crea o desactiva su conductor.
 - Las columnas nuevas (`publicadores.telefono`, `usuarios.publicador_id`, `usuarios.telefono`, `conductores.telefono`) y la tabla `programas_predicacion` se crean solas, una vez, al primer uso (`lib/esquema.js`); no hay que ejecutar nada.
+
+### Teléfonos y tarjetas de territorio
+- Los teléfonos son de **9 dígitos** (Perú): los campos solo aceptan números, recortan a 9, quitan un prefijo +51 y el servidor rechaza cualquier otro largo.
+- En *Avance y Bitácora* cada territorio es una tarjeta **plegada** (título, avance y estado); al desplegarla muestra fechas, vueltas, manzanas y el botón de bitácora. Siempre se dibujan plegadas, y la paginación aparece arriba y abajo.

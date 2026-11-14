@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../lib/db');
-const { limpiarTelefono, parseIds, MESES_ORDER, msgErr } = require('../lib/constantes');
+const { MSG_TELEFONO, telefonoValido, limpiarTelefono, parseIds, MESES_ORDER, msgErr } = require('../lib/constantes');
 const { getMesActivo, pendienteSQL } = require('../lib/mes');
 
 const router = express.Router();
@@ -46,6 +46,7 @@ async function sincronizarConductor(pubId, nombre, esConductor) {
 router.post('/api/publicadores', async (req, res) => {
     const { grupo, nombre, priv1, priv2, priv3, comentario, fecha_ingreso, fecha_nacimiento, fecha_bautismo, sexo, esperanza, privilegio_s21 } = req.body;
     if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede crear.' });
+    if (!telefonoValido(req.body.telefono)) return res.status(400).json({ ok: false, msg: MSG_TELEFONO });
     try {
         const fechaFinal = fecha_ingreso ? fecha_ingreso : new Date();
         const fNac = fecha_nacimiento ? fecha_nacimiento : null;
@@ -64,6 +65,7 @@ router.post('/api/publicadores', async (req, res) => {
 router.put('/api/publicadores/:id', async (req, res) => {
     const { nombre, priv1, priv2, priv3, comentario, grupo, fecha_ingreso, fecha_nacimiento, fecha_bautismo, sexo, esperanza, privilegio_s21 } = req.body;
     if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
+    if (!telefonoValido(req.body.telefono)) return res.status(400).json({ ok: false, msg: MSG_TELEFONO });
     try {
         const fNac = fecha_nacimiento ? fecha_nacimiento : null;
         const fBau = fecha_bautismo ? fecha_bautismo : null;

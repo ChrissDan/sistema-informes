@@ -55,13 +55,78 @@ function cambiarPaginaTerritorios(nuevaPag) {
     renderTarjetasTerritorios();
 }
 
+// Paginación (la misma se muestra arriba y abajo de las tarjetas)
+function htmlPaginacionTerritorios(total, totalPaginas, inicioIdx, finIdx) {
+    if (totalPaginas <= 1) return `<div class="terr-page-info">Mostrando ${total} de ${total} territorios</div><div></div>`;
+    let btnsHtml = `<button type="button" class="terr-page-btn" onclick="cambiarPaginaTerritorios(${paginaActualTerritorios - 1})" ${paginaActualTerritorios === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let p = 1; p <= totalPaginas; p++) {
+        btnsHtml += `<button type="button" class="terr-page-btn ${p === paginaActualTerritorios ? 'active' : ''}" onclick="cambiarPaginaTerritorios(${p})">${p}</button>`;
+    }
+    btnsHtml += `<button type="button" class="terr-page-btn" onclick="cambiarPaginaTerritorios(${paginaActualTerritorios + 1})" ${paginaActualTerritorios === totalPaginas ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    return `
+        <div class="terr-page-info">Mostrando territorios <strong>${inicioIdx + 1}–${finIdx}</strong> de <strong>${total}</strong> (Página ${paginaActualTerritorios} de ${totalPaginas})</div>
+        <div class="terr-page-controls">${btnsHtml}</div>
+    `;
+}
+
+// Tarjeta de un territorio: SIEMPRE nace plegada (solo título, avance y estado); al desplegar muestra el detalle
+function htmlTarjetaTerritorio(t) {
+    let pills = '';
+    const det = t.manzanas_detalle || {};
+    for (let m = 1; m <= t.cantidad_manzanas; m++) {
+        const st = det[m];
+        const cls = st === 'COMPLETO' ? 'is-completo' : (st === 'INCOMPLETO' ? 'is-incompleto' : '');
+        const title = st === 'COMPLETO' ? 'Manzana ' + m + ': Completa' : (st === 'INCOMPLETO' ? 'Manzana ' + m + ': Incompleta (a medias)' : 'Manzana ' + m + ': Pendiente');
+        pills += `<span class="manzana-pill ${cls}" title="${title}">${m}</span>`;
+    }
+    const badgeEstado = t.estado_actual === 'INICIO - CIERRE'
+        ? '<span class="badge badge-si">INICIO - CIERRE (100%)</span>'
+        : (t.estado_actual === 'CIERRE'
+            ? '<span class="badge badge-si">CIERRE (100%)</span>'
+            : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE (En curso)</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>')));
+
+    const vComp = t.vueltas_completas || 0;
+    const vIncomp = t.vueltas_incompletas || 0;
+    const fechasCardHtml = t.fecha_inicio
+        ? `<div>Inicio: <strong>${String(t.fecha_inicio).split('T')[0]}</strong></div>
+           <div>Cierre: <strong>${t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : 'En curso'}</strong></div>`
+        : `<div>Sin registros</div>`;
+    return `
+        <details class="terr-card terr-card-plegable">
+            <summary title="Clic para desplegar o plegar">
+                <div class="terr-card-izq">
+                    <div class="terr-card-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.85rem;"></i> Territorio ${esc(t.numero)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</div>
+                    <div class="terr-card-resumen"><span>Manzanas: <strong>${t.completadas}/${t.cantidad_manzanas}</strong> · <strong>${t.porcentaje}%</strong></span>${badgeEstado}</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${t.porcentaje}%"></div></div>
+                </div>
+                <div class="terr-card-der"><i class="fa-solid fa-chevron-down terr-chevron"></i></div>
+            </summary>
+            <div class="terr-card-cuerpo">
+                <div class="terr-card-sub" style="line-height:1.45;">${fechasCardHtml}</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <span class="badge badge-si" style="font-size:0.72rem;">Vueltas completas: ${vComp}</span>
+                    <span class="badge ${vIncomp > 0 ? 'badge-no' : 'badge-gray'}" style="font-size:0.72rem;">Vueltas incompletas: ${vIncomp}</span>
+                </div>
+                <div class="manzanas-mini-grid">${pills}</div>
+                <div class="terr-card-btn-row">
+                    <button type="button" class="btn-primary btn-terr-card-action" onclick="abrirModalBitacoraTerritorio('${t.id}')">
+                        <i class="fa-solid fa-book-open"></i> Ver Bitácora / Registrar Avance
+                    </button>
+                </div>
+            </div>
+        </details>
+    `;
+}
+
 function renderTarjetasTerritorios() {
     const cont = document.getElementById('gridTarjetasTerritorios');
-    const pagCont = document.getElementById('paginacionTarjetasTerritorios');
+    const pagAbajo = document.getElementById('paginacionTarjetasTerritorios');
+    const pagArriba = document.getElementById('paginacionTarjetasTerritoriosTop');
     if (!cont) return;
     if (cacheTerritorios.length === 0) {
         cont.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:#8f8f8f;">No hay territorios registrados aún. Usa el botón "Nuevo Territorio" para empezar.</div>';
-        if (pagCont) pagCont.innerHTML = '';
+        if (pagAbajo) pagAbajo.innerHTML = '';
+        if (pagArriba) pagArriba.innerHTML = '';
         return;
     }
     const total = cacheTerritorios.length;
@@ -71,75 +136,11 @@ function renderTarjetasTerritorios() {
 
     const inicioIdx = (paginaActualTerritorios - 1) * TERR_POR_PAGINA;
     const finIdx = Math.min(inicioIdx + TERR_POR_PAGINA, total);
-    const paginaItems = cacheTerritorios.slice(inicioIdx, finIdx);
+    cont.innerHTML = cacheTerritorios.slice(inicioIdx, finIdx).map(htmlTarjetaTerritorio).join('');
 
-    cont.innerHTML = '';
-    paginaItems.forEach(t => {
-        let pills = '';
-        const det = t.manzanas_detalle || {};
-        for (let m = 1; m <= t.cantidad_manzanas; m++) {
-            const st = det[m];
-            const cls = st === 'COMPLETO' ? 'is-completo' : (st === 'INCOMPLETO' ? 'is-incompleto' : '');
-            const title = st === 'COMPLETO' ? 'Manzana ' + m + ': Completa' : (st === 'INCOMPLETO' ? 'Manzana ' + m + ': Incompleta (a medias)' : 'Manzana ' + m + ': Pendiente');
-            pills += `<span class="manzana-pill ${cls}" title="${title}">${m}</span>`;
-        }
-        const badgeEstado = t.estado_actual === 'INICIO - CIERRE'
-            ? '<span class="badge badge-si">INICIO - CIERRE (100%)</span>'
-            : (t.estado_actual === 'CIERRE'
-                ? '<span class="badge badge-si">CIERRE (100%)</span>'
-                : (t.estado_actual === 'AVANCE' ? '<span class="badge badge-no">AVANCE (En curso)</span>' : (t.estado_actual === 'INICIO' ? '<span class="badge badge-grp">INICIO</span>' : '<span class="badge badge-gray">SIN INICIAR</span>')));
-
-        const vComp = t.vueltas_completas || 0;
-        const vIncomp = t.vueltas_incompletas || 0;
-        const fechasCardHtml = t.fecha_inicio
-            ? `<div>Inicio: <strong>${String(t.fecha_inicio).split('T')[0]}</strong></div>
-               <div>Cierre: <strong>${t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : 'En curso'}</strong></div>`
-            : `<div>Sin registros</div>`;
-        cont.innerHTML += `
-            <div class="terr-card" onclick="abrirModalBitacoraTerritorio('${t.id}')" title="Clic para ver bitácora y registrar avance">
-                <div class="terr-card-head">
-                    <div>
-                        <div class="terr-card-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.85rem;"></i> Territorio ${esc(t.numero)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</div>
-                        <div class="terr-card-sub" style="margin-top:3px; line-height:1.45;">${fechasCardHtml}</div>
-                    </div>
-                    ${badgeEstado}
-                </div>
-                <div style="display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 6px 0;">
-                    <span class="badge badge-si" style="font-size:0.72rem;">Vueltas completas: ${vComp}</span>
-                    <span class="badge ${vIncomp > 0 ? 'badge-no' : 'badge-gray'}" style="font-size:0.72rem;">Vueltas incompletas: ${vIncomp}</span>
-                </div>
-                <div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom:4px;">
-                        <span>Manzanas: <strong>${t.completadas}/${t.cantidad_manzanas}</strong> completas</span>
-                        <strong>${t.porcentaje}%</strong>
-                    </div>
-                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${t.porcentaje}%"></div></div>
-                </div>
-                <div class="manzanas-mini-grid">${pills}</div>
-                <div class="terr-card-btn-row">
-                    <button type="button" class="btn-primary btn-terr-card-action" onclick="event.stopPropagation(); abrirModalBitacoraTerritorio('${t.id}')">
-                        <i class="fa-solid fa-book-open"></i> Ver Bitácora / Registrar Avance
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    if (pagCont) {
-        if (totalPaginas <= 1) {
-            pagCont.innerHTML = `<div class="terr-page-info">Mostrando ${total} de ${total} territorios</div><div></div>`;
-        } else {
-            let btnsHtml = `<button type="button" class="terr-page-btn" onclick="cambiarPaginaTerritorios(${paginaActualTerritorios - 1})" ${paginaActualTerritorios === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`;
-            for (let p = 1; p <= totalPaginas; p++) {
-                btnsHtml += `<button type="button" class="terr-page-btn ${p === paginaActualTerritorios ? 'active' : ''}" onclick="cambiarPaginaTerritorios(${p})">${p}</button>`;
-            }
-            btnsHtml += `<button type="button" class="terr-page-btn" onclick="cambiarPaginaTerritorios(${paginaActualTerritorios + 1})" ${paginaActualTerritorios === totalPaginas ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
-            pagCont.innerHTML = `
-                <div class="terr-page-info">Mostrando territorios <strong>${inicioIdx + 1}–${finIdx}</strong> de <strong>${total}</strong> (Página ${paginaActualTerritorios} de ${totalPaginas})</div>
-                <div class="terr-page-controls">${btnsHtml}</div>
-            `;
-        }
-    }
+    const pag = htmlPaginacionTerritorios(total, totalPaginas, inicioIdx, finIdx);
+    if (pagAbajo) pagAbajo.innerHTML = pag;
+    if (pagArriba) pagArriba.innerHTML = pag;
 }
 
 function renderTablaCatalogoTerritorios() {

@@ -44,6 +44,17 @@ async function entregarArchivo(blob, nombre, titulo) {
     descargarBlob(blob, nombre);
 }
 
+// Teléfono peruano: solo 9 dígitos (si llega con +51 se quita el prefijo). Se aplica solo en los campos con data-telefono.
+function soloDigitosTel(v) {
+    let d = String(v ?? '').replace(/\D/g, '');
+    if (d.length === 11 && d.startsWith('51')) d = d.slice(2);
+    return d.slice(0, 9);
+}
+document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (el && el.matches && el.matches('input[data-telefono]')) { const limpio = soloDigitosTel(el.value); if (el.value !== limpio) el.value = limpio; }
+});
+
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 // --- AUTH: adjunta el token a cada llamada /api y cierra sesión si expira ---
 (function () {

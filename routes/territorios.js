@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../lib/db');
-const { msgErr, limpiarTelefono } = require('../lib/constantes');
+const { msgErr, limpiarTelefono, telefonoValido, MSG_TELEFONO } = require('../lib/constantes');
 const { soloAdmin, soloGlobal } = require('../lib/auth');
 
 const router = express.Router();
@@ -258,6 +258,7 @@ async function guardarTelefonoConductor(conductorId, publicadorId, telefono) {
 
 router.post('/api/conductores', soloAdmin, async (req, res) => {
     const { publicador_id, nombre } = req.body;
+    if (req.body.telefono !== undefined && !telefonoValido(req.body.telefono)) return res.status(400).json({ ok: false, msg: MSG_TELEFONO });
     if (!nombre || !String(nombre).trim()) return res.status(400).json({ ok: false, msg: 'El nombre del conductor es obligatorio.' });
     try {
         const [r] = await pool.query('INSERT INTO conductores (publicador_id, nombre, activo) VALUES (?, ?, 1)', [publicador_id || null, String(nombre).trim()]);
@@ -268,6 +269,7 @@ router.post('/api/conductores', soloAdmin, async (req, res) => {
 
 router.put('/api/conductores/:id', soloAdmin, async (req, res) => {
     const { publicador_id, nombre } = req.body;
+    if (req.body.telefono !== undefined && !telefonoValido(req.body.telefono)) return res.status(400).json({ ok: false, msg: MSG_TELEFONO });
     if (!nombre || !String(nombre).trim()) return res.status(400).json({ ok: false, msg: 'El nombre del conductor es obligatorio.' });
     try {
         await pool.query('UPDATE conductores SET publicador_id = ?, nombre = ? WHERE id = ?', [publicador_id || null, String(nombre).trim(), req.params.id]);

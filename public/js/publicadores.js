@@ -58,7 +58,7 @@ function editarPub(id) {
     
     f.sexo.value = obj.sexo || 'Hombre';
     f.esperanza.value = obj.esperanza || 'Otras ovejas';
-    f.telefono.value = obj.telefono || '';
+    f.telefono.value = soloDigitosTel(obj.telefono);
     document.getElementById('pubEsConductor').checked = Boolean(Number(obj.es_conductor));
 
     // --- LÓGICA PARA CHECKBOXES MÚLTIPLES S-21 ---

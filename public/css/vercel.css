@@ -1644,3 +1644,26 @@ html[data-theme="dark"] .prog-sheet-table tr.prog-fila-editando td { background:
 /* Botón de menú (☰) en modo oscuro: sin fondo claro (antes quedaba un cuadro blanco con el icono invisible) */
 html[data-theme="dark"] .menu-toggle,
 html[data-theme="dark"] .menu-toggle:hover { background: transparent; border-color: transparent; color: #ededed; }
+
+/* ==========================================================================
+   Tarjetas de territorio plegables (siempre nacen plegadas) y formulario de publicador alineado
+   ========================================================================== */
+.terr-cards-grid { align-items: start; }
+.terr-card-plegable { padding: 0; gap: 0; }
+.terr-card-plegable > summary {
+    list-style: none; cursor: pointer; padding: 12px 14px; border-radius: 10px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.terr-card-plegable > summary::-webkit-details-marker { display: none; }
+.terr-card-plegable > summary::marker { content: ''; }
+.terr-card-plegable > summary:hover { background: var(--primary-light); }
+.terr-card-izq { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.terr-card-resumen { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.76rem; color: var(--text-muted); }
+.terr-card-plegable .progress-bar-bg { height: 5px; }
+.terr-card-der { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.terr-chevron { color: var(--text-muted); font-size: 0.8rem; transition: transform 0.2s; }
+.terr-card-plegable[open] .terr-chevron { transform: rotate(180deg); }
+.terr-card-plegable[open] > summary { border-bottom: 1px solid var(--border); border-radius: 10px 10px 0 0; }
+.terr-card-cuerpo { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+#paginacionTarjetasTerritoriosTop { margin: 0 0 12px 0; }
+html[data-theme="dark"] .terr-card-plegable > summary:hover { background: #161616; }

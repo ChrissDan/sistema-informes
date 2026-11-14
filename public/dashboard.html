@@ -563,6 +563,7 @@
                                 <span><span class="manzana-dot dot-completo"></span> Completo</span>
                             </div>
                         </div>
+                        <div id="paginacionTarjetasTerritoriosTop" class="terr-pagination"></div>
                         <div id="gridTarjetasTerritorios" class="terr-cards-grid"></div>
                         <div id="paginacionTarjetasTerritorios" class="terr-pagination"></div>
                     </div>
@@ -835,7 +836,7 @@
                                 <label>Conductor <span class="label-hint">(El teléfono se completa solo desde el directorio; puedes cambiarlo)</span></label>
                                 <div style="display:grid; grid-template-columns: 1fr 160px; gap:8px;">
                                     <select id="progConductor"></select>
-                                    <input type="text" id="progConductorTel" placeholder="Teléfono" inputmode="tel">
+                                    <input type="text" id="progConductorTel" placeholder="Teléfono (9 dígitos)" data-telefono maxlength="9" inputmode="numeric">
                                 </div>
                             </div>
 
@@ -1011,14 +1012,14 @@
             </div>
             <div class="col-span-1">
                 <label>Teléfono <span class="label-hint">(Opcional)</span></label>
-                <input name="telefono" type="tel" inputmode="tel" placeholder="Ej: 956713954">
+                <input name="telefono" type="tel" data-telefono maxlength="9" inputmode="numeric" pattern="[0-9]{9}" title="Debe tener 9 dígitos (ej: 956713954)" placeholder="Ej: 956713954">
             </div>
-            <div class="col-span-1" style="display:flex; align-items:flex-end;">
-                <label class="form-check-pill" style="margin:0 0 6px 0;">
+            <div class="col-span-1" style="align-self:end;">
+                <label class="form-check-pill" style="margin:0; min-height:40px; display:flex; align-items:center; justify-content:flex-start; gap:10px;">
                     <input type="checkbox" id="pubEsConductor"> Puede ser conductor del programa
                 </label>
             </div>
-            <div class="global-view col-span-1">
+            <div class="col-span-1">
                 <label>Grupo Asignado</label>
                 <select id="pubGrupoSelect" name="grupo_manual">
                     <option value="1">Grupo 1</option>
@@ -1173,7 +1174,7 @@
             </div>
             <div class="col-span-1">
                 <label>Teléfono</label>
-                <input name="telefono" type="tel" inputmode="tel" placeholder="Ej: 956713954">
+                <input name="telefono" type="tel" data-telefono maxlength="9" inputmode="numeric" pattern="[0-9]{9}" title="Debe tener 9 dígitos (ej: 956713954)" placeholder="Ej: 956713954">
             </div>
             <div class="col-span-1">
                 <label>Correo / Usuario</label>
@@ -1248,7 +1249,7 @@
             </div>
             <div class="col-span-2">
                 <label>Teléfono <span class="label-hint">(Se usa en el programa de predicación; si eliges un publicador se guarda en su ficha)</span></label>
-                <input name="telefono" id="inputTelConductor" type="tel" inputmode="tel" placeholder="Ej: 956713954">
+                <input name="telefono" id="inputTelConductor" type="tel" data-telefono maxlength="9" inputmode="numeric" pattern="[0-9]{9}" title="Debe tener 9 dígitos (ej: 956713954)" placeholder="Ej: 956713954">
             </div>
             <div class="col-span-2 form-submit-row">
                 <button type="submit" class="btn-primary" style="width:100%">

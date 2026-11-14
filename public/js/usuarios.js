@@ -1,14 +1,14 @@
 // Usuarios y borrado genérico
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
 // --- USUARIOS ---
-function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = ''; f.grupo.value = obj.grupo; f.telefono.value = obj.telefono || ''; document.getElementById('userPubId').value = obj.publicador_id || ''; buscadorUsuarioPub.fijar(obj.publicador_id ? { id: obj.publicador_id, nombre: obj.publicador_nombre || '' } : null); abrirModal('usuario', id); }
+function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = ''; f.grupo.value = obj.grupo; f.telefono.value = soloDigitosTel(obj.telefono); document.getElementById('userPubId').value = obj.publicador_id || ''; buscadorUsuarioPub.fijar(obj.publicador_id ? { id: obj.publicador_id, nombre: obj.publicador_nombre || '' } : null); abrirModal('usuario', id); }
 // Publicador vinculado al usuario (una misma persona puede ser publicador, usuario y conductor)
 const buscadorUsuarioPub = crearBuscadorPublicador(document.getElementById('userPubBuscar'), {
     onSeleccion: (p) => {
         document.getElementById('userPubId').value = p.id;
         const f = document.getElementById('formUsuario');
         if (!f.nombre.value.trim()) f.nombre.value = p.nombre;
-        if (p.telefono) f.telefono.value = p.telefono;
+        if (p.telefono) f.telefono.value = soloDigitosTel(p.telefono);
     },
     onLimpiar: () => { document.getElementById('userPubId').value = ''; },
     onInvalidar: () => { document.getElementById('userPubId').value = ''; }

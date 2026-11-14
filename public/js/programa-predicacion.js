@@ -61,7 +61,7 @@ function telefonoLocalAntiguo(nombre) {
 
 function telefonoDeConductor(nombre) {
     const c = cacheConductores.find(x => x.nombre === nombre);
-    return (c && c.telefono) || telefonoLocalAntiguo(nombre) || '';
+    return soloDigitosTel((c && c.telefono) || telefonoLocalAntiguo(nombre) || '');
 }
 
 function asegurarOpcionSelect(sel, valor, etiqueta) {
@@ -364,7 +364,7 @@ function leerFormularioFilaPrograma() {
         territorios: t2 && t2 !== t1 ? `${t1}, ${t2}` : `${t1}`,
         manzanas: progManzanasSet.size > 0 ? Array.from(progManzanasSet).sort((a, b) => a - b).join(', ') : '',
         conductor: document.getElementById('progConductor')?.value || '',
-        telefono: (document.getElementById('progConductorTel')?.value || '').trim()
+        telefono: soloDigitosTel(document.getElementById('progConductorTel')?.value)
     };
 }
 
@@ -412,7 +412,7 @@ function editarFilaPrograma(idx) {
 
     asegurarOpcionSelect(document.getElementById('progConductor'), f.conductor);
     set('progConductor', f.conductor);
-    set('progConductorTel', f.telefono || '');
+    set('progConductorTel', soloDigitosTel(f.telefono));
 
     const btn = document.getElementById('btnAgregarFilaProg');
     if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar cambios';

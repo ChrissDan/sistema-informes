@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../lib/db');
-const { msgErr } = require('../lib/constantes');
+const { msgErr, limpiarTelefono } = require('../lib/constantes');
 const { soloAdmin, soloGlobal } = require('../lib/auth');
 
 const router = express.Router();
@@ -26,7 +26,7 @@ function sanearPrograma(b) {
         territorios: txt(f.territorios, 60),
         manzanas: txt(f.manzanas, 120),
         conductor: txt(f.conductor, 120),
-        telefono: txt(f.telefono, 30)
+        telefono: (limpiarTelefono(f.telefono) || '').slice(0, 9)
     }));
     return { fechaIni: fechaOVacio(b.fechaIni), fechaFin: fechaOVacio(b.fechaFin), mostrarGrupo: b.mostrarGrupo !== false, filas };
 }

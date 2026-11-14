@@ -334,7 +334,7 @@ function autocompletarConductor() {
     const nombre = opt ? opt.getAttribute('data-nombre') : '';
     if (nombre) document.getElementById('inputNombreConductor').value = nombre;
     const tel = opt ? opt.getAttribute('data-tel') : '';
-    if (tel) document.getElementById('inputTelConductor').value = tel;   // el teléfono del publicador se completa solo
+    if (tel) document.getElementById('inputTelConductor').value = soloDigitosTel(tel);   // el teléfono del publicador se completa solo
 }
 
 async function editarConductor(id) {
@@ -343,7 +343,7 @@ async function editarConductor(id) {
     await resetFormConductor();
     document.getElementById('conductorId').value = obj.id;
     document.getElementById('inputNombreConductor').value = obj.nombre;
-    document.getElementById('inputTelConductor').value = obj.telefono || '';
+    document.getElementById('inputTelConductor').value = soloDigitosTel(obj.telefono);
     if (obj.publicador_id) document.getElementById('selectPubConductor').value = obj.publicador_id;
     abrirModal('conductor', id);
 }
