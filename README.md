@@ -51,3 +51,29 @@ Aplicación web para gestionar informes mensuales de servicio, directorio de pub
 ### 4. Interfaz Visual (Estilo Vercel / Geist)
 - Tema minimalista en `public/css/vercel.css` con soporte para **Modo Claro y Modo Oscuro** (`html[data-theme="dark"]`), persistencia en `localStorage` y adaptación automática de las gráficas de Chart.js.
 
+
+---
+
+## Estructura del proyecto
+
+```
+server.js                 Arranque: Express, estáticos y montaje de routers
+lib/
+  db.js                   Pool de conexiones MySQL / TiDB
+  constantes.js           Meses, privilegios, metas de horas, msgErr
+  mes.js                  Año de servicio, mes activo y filtro de pendientes
+  auth.js                 JWT, roles (soloAdmin/soloGlobal) y filtro por grupo
+routes/                   Un router por área: auth, cierres, dashboard, publicadores,
+                          informes, reportes, reuniones, territorios, usuarios
+scripts/                  Migraciones puntuales (p. ej. migrar_indice_reuniones.js)
+public/
+  index.html, js/login.js Inicio de sesión
+  dashboard.html          Panel principal
+  js/*.js                 Scripts clásicos del panel (comparten ámbito global);
+                          el ORDEN de carga está en dashboard.html:
+                          core, informes, publicadores, dashboard, reuniones, cierres,
+                          reportes, s21, graficas, usuarios, territorios-*, programa-predicacion, vcal
+```
+
+### Migración de bases de datos existentes
+Si tu base ya existía antes del índice único de reuniones, ejecuta una vez: `node scripts/migrar_indice_reuniones.js`.
