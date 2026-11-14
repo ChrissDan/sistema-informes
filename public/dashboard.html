@@ -556,20 +556,6 @@
                 <div id="subview-terr-resumen" class="terr-subview active">
                     <div class="card">
                         <div class="card-header-flex">
-                            <div>
-                                <h3><i class="fa-solid fa-calendar-week"></i> Estado de la Última Semana y Asistente del Programa de Predicación</h3>
-                                <div id="subtituloSemanaTerritorios" style="font-size:0.78rem; color:#71717a; margin-top:3px;">Cargando resumen semanal...</div>
-                            </div>
-                            <button type="button" class="btn-primary" style="padding:7px 14px; font-size:0.82rem;" onclick="mostrarSubTabTerritorio('programa')">
-                                <i class="fa-solid fa-calendar-plus"></i> Programa
-                            </button>
-                        </div>
-
-                        <div id="panelPlanificadorTerritorios" class="terr-planner-layout"></div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header-flex">
                             <h3><i class="fa-solid fa-table-cells-large"></i> Estado de Manzanas por Territorio</h3>
                             <div style="display:flex; gap:12px; font-size:0.78rem; align-items:center; flex-wrap:wrap;">
                                 <span><span class="manzana-dot dot-pendiente"></span> Pendiente</span>
@@ -731,6 +717,17 @@
 
                 <!-- SUB-VISTA 5: PROGRAMA DEL SERVICIO DEL CAMPO (se guarda un programa por tipo de reunión) -->
                 <div id="subview-terr-programa" class="terr-subview">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <div>
+                                <h3><i class="fa-solid fa-calendar-week"></i> Estado de la Última Semana y Asistente del Programa de Predicación</h3>
+                                <div id="subtituloSemanaTerritorios" style="font-size:0.78rem; color:#71717a; margin-top:3px;">Cargando resumen semanal...</div>
+                            </div>
+                        </div>
+
+                        <div id="panelPlanificadorTerritorios" class="terr-planner-layout"></div>
+                    </div>
+
                     <div class="card">
                         <div class="card-header-flex">
                             <h3><i class="fa-solid fa-calendar-check"></i> Programa del Servicio del Campo</h3>
