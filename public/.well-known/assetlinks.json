@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.umachiri.informes",
+    "sha256_cert_fingerprints": ["51:E6:46:FE:2D:C1:15:AC:E4:62:15:25:B3:85:30:E5:96:9A:CB:AB:5E:01:52:99:7B:36:5A:FD:D9:74:21:2D"]
+  }
+}]

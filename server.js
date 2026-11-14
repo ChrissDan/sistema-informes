@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 3000;
 // Detrás de un proxy (Render, Railway, Nginx...) define TRUST_PROXY=1 para que req.ip sea la IP real del cliente
 if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? parseInt(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// dotfiles:'allow' para servir /.well-known/assetlinks.json (verificación de la app de Android)
+app.use(express.static(path.join(__dirname, 'public'), { dotfiles: 'allow' }));
 
 // Login (público, con limitador de intentos)
 app.use(require('./routes/auth'));
