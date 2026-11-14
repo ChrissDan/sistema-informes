@@ -1,10 +1,18 @@
 // Publicadores: directorio, alta/edición y estado
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
 // --- PUBLICADORES ---
+// Marcas junto al nombre: conductor, usuario del sistema y teléfono
+function vinculosPub(d) {
+    let h = '';
+    if (Number(d.es_conductor)) h += ' <i class="fa-solid fa-user-tie" style="color:#0f766e;" title="Puede ser conductor del programa"></i>';
+    if (Number(d.es_usuario)) h += ' <i class="fa-solid fa-user-shield" style="color:#2563eb;" title="Tiene usuario en el sistema"></i>';
+    if (d.telefono) h += `<div style="font-size:0.74rem; color:var(--text-muted); font-weight:400;"><i class="fa-solid fa-phone" style="font-size:0.65rem;"></i> ${esc(d.telefono)}</div>`;
+    return h;
+}
 async function cargarTablaPublicadores() {
-    let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null; const fNombre = document.getElementById('pubFiltroNombre').value; const fPriv3 = document.getElementById('pubFiltroPriv3').value;
+    let grp = isGlobal ? 0 : session.grupo; const fGrupo = document.getElementById('pubFiltroGrupo') ? document.getElementById('pubFiltroGrupo').value : null; const idsNombre = await buscadorPublicadores.idsParaBuscar(); const fPriv3 = document.getElementById('pubFiltroPriv3').value;
     if (isGlobal && fGrupo) grp = fGrupo;
-    const params = new URLSearchParams({ grupo: grp }); if (fNombre) params.append('nombre', fNombre); if (fPriv3) params.append('priv3', fPriv3);
+    const params = new URLSearchParams({ grupo: grp }); if (idsNombre) params.append('publicador_ids', idsNombre.join(',') || '0'); if (fPriv3) params.append('priv3', fPriv3);
     const res = await fetch(`/api/publicadores?${params.toString()}`); cachePublicadores = await res.json(); const tbody = document.getElementById('tablaPublicadores'); tbody.innerHTML = '';
     let stats = { total: 0, reg: 0, esp: 0, aux: 0, pub: 0, groups: {} }; for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
     if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
@@ -15,7 +23,7 @@ async function cargarTablaPublicadores() {
         const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
         const infoBadge = d.informo_mes === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
         let fechaTxt = '-'; if (d.fecha_ingreso) { const dateObj = new Date(d.fecha_ingreso); const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000; fechaTxt = new Date(dateObj.getTime() + userTimezoneOffset).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }); }
-        tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${esc(d.nombre)}</td><td>${esc(d.priv1 || '-')}</td><td>${esc(d.priv2 || '-')}</td><td><span class="badge badge-gray">${esc(d.priv3)}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.comentario || '')}</td><td class="global-view" style="font-size:0.85em;">${fechaTxt}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+        tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${esc(d.nombre)}${vinculosPub(d)}</td><td>${esc(d.priv1 || '-')}</td><td>${esc(d.priv2 || '-')}</td><td><span class="badge badge-gray">${esc(d.priv3)}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.comentario || '')}</td><td class="global-view" style="font-size:0.85em;">${fechaTxt}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
     });
     document.getElementById('pub-stat-total').textContent = stats.total; document.getElementById('pub-stat-reg').textContent = stats.reg; document.getElementById('pub-stat-esp').textContent = stats.esp; document.getElementById('pub-stat-aux').textContent = stats.aux; document.getElementById('pub-stat-pub').textContent = stats.pub;
     const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
@@ -23,7 +31,7 @@ async function cargarTablaPublicadores() {
     if (isAdmin) { document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'table-cell'); document.querySelectorAll('.global-view.badge').forEach(e => e.style.display = 'none'); }
     if (isGlobal) { document.querySelectorAll('.global-view').forEach(e => e.style.display = 'table-cell'); }
 }
-async function toggleEstado(id, nuevoEstado, checkbox) { const accionTexto = nuevoEstado ? 'activar' : 'desactivar'; const result = await Swal.fire({ title: `¿${accionTexto} publicador?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }); if (result.isConfirmed) { try { const res = await fetch(`/api/publicadores/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: `Listo` }); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstado; } } catch (e) { checkbox.checked = !nuevoEstado; } } else { checkbox.checked = !nuevoEstado; } }
+async function toggleEstado(id, nuevoEstado, checkbox) { const accionTexto = nuevoEstado ? 'activar' : 'desactivar'; const result = await Swal.fire({ title: `¿${accionTexto} publicador?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }); if (result.isConfirmed) { try { const res = await fetch(`/api/publicadores/${id}/estado`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: nuevoEstado, requester_group: session.grupo }) }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: `Listo` }); invalidarBuscadorPublicadores(); cargarTablaPublicadores(); } else { Swal.fire('Error', json.msg, 'error'); checkbox.checked = !nuevoEstado; } } catch (e) { checkbox.checked = !nuevoEstado; } } else { checkbox.checked = !nuevoEstado; } }
 
 function editarPub(id) { 
     if (!isAdmin) return; 
@@ -50,6 +58,8 @@ function editarPub(id) {
     
     f.sexo.value = obj.sexo || 'Hombre';
     f.esperanza.value = obj.esperanza || 'Otras ovejas';
+    f.telefono.value = obj.telefono || '';
+    document.getElementById('pubEsConductor').checked = Boolean(Number(obj.es_conductor));
 
     // --- LÓGICA PARA CHECKBOXES MÚLTIPLES S-21 ---
     // 1. Limpiamos todas las casillas primero
@@ -97,6 +107,7 @@ document.getElementById('formPublicador').addEventListener('submit', async (e) =
     const url = id ? `/api/publicadores/${id}` : '/api/publicadores'; 
     data.grupo = isAdmin ? document.getElementById('pubGrupoSelect').value : session.grupo; 
     data.requester_group = session.grupo; 
+    data.es_conductor = document.getElementById('pubEsConductor').checked; 
     
     const res = await fetch(url, { 
         method: method, 
@@ -109,6 +120,7 @@ document.getElementById('formPublicador').addEventListener('submit', async (e) =
         Toast.fire({ icon: 'success', title: 'Listo' }); 
         cerrarModal(); 
         resetFormPub(); 
+        invalidarBuscadorPublicadores(); 
         cargarTablaPublicadores(); 
     } else { 
         Swal.fire('Error', json.msg, 'error'); 

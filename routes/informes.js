@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../lib/db');
-const { ordenMesSQL, msgErr, PRIV_CON_HORAS, metaHorasPriv } = require('../lib/constantes');
+const { parseIds, ordenMesSQL, msgErr, PRIV_CON_HORAS, metaHorasPriv } = require('../lib/constantes');
 const { claveMes, getMesActivo } = require('../lib/mes');
 const { esGlobal } = require('../lib/auth');
 
@@ -19,7 +19,8 @@ router.get('/api/informes', async (req, res) => {
             else if (priv3 === 'PUB_COMBINED') query += " AND i.priv3 IN ('PUB', 'PNB')"; 
             else { query += " AND i.priv3 = ?"; params.push(priv3); }
         }
-        if (nombre && nombre !== '') { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); }
+        const ids = parseIds(req.query.publicador_ids); if (ids) { query += " AND i.publicador_id IN (?)"; params.push(ids); }
+        if (nombre && nombre !== '') { query += " AND LOWER(p.nombre) LIKE ?"; params.push(`%${String(nombre).toLowerCase()}%`); }
         query += ` ORDER BY ${ordenMesSQL('i.mes')} DESC, i.grupo ASC, p.nombre ASC`;
         const [rows] = await pool.query(query, params); res.json(rows);
     } catch (error) { res.status(500).json({ error: msgErr(error) }); }

@@ -10,7 +10,7 @@ async function cargarConductoresData() {
         const tbody = document.getElementById('tablaConductores');
         if (!tbody) return;
         if (cacheConductores.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#8f8f8f;">No hay conductores registrados.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#8f8f8f;">No hay conductores registrados.</td></tr>';
             return;
         }
         tbody.innerHTML = '';
@@ -22,7 +22,8 @@ async function cargarConductoresData() {
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${esc(c.nombre)}</strong></td>
-                    <td><span class="badge badge-si">ACTIVO</span></td>
+                    <td>${esc(c.telefono || '-')}</td>
+                    <td>${c.activo === 0 ? '<span class="badge badge-gray">INACTIVO</span>' : '<span class="badge badge-si">ACTIVO</span>'}</td>
                     <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
                 </tr>
             `;
@@ -321,7 +322,7 @@ async function resetFormConductor() {
             const res = await fetch('/api/publicadores?grupo=0');
             const pubs = await res.json();
             pubs.filter(p => p.activo).forEach(p => {
-                sel.innerHTML += `<option value="${p.id}" data-nombre="${esc(p.nombre)}">${esc(p.nombre)} (G${p.grupo})</option>`;
+                sel.innerHTML += `<option value="${p.id}" data-nombre="${esc(p.nombre)}" data-tel="${esc(p.telefono || '')}">${esc(p.nombre)} (G${p.grupo})</option>`;
             });
         } catch (e) {}
     }
@@ -332,6 +333,8 @@ function autocompletarConductor() {
     const opt = sel.options[sel.selectedIndex];
     const nombre = opt ? opt.getAttribute('data-nombre') : '';
     if (nombre) document.getElementById('inputNombreConductor').value = nombre;
+    const tel = opt ? opt.getAttribute('data-tel') : '';
+    if (tel) document.getElementById('inputTelConductor').value = tel;   // el teléfono del publicador se completa solo
 }
 
 async function editarConductor(id) {
@@ -340,6 +343,7 @@ async function editarConductor(id) {
     await resetFormConductor();
     document.getElementById('conductorId').value = obj.id;
     document.getElementById('inputNombreConductor').value = obj.nombre;
+    document.getElementById('inputTelConductor').value = obj.telefono || '';
     if (obj.publicador_id) document.getElementById('selectPubConductor').value = obj.publicador_id;
     abrirModal('conductor', id);
 }
@@ -667,7 +671,7 @@ document.getElementById('formConductor')?.addEventListener('submit', async (e) =
     const res = await fetch(id ? `/api/conductores/${id}` : '/api/conductores', {
         method: id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicador_id: sel.value || null, nombre })
+        body: JSON.stringify({ publicador_id: sel.value || null, nombre, telefono: document.getElementById('inputTelConductor').value })
     });
     const json = await res.json();
     if (res.ok && json.ok) {

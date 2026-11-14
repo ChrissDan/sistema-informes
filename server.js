@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { autenticar, filtroGrupo } = require('./lib/auth'); // valida JWT_SECRET al cargar
+const { esquemaListo } = require('./lib/esquema');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ app.use(require('./routes/auth'));
 // Todo lo demás de /api exige token válido y fuerza el grupo del encargado
 app.use('/api', autenticar);
 app.use('/api', filtroGrupo);
+app.use('/api', esquemaListo);               // crea columnas/tablas nuevas la primera vez (idempotente)
 
 app.use(require('./routes/cierres'));        // mes activo y cierres
 app.use(require('./routes/dashboard'));
@@ -26,6 +28,7 @@ app.use(require('./routes/informes'));
 app.use(require('./routes/reportes'));       // reportes, totales S-21 y tarjetas
 app.use(require('./routes/reuniones'));
 app.use(require('./routes/territorios'));    // catálogo, conductores, turnos, bitácora y S-13
+app.use(require('./routes/programas'));      // programa del servicio del campo (uno por tipo)
 app.use(require('./routes/usuarios'));
 
 if (require.main === module) {

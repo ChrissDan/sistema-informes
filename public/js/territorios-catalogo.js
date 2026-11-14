@@ -18,6 +18,7 @@ function mostrarSubTabTerritorio(tab) {
     const view = document.getElementById('subview-terr-' + tab);
     if (btn) btn.classList.add('active');
     if (view) view.classList.add('active');
+    if (tab === 'programa' && typeof iniciarVistaPrograma === 'function') iniciarVistaPrograma();
 }
 
 async function cargarVistaTerritorios() {

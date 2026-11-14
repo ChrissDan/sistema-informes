@@ -1565,3 +1565,82 @@ html[data-theme="dark"] .prog-row-chip {
     gap: 6px;
     font-weight: 600;
 }
+
+/* ==========================================================================
+   Buscador de publicador (autocompletar) — Informes, Publicadores y Reportes
+   ========================================================================== */
+.buscador-pub { position: relative; }
+.buscador-pub input.buscador-sel { font-weight: 600; padding-right: 40px; }
+.buscador-x { position: absolute; right: 6px; bottom: 5px; width: 32px; height: 32px; border: none; background: transparent; color: var(--text-muted); font-size: 1.5rem; line-height: 1; cursor: pointer; border-radius: 6px; }
+.buscador-x:hover { background: var(--primary-light); color: var(--text-main); }
+.buscador-lista { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 60; max-height: 320px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 4px; }
+.buscador-lista[hidden] { display: none; }
+.buscador-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+.buscador-item:hover, .buscador-item.activo { background: var(--primary-light); }
+.buscador-nombre { font-weight: 600; color: var(--text-main); }
+.buscador-meta { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+.buscador-vacio { padding: 12px; color: var(--text-muted); font-size: 0.9rem; text-align: center; }
+
+/* ==========================================================================
+   Selector de año de servicio (encabezado): centrado y legible en teléfono, tablet y PC
+   ========================================================================== */
+.header-right { display: flex; align-items: center; justify-content: center; gap: 10px; margin-right: 20px; }
+.anio-etiqueta { display: none; }
+.anio-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.anio-select {
+    -webkit-appearance: none; appearance: none;
+    min-width: 142px; height: 40px; padding: 0 38px 0 40px;
+    border: 1px solid var(--border-strong); border-radius: 999px;
+    background: var(--surface); color: var(--text-main);
+    font-family: inherit; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.2px;
+    text-align: center; text-align-last: center; -moz-text-align-last: center;
+    cursor: pointer; box-shadow: var(--shadow-sm); transition: border-color 0.15s, box-shadow 0.15s;
+}
+.anio-select:hover { border-color: var(--text-muted); }
+.anio-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15); }
+.anio-icono, .anio-flecha { position: absolute; pointer-events: none; color: var(--text-muted); }
+.anio-icono { left: 15px; font-size: 0.85rem; }
+.anio-flecha { right: 15px; font-size: 0.7rem; }
+
+@media (max-width: 768px) {
+    header { padding: 0 12px; gap: 8px; }
+    .header-left { min-width: 0; flex: 1; gap: 8px; }
+    #pageTitle { font-size: 0.98rem; line-height: 1.15; min-width: 0; }
+    #pageTitle > i { display: none; }
+    .header-right { margin-right: 0; gap: 8px; flex-shrink: 0; }
+    .anio-select { min-width: 128px; height: 38px; padding: 0 30px 0 34px; font-size: 0.9rem; }
+    .anio-icono { left: 12px; }
+    .anio-flecha { right: 12px; }
+}
+
+/* ==========================================================================
+   Territorios: botones dentro de la pestaña "Territorios" y pestaña "Programa"
+   ========================================================================== */
+.terr-catalogo-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 768px) { .terr-catalogo-acciones { justify-content: stretch; } .terr-catalogo-acciones > * { flex: 1; } }
+
+.prog-tipos { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 6px; }
+.btn-prog-tipo {
+    min-width: 160px; height: 46px; padding: 0 24px; border-radius: 999px;
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-main);
+    font-family: inherit; font-weight: 700; font-size: 0.98rem; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: var(--shadow-sm); transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-prog-tipo:hover { background: var(--primary-light); }
+.btn-prog-tipo.active { background: var(--primary); color: var(--surface); border-color: var(--primary); }
+.prog-tipos-sub { text-align: center; color: var(--text-muted); font-size: 0.82rem; margin: 0 0 18px; }
+.prog-estado { font-size: 0.8rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
+.prog-estado.ok { color: var(--success); }
+.prog-estado.error { color: var(--danger); }
+
+/* Edición de filas del programa */
+.prog-sheet-table tr.prog-fila-click { cursor: pointer; }
+.prog-sheet-table tr.prog-fila-editando td { background: #eff6ff !important; box-shadow: inset 0 0 0 2px var(--accent); }
+.prog-row-chip button.chip-edit { color: #2563eb !important; }
+html[data-theme="dark"] .prog-sheet-table tr.prog-fila-editando td { background: #0b1d3a !important; color: #ededed; }
+#progTituloFila.editando { color: #1d4ed8; }
+
+/* Botón de menú (☰) en modo oscuro: sin fondo claro (antes quedaba un cuadro blanco con el icono invisible) */
+html[data-theme="dark"] .menu-toggle,
+html[data-theme="dark"] .menu-toggle:hover { background: transparent; border-color: transparent; color: #ededed; }

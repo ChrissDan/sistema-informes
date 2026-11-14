@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../lib/db');
-const { ordenMesSQL, msgErr } = require('../lib/constantes');
+const { parseIds, ordenMesSQL, msgErr } = require('../lib/constantes');
 const { esGlobal, soloGlobal } = require('../lib/auth');
 
 const router = express.Router();
@@ -70,7 +70,8 @@ router.post('/api/reportes/advanced', async (req, res) => {
         if (mes) { query += " AND i.mes = ?"; params.push(mes); } 
         if (grupo) { query += " AND i.grupo = ?"; params.push(grupo); } 
         if (priv3) { if (priv3 === 'AUX_COMBINED') query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C')"; else if (priv3 === 'PUB_COMBINED') query += " AND i.priv3 IN ('PUB', 'PNB')"; else { query += " AND i.priv3 = ?"; params.push(priv3); } } 
-        if (nombre) { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); } 
+        const ids = parseIds(req.body.publicador_ids); if (ids) { query += " AND i.publicador_id IN (?)"; params.push(ids); }
+        if (nombre) { query += " AND LOWER(p.nombre) LIKE ?"; params.push(`%${String(nombre).toLowerCase()}%`); } 
         query += ` ORDER BY ${ordenMesSQL('i.mes')} ASC, i.grupo ASC, p.nombre ASC`; 
         const [rows] = await pool.query(query, params); res.json(rows); 
     } catch (error) { res.status(500).json({ error: msgErr(error) }); } 

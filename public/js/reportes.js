@@ -1,12 +1,13 @@
 // Reportes: búsqueda, PDF, precursores y cursos
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
 // --- REPORTES ---
-function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
-function limpiarFiltrosPub() { document.getElementById('pubFiltroNombre').value = ''; document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
+let currentReportData = [];   // última búsqueda de Reportes (la usan el PDF y las sumas)
+function limpiarFiltrosReporte() { document.getElementById('formReporte').reset(); buscadorReportes.limpiar(); document.getElementById('reporteResultados').style.display = 'none'; currentReportData = []; }
+function limpiarFiltrosPub() { buscadorPublicadores.limpiar(); document.getElementById('pubFiltroPriv3').value = ''; if (isAdmin) document.getElementById('pubFiltroGrupo').value = ''; cargarTablaPublicadores(); }
 
 async function generarReporte() {
     const form = document.getElementById('formReporte');
-    const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, nombre: form.nombre.value, anio_servicio: getAnio() }; // AÑO AÑADIDO
+    const data = { mes: form.mes.value, grupo: form.grupo.value, priv3: form.priv3.value, publicador_ids: await buscadorReportes.idsParaBuscar(), anio_servicio: getAnio() }; // AÑO AÑADIDO
     const res = await fetch('/api/reportes/advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     currentReportData = await res.json(); document.getElementById('reporteResultados').style.display = 'block'; document.getElementById('repTotalRows').textContent = currentReportData.length;
     const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = ''; let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {};

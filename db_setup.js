@@ -26,7 +26,9 @@ const tables = [
         grupo INT NOT NULL,
         priv1 VARCHAR(50),
         correo VARCHAR(100) UNIQUE,
-        password VARCHAR(255) NOT NULL
+        password VARCHAR(255) NOT NULL,
+        publicador_id INT DEFAULT NULL,
+        telefono VARCHAR(30) DEFAULT NULL
     )`,
     `CREATE TABLE IF NOT EXISTS publicadores (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -43,6 +45,7 @@ const tables = [
         sexo VARCHAR(15) DEFAULT 'Hombre',
         esperanza VARCHAR(20) DEFAULT 'Otras ovejas',
         privilegio_s21 VARCHAR(50) DEFAULT NULL,
+        telefono VARCHAR(30) DEFAULT NULL,
         KEY fk_publicador_grupo (grupo),
         CONSTRAINT fk_publicador_grupo FOREIGN KEY (grupo) REFERENCES grupos (id) ON DELETE RESTRICT ON UPDATE CASCADE
     )`,
@@ -97,6 +100,7 @@ const tables = [
         id INT AUTO_INCREMENT PRIMARY KEY,
         publicador_id INT DEFAULT NULL,
         nombre VARCHAR(150) NOT NULL,
+        telefono VARCHAR(30) DEFAULT NULL,
         activo TINYINT(1) DEFAULT 1
     )`,
     `CREATE TABLE IF NOT EXISTS turnos_predicacion (
@@ -122,6 +126,14 @@ const tables = [
         ciclo INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         KEY idx_terr_ciclo (territorio_id, ciclo)
+    )`,
+    `CREATE TABLE IF NOT EXISTS programas_predicacion (
+        tipo VARCHAR(10) NOT NULL PRIMARY KEY,
+        fecha_ini DATE DEFAULT NULL,
+        fecha_fin DATE DEFAULT NULL,
+        datos MEDIUMTEXT NOT NULL,
+        actualizado_por INT DEFAULT NULL,
+        actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`
 ];
 

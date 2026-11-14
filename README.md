@@ -63,15 +63,16 @@ lib/
   constantes.js           Meses, privilegios, metas de horas, msgErr
   mes.js                  Año de servicio, mes activo y filtro de pendientes
   auth.js                 JWT, roles (soloAdmin/soloGlobal) y filtro por grupo
+  esquema.js              Columnas/tablas nuevas (teléfono, vínculos, programas); se aplica solo, una vez
 routes/                   Un router por área: auth, cierres, dashboard, publicadores,
-                          informes, reportes, reuniones, territorios, usuarios
+                          informes, reportes, reuniones, territorios, programas, usuarios
 scripts/                  Migraciones puntuales (p. ej. migrar_indice_reuniones.js)
 public/
   index.html, js/login.js Inicio de sesión
   dashboard.html          Panel principal
   js/*.js                 Scripts clásicos del panel (comparten ámbito global);
                           el ORDEN de carga está en dashboard.html:
-                          core, informes, publicadores, dashboard, reuniones, cierres,
+                          core, buscador, informes, publicadores, dashboard, reuniones, cierres,
                           reportes, s21, graficas, usuarios, territorios-*, programa-predicacion, vcal
 ```
 
@@ -94,3 +95,18 @@ Para cifrar con bcrypt las contraseñas heredadas en texto plano: `node scripts/
 - APK / Google Play: en [pwabuilder.com](https://www.pwabuilder.com) ingresa la URL pública (HTTPS) y descarga el paquete de Android (Trusted Web Activity). Para Google Play se necesita cuenta de desarrollador y firmar el paquete.
 - La plantilla S-21 en blanco está incluida en el proyecto (`public/plantillas/S-21.pdf`): las tarjetas, el ZIP masivo y los totales se generan sin tener que elegir ningún archivo. Para actualizar el formato, reemplaza ese PDF conservando los nombres de los campos del formulario.
 - En el teléfono, el PDF/ZIP generado se entrega con un botón *Guardar / Compartir* (menú de compartir del sistema).
+
+### Buscador de publicador
+Los campos de nombre de Informes, Publicadores y Reportes usan el mismo buscador (`public/js/buscador.js`): no distingue mayúsculas ni tildes, acepta las palabras en cualquier orden, muestra debajo los publicadores que coinciden y busca al elegir uno (con clic, o con flechas + Enter). Los endpoints aceptan `publicador_ids` (lista de IDs).
+
+### Programa del servicio del campo (Territorios → pestaña "Programa")
+- Hay **un programa guardado por tipo de reunión**: *Vie – Dom* y *Dom – Jue*. Se guardan solos en la base de datos (tabla `programas_predicacion`); crear uno nuevo del mismo tipo reemplaza al anterior (botón *Nuevo programa*).
+- Las filas se **editan en su sitio**: clic en la fila (o en el lápiz), se cambian los datos y *Guardar cambios* actualiza esa misma fila.
+- Impresión A4: **Vie – Dom = 2 programas por hoja** y **Dom – Jue = 3 por hoja**; la letra se agranda automáticamente al máximo que cabe.
+- El teléfono del conductor se completa solo desde el directorio.
+
+### Personas: publicadores, usuarios y conductores
+Una misma persona puede ser publicador, usuario del sistema y conductor. El **teléfono** vive en la ficha del publicador (fuente única):
+- *Usuarios* se vincula con un publicador (`usuarios.publicador_id`) y *Conductores* también (`conductores.publicador_id`); en ambos el teléfono se lee y se guarda en el publicador vinculado. Si no hay vínculo, se guarda en el propio usuario/conductor.
+- En *Publicadores*, la casilla "Puede ser conductor del programa" crea o desactiva su conductor.
+- Las columnas nuevas (`publicadores.telefono`, `usuarios.publicador_id`, `usuarios.telefono`, `conductores.telefono`) y la tabla `programas_predicacion` se crean solas, una vez, al primer uso (`lib/esquema.js`); no hay que ejecutar nada.

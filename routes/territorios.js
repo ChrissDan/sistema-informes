@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../lib/db');
-const { msgErr } = require('../lib/constantes');
+const { msgErr, limpiarTelefono } = require('../lib/constantes');
 const { soloAdmin, soloGlobal } = require('../lib/auth');
 
 const router = express.Router();
@@ -238,16 +238,30 @@ router.get('/api/territorios/:id/manzanas', soloGlobal, async (req, res) => {
 // Conductores
 router.get('/api/conductores', soloGlobal, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM conductores ORDER BY activo DESC, nombre ASC');
+        // telefono = el del publicador vinculado (fuente única) o, si no hay vínculo, el propio del conductor
+        const [rows] = await pool.query(`SELECT c.id, c.publicador_id, c.nombre, c.activo, COALESCE(NULLIF(p.telefono, ''), c.telefono) AS telefono
+            FROM conductores c LEFT JOIN publicadores p ON p.id = c.publicador_id ORDER BY c.activo DESC, c.nombre ASC`);
         res.json(rows);
     } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
+
+// Guarda el teléfono donde corresponde: en el publicador vinculado o, si no hay, en el propio conductor
+async function guardarTelefonoConductor(conductorId, publicadorId, telefono) {
+    if (telefono === undefined) return;
+    if (publicadorId) {
+        await pool.query('UPDATE publicadores SET telefono = ? WHERE id = ?', [telefono, publicadorId]);
+        await pool.query('UPDATE conductores SET telefono = NULL WHERE id = ?', [conductorId]);
+    } else {
+        await pool.query('UPDATE conductores SET telefono = ? WHERE id = ?', [telefono, conductorId]);
+    }
+}
 
 router.post('/api/conductores', soloAdmin, async (req, res) => {
     const { publicador_id, nombre } = req.body;
     if (!nombre || !String(nombre).trim()) return res.status(400).json({ ok: false, msg: 'El nombre del conductor es obligatorio.' });
     try {
-        await pool.query('INSERT INTO conductores (publicador_id, nombre, activo) VALUES (?, ?, 1)', [publicador_id || null, String(nombre).trim()]);
+        const [r] = await pool.query('INSERT INTO conductores (publicador_id, nombre, activo) VALUES (?, ?, 1)', [publicador_id || null, String(nombre).trim()]);
+        await guardarTelefonoConductor(r.insertId, publicador_id || null, req.body.telefono === undefined ? undefined : limpiarTelefono(req.body.telefono));
         res.json({ ok: true });
     } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
@@ -257,6 +271,7 @@ router.put('/api/conductores/:id', soloAdmin, async (req, res) => {
     if (!nombre || !String(nombre).trim()) return res.status(400).json({ ok: false, msg: 'El nombre del conductor es obligatorio.' });
     try {
         await pool.query('UPDATE conductores SET publicador_id = ?, nombre = ? WHERE id = ?', [publicador_id || null, String(nombre).trim(), req.params.id]);
+        await guardarTelefonoConductor(req.params.id, publicador_id || null, req.body.telefono === undefined ? undefined : limpiarTelefono(req.body.telefono));
         res.json({ ok: true });
     } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });

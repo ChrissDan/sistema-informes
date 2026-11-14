@@ -1,6 +1,7 @@
 // Cierre y reapertura de meses
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
 // --- CIERRES ---
+let mesesCerrados = [];   // meses cerrados del año seleccionado (lo llena verificarCierres)
 async function verificarCierres() {
     try {
         const res = await fetch(`/api/cierres?anio_servicio=${getAnio()}`); // AÑO AÑADIDO

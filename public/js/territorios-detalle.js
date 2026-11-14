@@ -1,7 +1,7 @@
 // Territorios: modal de bitácora y registro de avance
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
 function copiarResumenProgramaPredicacion() {
-    abrirModalPrograma();
+    mostrarSubTabTerritorio('programa');
 }
 
 /* ==========================================================================
