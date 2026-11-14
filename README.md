@@ -28,7 +28,8 @@ Aplicación web para gestionar informes mensuales de servicio, directorio de pub
 
 ### 1. Seguridad y Permisos
 - **Contraseñas cifradas con `bcryptjs`**: nunca se almacenan ni se exponen en texto plano.
-- **Autenticación con JWT (`jsonwebtoken`)**: sesión de 12 horas en el encabezado `Authorization: Bearer <token>`, con limitador de intentos de login por IP (máx. 8 intentos fallidos cada 15 min).
+- **Autenticación con JWT (`jsonwebtoken`)**: sesión de 12 horas en el encabezado `Authorization: Bearer <token>`, con limitador de intentos de login por IP (máx. 25 intentos fallidos cada 5 min). `JWT_SECRET` es **obligatorio** (mín. 32 caracteres) y el rol del usuario se revalida contra la base de datos (caché de 30 s), así que eliminar o cambiar a un usuario surte efecto de inmediato.
+- **Variables opcionales:** `TRUST_PROXY=1` si se despliega detrás de un proxy (para que el limitador use la IP real) y `DB_SSL_INSECURE=true` solo para depurar la conexión SSL.
 - **Roles aplicados desde el servidor (`req.user.grupo`)**:
   - `grupo = 0` (**Superadmin**): acceso total, gestión de usuarios, cierres/reaperturas de mes y registro en meses pasados reabiertos.
   - `grupo = 9` (**Supervisor**): vista global de auditoría.
@@ -37,10 +38,10 @@ Aplicación web para gestionar informes mensuales de servicio, directorio de pub
 ### 2. Año de Servicio, Mes Activo y Cierres
 - **Año de servicio**: comprende de **septiembre a agosto** (ej. Septiembre 2025 – Agosto 2026 corresponde al año de servicio `2026`).
 - **Regla del Mes Activo (`GET /api/mes-activo`)**:
-  - Para informar un mes nuevo, el mes anterior debe estar cerrado.
-  - El mes activo es siempre el inmediatamente posterior al último mes cerrado.
-  - No se permiten informes ni cierres de meses futuros al activo.
-  - Si el superadmin reabre un mes pasado (`/api/reabrir-mes`), solo el superadmin puede registrar informes en él.
+  - El mes activo es automático: siempre el mes calendario inmediatamente anterior (zona horaria UTC-5) y cambia solo al iniciar el siguiente mes.
+  - Los encargados solo pueden registrar informes del mes activo; solo el superadmin puede registrar en otros meses abiertos.
+  - Un mes cerrado no admite altas, ediciones ni borrados de informes hasta que el superadmin lo reabra (`/api/reabrir-mes`).
+  - El servidor toma grupo, nombre y privilegios del publicador desde la base de datos y valida la meta mínima de horas de los auxiliares (30 h AUX/AUX I/AUX M, 15 h AUX C); solo Admin/Supervisor pueden aprobar excepciones.
 
 ### 3. Control de Pendientes sin Duplicados
 - **Fuente única de verdad**: quién falta por informar en un mes se calcula directamente sobre la tabla `informes` (publicadores activos cuya `fecha_ingreso` sea anterior o igual al mes consultado y que aún no tengan informe en ese mes y año).

@@ -6,9 +6,16 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const crypto = require('crypto');
-const JWT_SECRET = process.env.JWT_SECRET || crypto.createHash('sha256').update((process.env.DB_PASSWORD || '') + ':' + (process.env.DB_HOST || '') + ':sistema-informes-jwt').digest('hex');
+// JWT_SECRET es obligatorio: sin él, el token se podría falsificar. Genera uno con:
+// node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+    console.error('❌ Falta JWT_SECRET en .env (mínimo 32 caracteres). El servidor no se iniciará sin un secreto seguro.');
+    process.exit(1);
+}
 
+// Detrás de un proxy (Render, Railway, Nginx...) define TRUST_PROXY=1 para que req.ip sea la IP real del cliente
+if (process.env.TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY) ? parseInt(process.env.TRUST_PROXY) : process.env.TRUST_PROXY);
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -18,7 +25,8 @@ const pool = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    ssl: { rejectUnauthorized: false }, 
+    ssl: { rejectUnauthorized: process.env.DB_SSL_INSECURE !== 'true' }, // verifica el certificado de TiDB (DB_SSL_INSECURE=true solo para depurar)
+    
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -27,6 +35,14 @@ const pool = mysql.createPool({
 });
 
 const MESES_ORDER = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+// Orden dentro del año de servicio (septiembre -> agosto) para usar en ORDER BY
+const MESES_SERVICIO = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'];
+const ordenMesSQL = (col) => `FIELD(${col}, ${MESES_SERVICIO.map(m => `'${m}'`).join(', ')})`;
+// Registra el error real en el servidor y devuelve un mensaje genérico al cliente
+const msgErr = (e) => { console.error(e); return 'Error interno del servidor.'; };
+// Privilegios que deben reportar horas y meta mínima de horas de los auxiliares (S-21)
+const PRIV_CON_HORAS = ['REG', 'ESP', 'AUX I', 'AUX M', 'AUX', 'AUX C'];
+const metaHorasPriv = (p) => p === 'AUX C' ? 15 : (['AUX I', 'AUX M', 'AUX'].includes(p) ? 30 : 0);
 
 // --- AUTH ---
 const isHash = (v) => typeof v === 'string' && /^\$2[aby]\$/.test(v);
@@ -34,6 +50,7 @@ const isHash = (v) => typeof v === 'string' && /^\$2[aby]\$/.test(v);
 // Limitador simple de intentos de login (por IP, en memoria)
 const intentos = new Map();
 const MAX_INTENTOS = 25, VENTANA_MS = 5 * 60 * 1000;
+setInterval(() => { const now = Date.now(); for (const [ip, e] of intentos) if (now - e.t > VENTANA_MS) intentos.delete(ip); }, VENTANA_MS).unref();
 function loginLimiter(req, res, next) {
     const now = Date.now();
     const e = intentos.get(req.ip) || { n: 0, t: now };
@@ -74,12 +91,25 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 });
 
 // Todo /api (excepto login) requiere token válido; el rol sale del token, no del cliente
-app.use('/api', (req, res, next) => {
+// El grupo/rol se revalida contra la BD (cache de 30 s): si se elimina o cambia a un usuario, el token deja de dar el acceso anterior
+const authCache = new Map();
+const invalidarAuth = (id) => authCache.delete(Number(id));
+app.use('/api', async (req, res, next) => {
     const h = req.headers.authorization || '';
     const token = h.startsWith('Bearer ') ? h.slice(7) : null;
     if (!token) return res.status(401).json({ ok: false, msg: 'No autenticado' });
-    try { req.user = jwt.verify(token, JWT_SECRET); next(); }
-    catch (e) { res.status(401).json({ ok: false, msg: 'Sesión inválida o expirada' }); }
+    let payload;
+    try { payload = jwt.verify(token, JWT_SECRET); }
+    catch (e) { return res.status(401).json({ ok: false, msg: 'Sesión inválida o expirada' }); }
+    try {
+        let u = authCache.get(payload.id);
+        if (!u || Date.now() - u.t > 30000) {
+            const [rows] = await pool.query('SELECT grupo FROM usuarios WHERE id = ?', [payload.id]);
+            if (!rows[0]) { authCache.delete(payload.id); return res.status(401).json({ ok: false, msg: 'Sesión inválida o expirada' }); }
+            u = { grupo: rows[0].grupo, t: Date.now() }; authCache.set(payload.id, u);
+        }
+        req.user = { id: payload.id, grupo: u.grupo }; next();
+    } catch (e) { res.status(500).json({ ok: false, msg: msgErr(e) }); }
 });
 // Encargados de grupo (no 0 ni 9): el grupo se fuerza desde el token, ignorando lo que envíe el cliente
 const esGlobal = (g) => g == 0 || g == 9;
@@ -123,26 +153,24 @@ function pendienteSQL(mes, anio, alias = 'publicadores') {
 }
 app.get('/api/mes-activo', async (req, res) => {
     try { const a = await getMesActivo(pool); res.json({ mes: a.mes, anio_servicio: a.anio_servicio }); }
-    catch (error) { res.status(500).json({ error: error.message }); }
+    catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 // --- CIERRES ---
 app.get('/api/cierres', async (req, res) => {
     const { anio_servicio } = req.query;
     try { const [rows] = await pool.query('SELECT mes FROM cierres WHERE anio_servicio = ?', [anio_servicio]); res.json(rows.map(r => r.mes)); } 
-    catch (error) { res.status(500).json({ error: error.message }); }
+    catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/cerrar-mes', async (req, res) => {
-    const { mes, requester_group, anio_servicio } = req.body;
+    const { mes, anio_servicio } = req.body;
     if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
 
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const act = await getMesActivo(conn); const kMes = claveMes(mes, anio_servicio);
-        if (isNaN(kMes)) { await conn.rollback(); return res.json({ ok: false, msg: 'Mes inválido.' }); }
-        if (act.hayCierres && kMes > act.key) { await conn.rollback(); return res.json({ ok: false, msg: `Primero debes cerrar ${act.mes} ${act.anio_servicio}.` }); }
+        if (isNaN(claveMes(mes, anio_servicio))) { await conn.rollback(); return res.json({ ok: false, msg: 'Mes inválido.' }); }
         const pq = pendienteSQL(mes, anio_servicio, 'p'); const [pendientes] = await conn.query(`SELECT COUNT(*) as total FROM publicadores p WHERE ${pq.sql}`, pq.params);
         if (pendientes[0].total > 0) {
             await conn.rollback();
@@ -156,17 +184,16 @@ app.post('/api/cerrar-mes', async (req, res) => {
         await conn.query("INSERT INTO cierres (mes, anio_servicio) VALUES (?, ?)", [mes, anio_servicio]);
         await conn.commit();
         res.json({ ok: true });
-    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: error.message });
+    } catch (error) { await conn.rollback(); res.status(500).json({ ok: false, msg: msgErr(error) });
     } finally { conn.release(); }
 });
 
 app.post('/api/reabrir-mes', async (req, res) => {
-    const { mes, requester_group, anio_servicio } = req.body;
+    const { mes, anio_servicio } = req.body;
     if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: "No tienes permiso para reabrir meses." });
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        const act = await getMesActivo(conn); const kMes = claveMes(mes, anio_servicio);
         const [del] = await conn.query("DELETE FROM cierres WHERE mes = ? AND anio_servicio = ?", [mes, anio_servicio]);
         if (del.affectedRows === 0) { await conn.rollback(); return res.json({ ok: false, msg: "Ese mes no estaba cerrado." }); }
         await conn.commit();
@@ -215,7 +242,7 @@ app.get('/api/dashboard', async (req, res) => {
                 reg: { count: Number(st.reg_count) || 0, horas: Number(st.reg_horas) || 0, cursos: Number(st.reg_cursos) || 0 }
             }
         });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.get('/api/dashboard/cursos-por-mes', async (req, res) => {
@@ -231,7 +258,7 @@ app.get('/api/dashboard/cursos-por-mes', async (req, res) => {
         sql += " GROUP BY mes";
         const [rows] = await pool.query(sql, params);
         res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.get('/api/dashboard/cursos', async (req, res) => {
@@ -243,7 +270,7 @@ app.get('/api/dashboard/cursos', async (req, res) => {
         if (grupo && grupo != '0' && grupo != '9') { sql += " AND grupo = ?"; params.push(grupo); }
         const [rows] = await pool.query(sql, params);
         res.json({ pub: parseInt(rows[0].pub) || 0, aux: parseInt(rows[0].aux) || 0, reg: parseInt(rows[0].reg) || 0 });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
@@ -255,7 +282,7 @@ app.get('/api/dashboard/cursos-comparativa', async (req, res) => {
         sql += " GROUP BY mes";
         const [rows] = await pool.query(sql, params);
         res.json(rows); 
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.get('/api/dashboard/asistencia-comparativa', async (req, res) => {
@@ -269,7 +296,7 @@ app.get('/api/dashboard/asistencia-comparativa', async (req, res) => {
             return { mes: r.mes, tipo: r.tipo, modalidad: r.modalidad, promedio: weeks > 0 ? Math.round((s1 + s2 + s3 + s4 + s5) / weeks) : 0 };
         });
         res.json(resultados);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 // --- PUBLICADORES (Directorio Global) ---
@@ -293,7 +320,7 @@ app.get('/api/publicadores', async (req, res) => {
         if (nombre && nombre !== '') { query += " AND nombre LIKE ?"; params.push(`%${nombre}%`); }
         query += " ORDER BY activo DESC, grupo ASC, nombre ASC";
         const [rows] = await pool.query(query, params); res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/publicadores', async (req, res) => { 
@@ -309,7 +336,7 @@ app.post('/api/publicadores', async (req, res) => {
         ); 
         res.json({ ok: true }); 
     } catch (error) { 
-        res.status(500).json({ ok: false, msg: error.message }); 
+        res.status(500).json({ ok: false, msg: msgErr(error) }); 
     }
 });
 
@@ -325,12 +352,12 @@ app.put('/api/publicadores/:id', async (req, res) => {
         ); 
         res.json({ ok: true }); 
     } catch (error) { 
-        res.status(500).json({ ok: false, msg: error.message }); 
+        res.status(500).json({ ok: false, msg: msgErr(error) }); 
     }
 });
 
-app.patch('/api/publicadores/:id/estado', async (req, res) => { /* Igual */ const { activo, requester_group } = req.body; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede cambiar estado.' }); try { await pool.query('UPDATE publicadores SET activo = ? WHERE id = ?', [activo ? 1 : 0, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }});
-app.delete('/api/publicadores/:id', async (req, res) => { /* Igual */ const requester_group = req.query.requester_group; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { await pool.query('DELETE FROM publicadores WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { if(error.code === 'ER_ROW_IS_REFERENCED_2') res.status(400).json({ ok: false, msg: 'Borra sus informes primero.' }); else res.status(500).json({ ok: false, msg: error.message }); }});
+app.patch('/api/publicadores/:id/estado', async (req, res) => { /* Igual */ const { activo, requester_group } = req.body; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Solo Admin puede cambiar estado.' }); try { await pool.query('UPDATE publicadores SET activo = ? WHERE id = ?', [activo ? 1 : 0, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }});
+app.delete('/api/publicadores/:id', async (req, res) => { /* Igual */ const requester_group = req.query.requester_group; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { const [[{ n }]] = await pool.query('SELECT COUNT(*) AS n FROM informes WHERE publicador_id = ?', [req.params.id]); if (n > 0) return res.status(400).json({ ok: false, msg: `Tiene ${n} informe(s) registrado(s). Para conservar el historial, desactívalo en lugar de eliminarlo (o borra sus informes primero).` }); await pool.query('DELETE FROM publicadores WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { if(error.code === 'ER_ROW_IS_REFERENCED_2') res.status(400).json({ ok: false, msg: 'Borra sus informes primero.' }); else res.status(500).json({ ok: false, msg: msgErr(error) }); }});
 
 app.get('/api/check-inactivos', async (req, res) => {
     // Check inactivos busca en todo el historial, lo dejamos global por ahora para alertas generales.
@@ -358,7 +385,7 @@ app.get('/api/check-inactivos', async (req, res) => {
             if (mesesSinInformar >= 1) candidatos.push({ ...pub, meses_sin_informar: mesesSinInformar });
         }
         res.json({ candidatos: candidatos.sort((a, b) => a.grupo !== b.grupo ? a.grupo - b.grupo : a.nombre.localeCompare(b.nombre)) }); 
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 // --- INFORMES ---
@@ -375,16 +402,15 @@ app.get('/api/informes', async (req, res) => {
             else { query += " AND i.priv3 = ?"; params.push(priv3); }
         }
         if (nombre && nombre !== '') { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); }
-        query += ` ORDER BY FIELD(i.mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') DESC, i.grupo ASC, p.nombre ASC`;
+        query += ` ORDER BY ${ordenMesSQL('i.mes')} DESC, i.grupo ASC, p.nombre ASC`;
         const [rows] = await pool.query(query, params); res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/informes', async (req, res) => {
-    let { mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios, credito_hrs, anio_servicio } = req.body;
+    const { mes, publicador_id, horas, cursos, predico, comentarios, credito_hrs, anio_servicio } = req.body;
     const h = parseFloat(horas) || 0; const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
-    const pUpper = (priv3 || "").trim().toUpperCase();
-    if (['REG', 'ESP', 'AUX I', 'AUX M', 'AUX', 'AUX C'].includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `Un ${pUpper} no puede reportar 0 horas.` });
+    if (h < 0 || c < 0 || cred < 0) return res.status(400).json({ ok: false, msg: 'No se permiten valores negativos.' });
     let maxCred = 55 - h; if (maxCred < 0) maxCred = 0;
     if (cred > maxCred) return res.status(400).json({ ok: false, msg: `Límite de crédito excedido.` });
 
@@ -395,46 +421,57 @@ app.post('/api/informes', async (req, res) => {
         if (req.user.grupo != 0 && (String(mes).trim().toUpperCase() !== act.mes || String(anio_servicio) !== act.anio_servicio)) {
             return res.status(403).json({ ok: false, msg: `El mes está bloqueado. Solo puedes registrar informes del mes actual (${act.mes} ${act.anio_servicio}).` });
         }
-    } catch (e) { return res.status(500).json({ ok: false, msg: e.message }); }
+    } catch (e) { return res.status(500).json({ ok: false, msg: msgErr(e) }); }
 
     const conn = await pool.getConnection();
     try {
-        if (!esGlobal(req.user.grupo)) {
-            const [pg] = await conn.query("SELECT grupo FROM publicadores WHERE id = ?", [publicador_id]);
-            if (pg.length === 0 || pg[0].grupo != req.user.grupo) { conn.release(); return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); }
+        // Grupo, nombre y privilegios salen SIEMPRE de la base de datos, nunca de lo que envíe el cliente
+        const [pg] = await conn.query("SELECT id, nombre, grupo, priv1, priv2, priv3 FROM publicadores WHERE id = ?", [publicador_id]);
+        if (pg.length === 0) return res.status(404).json({ ok: false, msg: 'Publicador no encontrado.' });
+        const pub = pg[0];
+        if (!esGlobal(req.user.grupo) && pub.grupo != req.user.grupo) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
+
+        const pUpper = (pub.priv3 || '').trim().toUpperCase();
+        if (PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `Un ${pUpper} no puede reportar 0 horas.` });
+        // Meta mínima de horas de auxiliares: solo Admin/Supervisor pueden aprobar excepciones
+        const meta = metaHorasPriv(pUpper);
+        if (meta > 0 && h < meta && !esGlobal(req.user.grupo)) {
+            return res.status(403).json({ ok: false, msg: `Un ${pUpper} debe reportar al menos ${meta} horas. El Secretario debe evaluarlo.` });
         }
+
         const [cierre] = await conn.query("SELECT * FROM cierres WHERE mes = ? AND anio_servicio = ?", [mes, anio_servicio]);
-        if (cierre.length > 0) { conn.release(); return res.status(400).json({ ok: false, msg: `Mes cerrado en este año.` }); }
-        const [existente] = await conn.query("SELECT id FROM informes WHERE publicador_id = ? AND mes = ? AND anio_servicio = ?", [publicador_id, mes, anio_servicio]);
-        if (existente.length > 0) { conn.release(); return res.status(400).json({ ok: false, msg: `Ya existe un informe.` }); }
-        
+        if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `Mes cerrado en este año.` });
+        const [existente] = await conn.query("SELECT id FROM informes WHERE publicador_id = ? AND mes = ? AND anio_servicio = ?", [pub.id, mes, anio_servicio]);
+        if (existente.length > 0) return res.status(400).json({ ok: false, msg: `Ya existe un informe.` });
+
         await conn.beginTransaction();
-        await conn.query(`INSERT INTO informes (mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios, credito_hrs, anio_servicio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-            [mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, h, c, predico, comentarios, cred, anio_servicio]);
+        await conn.query(`INSERT INTO informes (mes, grupo, publicador_id, publicador_nombre, priv1, priv2, priv3, horas, cursos, predico, comentarios, credito_hrs, anio_servicio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [mes, pub.grupo, pub.id, pub.nombre, pub.priv1, pub.priv2, pub.priv3, h, c, predico === 'SI' ? 'SI' : 'NO', comentarios, cred, anio_servicio]);
         await conn.commit(); res.json({ ok: true });
-    } catch (error) { await conn.rollback(); if (error.code === 'ER_DUP_ENTRY') res.status(400).json({ ok: false, msg: 'Ya existe un informe.' }); else res.status(500).json({ ok: false, msg: error.message }); } finally { conn.release(); }
+    } catch (error) { await conn.rollback(); if (error.code === 'ER_DUP_ENTRY') res.status(400).json({ ok: false, msg: 'Ya existe un informe.' }); else res.status(500).json({ ok: false, msg: msgErr(error) }); } finally { conn.release(); }
 });
 
 app.put('/api/informes/:id', async (req, res) => {
-    let { horas, cursos, predico, comentarios, publicador_id, credito_hrs } = req.body;
+    const { horas, cursos, predico, comentarios, credito_hrs } = req.body;
     const h = parseFloat(horas) || 0; const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
+    if (h < 0 || c < 0 || cred < 0) return res.status(400).json({ ok: false, msg: 'No se permiten valores negativos.' });
     try {
         const [infOrig] = await pool.query("SELECT mes, priv3, anio_servicio, grupo, publicador_id FROM informes WHERE id = ?", [req.params.id]);
         if (infOrig.length === 0) return res.status(404).json({ ok: false, msg: "No encontrado." });
         const { mes, priv3, anio_servicio } = infOrig[0];
         if (!esGlobal(req.user.grupo) && infOrig[0].grupo != req.user.grupo) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
-        
-        if (['REG', 'ESP', 'AUX I', 'AUX M', 'AUX', 'AUX C'].includes((priv3||'').toUpperCase()) && h <= 0) return res.status(400).json({ ok: false, msg: `0 horas no permitido.` });
+
+        const pUpper = (priv3 || '').trim().toUpperCase();
+        if (PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `0 horas no permitido.` });
+        const meta = metaHorasPriv(pUpper);
+        if (meta > 0 && h < meta && !esGlobal(req.user.grupo)) return res.status(403).json({ ok: false, msg: `Un ${pUpper} debe reportar al menos ${meta} horas. El Secretario debe evaluarlo.` });
+        if (cred > Math.max(55 - h, 0)) return res.status(400).json({ ok: false, msg: 'Límite de crédito excedido.' });
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ? AND anio_servicio = ?", [mes, anio_servicio]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `Mes cerrado.` });
-        
-        const conn = await pool.getConnection();
-        try {
-            await conn.beginTransaction();
-            await conn.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=? WHERE id=?', [h, c, predico, comentarios, cred, req.params.id]);
-            await conn.commit(); res.json({ ok: true });
-        } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }
-    } catch (err) { res.status(500).json({ ok: false, msg: err.message }); }
+
+        await pool.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=? WHERE id=?', [h, c, predico === 'SI' ? 'SI' : 'NO', comentarios, cred, req.params.id]);
+        res.json({ ok: true });
+    } catch (err) { res.status(500).json({ ok: false, msg: msgErr(err) }); }
 });
 
 app.delete('/api/informes/:id', async (req, res) => {
@@ -449,36 +486,10 @@ app.delete('/api/informes/:id', async (req, res) => {
             await pool.query('DELETE FROM informes WHERE id = ?', [req.params.id]);
         }
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 // --- REPORTES ---
-app.get('/api/reportes/resumen', async (req, res) => {
-    const { mes, grupo, anio_servicio } = req.query;
-    try {
-        let paramsGrp = []; let whereGrp = "";
-        if (grupo && grupo != '0' && grupo != '9') { whereGrp = " AND grupo = ?"; paramsGrp.push(grupo); }
-        const [rowsPubs] = await pool.query(`SELECT COUNT(*) as total FROM publicadores WHERE activo = 1 ${whereGrp}`, paramsGrp);
-        const [rowsReu] = await pool.query(`SELECT * FROM reuniones WHERE mes = ? AND anio_servicio = ? AND tipo = 'FIN DE SEMANA'`, [mes, anio_servicio]);
-        let promedioAsis = 0;
-        if (rowsReu.length > 0) {
-            const r = rowsReu[0]; const sum = (r.sem1||0) + (r.sem2||0) + (r.sem3||0) + (r.sem4||0) + (r.sem5||0);
-            let count = 0; if(r.sem1 > 0) count++; if(r.sem2 > 0) count++; if(r.sem3 > 0) count++; if(r.sem4 > 0) count++; if(r.sem5 > 0) count++;
-            if(count > 0) promedioAsis = Math.round(sum / count);
-        }
-        let paramsStats = [mes, anio_servicio]; if (grupo && grupo != '0' && grupo != '9') paramsStats.push(grupo);
-        const [rowsStats] = await pool.query(`SELECT priv3, COUNT(*) as cant, SUM(horas) as horas, SUM(cursos) as cursos FROM informes WHERE mes = ? AND anio_servicio = ? ${whereGrp} GROUP BY priv3`, paramsStats);
-        let stats = { pub: { cant: 0, horas: 0, cursos: 0 }, aux: { cant: 0, horas: 0, cursos: 0 }, reg: { cant: 0, horas: 0, cursos: 0 } };
-        rowsStats.forEach(row => {
-            const p = row.priv3.toUpperCase();
-            if (p === 'REG' || p === 'ESP') { stats.reg.cant += row.cant; stats.reg.horas += row.horas || 0; stats.reg.cursos += row.cursos || 0; } 
-            else if (p.includes('AUX')) { stats.aux.cant += row.cant; stats.aux.horas += row.horas || 0; stats.aux.cursos += row.cursos || 0; } 
-            else { stats.pub.cant += row.cant; stats.pub.horas += row.horas || 0; stats.pub.cursos += row.cursos || 0; }
-        });
-        res.json({ activos: rowsPubs[0].total, asistencia: promedioAsis, detalles: stats });
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
 app.get('/api/reportes/datos-extra', async (req, res) => {
     const { mes, grupo, anio_servicio } = req.query;
     try {
@@ -489,18 +500,20 @@ app.get('/api/reportes/datos-extra', async (req, res) => {
         let paramsReu = [anio_servicio];
         if (mes && mes !== '' && mes !== 'TODOS') { sqlReu += " AND mes = ?"; paramsReu.push(mes); }
         const [rowsReu] = await pool.query(sqlReu, paramsReu);
-        let promedioAsis = 0;
-        if (rowsReu.length > 0) {
-            let sumTotal = 0; let weeksTotal = 0;
-            rowsReu.forEach(r => {
-                const s1 = parseInt(r.sem1) || 0; const s2 = parseInt(r.sem2) || 0; const s3 = parseInt(r.sem3) || 0; const s4 = parseInt(r.sem4) || 0; const s5 = parseInt(r.sem5) || 0;
-                sumTotal += (s1 + s2 + s3 + s4 + s5);
-                if(s1 > 0) weeksTotal++; if(s2 > 0) weeksTotal++; if(s3 > 0) weeksTotal++; if(s4 > 0) weeksTotal++; if(s5 > 0) weeksTotal++;
-            });
-            if (weeksTotal > 0) promedioAsis = Math.round(sumTotal / (weeksTotal / rowsReu.length));
-        }
+        // Por mes: se suma cada semana entre modalidades (presencial + zoom) y se promedia sobre las semanas con asistencia.
+        // Anual: promedio de los promedios mensuales de los meses que tienen datos.
+        const semanasPorMes = {};
+        rowsReu.forEach(r => {
+            const arr = semanasPorMes[r.mes] || (semanasPorMes[r.mes] = [0, 0, 0, 0, 0]);
+            [r.sem1, r.sem2, r.sem3, r.sem4, r.sem5].forEach((v, i) => { arr[i] += parseInt(v) || 0; });
+        });
+        const promediosMensuales = Object.values(semanasPorMes).map(arr => {
+            const semanas = arr.filter(v => v > 0).length;
+            return semanas > 0 ? arr.reduce((a, b) => a + b, 0) / semanas : null;
+        }).filter(v => v !== null);
+        const promedioAsis = promediosMensuales.length > 0 ? Math.round(promediosMensuales.reduce((a, b) => a + b, 0) / promediosMensuales.length) : 0;
         res.json({ activos: rowsPubs[0].total, asistencia: promedioAsis });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.get('/api/reportes/precursores', async (req, res) => {
@@ -517,7 +530,7 @@ app.get('/api/reportes/precursores', async (req, res) => {
             return { nombre: p.nombre, grupo: p.grupo, priv: p.priv3, informes: mis.map(i => ({ mes: i.mes.substring(0,3), horas: i.horas, credito_hrs: i.credito_hrs })), total: t };
         });
         res.json(data);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.get('/api/reportes/detalle-cursos', async (req, res) => {
@@ -530,7 +543,7 @@ app.get('/api/reportes/detalle-cursos', async (req, res) => {
         const con = rows.filter(r => Number(r.total_meses) > 0).map(r => ({ grupo: r.grupo, nombre: r.nombre, meses: r.meses_con_cursos }));
         const sin = rows.filter(r => Number(r.total_meses) === 0 || !r.total_meses).map(r => ({ grupo: r.grupo, nombre: r.nombre }));
         res.json({ totales: { conducen: con.length, no_conducen: sin.length }, conducen: con, no_conducen: sin });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/reportes/advanced', async (req, res) => { 
@@ -542,12 +555,12 @@ app.post('/api/reportes/advanced', async (req, res) => {
         if (grupo) { query += " AND i.grupo = ?"; params.push(grupo); } 
         if (priv3) { if (priv3 === 'AUX_COMBINED') query += " AND i.priv3 IN ('AUX', 'AUX I', 'AUX M', 'AUX C')"; else if (priv3 === 'PUB_COMBINED') query += " AND i.priv3 IN ('PUB', 'PNB')"; else { query += " AND i.priv3 = ?"; params.push(priv3); } } 
         if (nombre) { query += " AND p.nombre LIKE ?"; params.push(`%${nombre}%`); } 
-        query += ` ORDER BY FIELD(i.mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, i.grupo ASC, p.nombre ASC`; 
+        query += ` ORDER BY ${ordenMesSQL('i.mes')} ASC, i.grupo ASC, p.nombre ASC`; 
         const [rows] = await pool.query(query, params); res.json(rows); 
-    } catch (error) { res.status(500).json({ error: error.message }); } 
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); } 
 });
 
-app.get('/api/reportes/totales-s21', async (req, res) => {
+app.get('/api/reportes/totales-s21', soloGlobal, async (req, res) => {
     const { anio_servicio } = req.query;
     try {
         const sql = `
@@ -568,7 +581,7 @@ app.get('/api/reportes/totales-s21', async (req, res) => {
         const [rows] = await pool.query(sql, [anio_servicio]);
         res.json(rows);
     } catch (error) { 
-        res.status(500).json({ error: error.message }); 
+        res.status(500).json({ error: msgErr(error) }); 
     }
 });
 
@@ -578,9 +591,9 @@ app.get('/api/publicador/:id/tarjeta', async (req, res) => {
         const [pub] = await pool.query("SELECT * FROM publicadores WHERE id = ?", [id]);
         if (pub.length === 0) return res.status(404).json({ error: "No encontrado" });
         if (!esGlobal(req.user.grupo) && pub[0].grupo != req.user.grupo) return res.status(403).json({ error: "Acceso denegado." });
-        const [informes] = await pool.query("SELECT mes, horas, cursos, comentarios, priv3, predico FROM informes WHERE publicador_id = ? AND anio_servicio = ?", [id, anio_servicio]);
+        const [informes] = await pool.query("SELECT mes, horas, credito_hrs, cursos, comentarios, priv3, predico FROM informes WHERE publicador_id = ? AND anio_servicio = ?", [id, anio_servicio]);
         res.json({ publicador: pub[0], informes: informes });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 // --- REUNIONES ---
@@ -589,13 +602,44 @@ app.get('/api/reuniones', async (req, res) => {
     try {
         let query = "SELECT * FROM reuniones WHERE anio_servicio = ?"; const params = [anio_servicio];
         if (mes && mes !== 'TODOS') { query += " AND mes = ?"; params.push(mes); }
-        query += ` ORDER BY FIELD(mes, 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE') ASC, tipo ASC, modalidad ASC`;
+        query += ` ORDER BY ${ordenMesSQL('mes')} ASC, tipo ASC, modalidad ASC`;
         const [rows] = await pool.query(query, params); res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
-app.post('/api/reuniones', async (req, res) => { const { mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, requester_group, anio_servicio } = req.body; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' }); try { await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, anio_servicio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [mes, tipo, modalidad, sem1||0, sem2||0, sem3||0, sem4||0, sem5||0, anio_servicio]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
-app.put('/api/reuniones/:id', async (req, res) => { const { sem1, sem2, sem3, sem4, sem5, requester_group } = req.body; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' }); try { await pool.query('UPDATE reuniones SET sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [sem1||0, sem2||0, sem3||0, sem4||0, sem5||0, req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
-app.delete('/api/reuniones/:id', async (req, res) => { const requester_group = req.query.requester_group; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { await pool.query('DELETE FROM reuniones WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); } });
+const TIPOS_REUNION = ['ENTRE SEMANA', 'FIN DE SEMANA'], MODALIDADES_REUNION = ['PRESENCIAL', 'ZOOM'];
+function validarReunion(b) {
+    const mes = String(b.mes || '').trim().toUpperCase();
+    if (!MESES_ORDER.includes(mes)) return { error: 'Mes inválido.' };
+    if (!TIPOS_REUNION.includes(b.tipo)) return { error: 'Tipo de reunión inválido.' };
+    if (!MODALIDADES_REUNION.includes(b.modalidad)) return { error: 'Modalidad inválida.' };
+    const sem = [b.sem1, b.sem2, b.sem3, b.sem4, b.sem5].map(v => parseInt(v) || 0);
+    if (sem.some(v => v < 0 || v > 9999)) return { error: 'La asistencia debe ser un número entre 0 y 9999.' };
+    return { mes, tipo: b.tipo, modalidad: b.modalidad, sem };
+}
+app.post('/api/reuniones', async (req, res) => {
+    if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' });
+    const v = validarReunion(req.body); if (v.error) return res.status(400).json({ ok: false, msg: v.error });
+    const anio = parseInt(req.body.anio_servicio); if (!anio) return res.status(400).json({ ok: false, msg: 'Año de servicio inválido.' });
+    try {
+        const [dup] = await pool.query('SELECT id FROM reuniones WHERE mes = ? AND tipo = ? AND modalidad = ? AND anio_servicio = ?', [v.mes, v.tipo, v.modalidad, anio]);
+        if (dup.length > 0) return res.status(400).json({ ok: false, msg: `Ya existe el registro de ${v.mes} · ${v.tipo} · ${v.modalidad}. Edítalo en lugar de crear otro.` });
+        await pool.query('INSERT INTO reuniones (mes, tipo, modalidad, sem1, sem2, sem3, sem4, sem5, anio_servicio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [v.mes, v.tipo, v.modalidad, ...v.sem, anio]);
+        res.json({ ok: true });
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
+});
+app.put('/api/reuniones/:id', async (req, res) => {
+    if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'No tienes permiso.' });
+    const v = validarReunion(req.body); if (v.error) return res.status(400).json({ ok: false, msg: v.error });
+    try {
+        const [orig] = await pool.query('SELECT anio_servicio FROM reuniones WHERE id = ?', [req.params.id]);
+        if (orig.length === 0) return res.status(404).json({ ok: false, msg: 'Registro no encontrado.' });
+        const [dup] = await pool.query('SELECT id FROM reuniones WHERE mes = ? AND tipo = ? AND modalidad = ? AND anio_servicio = ? AND id != ?', [v.mes, v.tipo, v.modalidad, orig[0].anio_servicio, req.params.id]);
+        if (dup.length > 0) return res.status(400).json({ ok: false, msg: `Ya existe otro registro de ${v.mes} · ${v.tipo} · ${v.modalidad}.` });
+        await pool.query('UPDATE reuniones SET mes=?, tipo=?, modalidad=?, sem1=?, sem2=?, sem3=?, sem4=?, sem5=? WHERE id=?', [v.mes, v.tipo, v.modalidad, ...v.sem, req.params.id]);
+        res.json({ ok: true });
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
+});
+app.delete('/api/reuniones/:id', async (req, res) => { const requester_group = req.query.requester_group; if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' }); try { await pool.query('DELETE FROM reuniones WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); } });
 
 // --- TERRITORIOS (Catálogo, Conductores, Turnos, Bitácora y S-13) ---
 function parseManzanasList(str) {
@@ -768,7 +812,7 @@ app.get('/api/territorios', soloGlobal, async (req, res) => {
             };
         });
         res.json(resultado);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/territorios', soloAdmin, async (req, res) => {
@@ -780,7 +824,7 @@ app.post('/api/territorios', soloAdmin, async (req, res) => {
         res.json({ ok: true });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ ok: false, msg: 'Ya existe un territorio con ese número.' });
-        res.status(500).json({ ok: false, msg: error.message });
+        res.status(500).json({ ok: false, msg: msgErr(error) });
     }
 });
 
@@ -790,7 +834,7 @@ app.put('/api/territorios/:id', soloAdmin, async (req, res) => {
     try {
         await pool.query('UPDATE territorios SET numero = ?, nombre = ?, cantidad_manzanas = ? WHERE id = ?', [String(numero).trim(), (nombre || '').trim(), cant, req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.delete('/api/territorios/:id', soloAdmin, async (req, res) => {
@@ -798,7 +842,7 @@ app.delete('/api/territorios/:id', soloAdmin, async (req, res) => {
         await pool.query('DELETE FROM bitacora_territorios WHERE territorio_id = ?', [req.params.id]);
         await pool.query('DELETE FROM territorios WHERE id = ?', [req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 // Estado de manzanas de un territorio en su vuelta actual (o excluyendo un registro al editar)
@@ -824,7 +868,7 @@ app.get('/api/territorios/:id/manzanas', soloGlobal, async (req, res) => {
             fecha_inicio_ciclo: cicloTerminado ? null : fechaInicioCiclo,
             manzanas: cicloTerminado ? {} : estadoPorManzana
         });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 // Conductores
@@ -832,7 +876,7 @@ app.get('/api/conductores', soloGlobal, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM conductores ORDER BY activo DESC, nombre ASC');
         res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/conductores', soloAdmin, async (req, res) => {
@@ -841,7 +885,7 @@ app.post('/api/conductores', soloAdmin, async (req, res) => {
     try {
         await pool.query('INSERT INTO conductores (publicador_id, nombre, activo) VALUES (?, ?, 1)', [publicador_id || null, String(nombre).trim()]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.put('/api/conductores/:id', soloAdmin, async (req, res) => {
@@ -850,14 +894,14 @@ app.put('/api/conductores/:id', soloAdmin, async (req, res) => {
     try {
         await pool.query('UPDATE conductores SET publicador_id = ?, nombre = ? WHERE id = ?', [publicador_id || null, String(nombre).trim(), req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.delete('/api/conductores/:id', soloAdmin, async (req, res) => {
     try {
         await pool.query('DELETE FROM conductores WHERE id = ?', [req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 // Turnos de Predicación
@@ -865,7 +909,7 @@ app.get('/api/turnos', soloGlobal, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM turnos_predicacion ORDER BY id ASC');
         res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/turnos', soloAdmin, async (req, res) => {
@@ -874,7 +918,7 @@ app.post('/api/turnos', soloAdmin, async (req, res) => {
     try {
         await pool.query('INSERT INTO turnos_predicacion (nombre, horario, activo) VALUES (?, ?, 1)', [String(nombre).trim(), (horario || '').trim()]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.put('/api/turnos/:id', soloAdmin, async (req, res) => {
@@ -883,14 +927,14 @@ app.put('/api/turnos/:id', soloAdmin, async (req, res) => {
     try {
         await pool.query('UPDATE turnos_predicacion SET nombre = ?, horario = ? WHERE id = ?', [String(nombre).trim(), (horario || '').trim(), req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.delete('/api/turnos/:id', soloAdmin, async (req, res) => {
     try {
         await pool.query('DELETE FROM turnos_predicacion WHERE id = ?', [req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 // Bitácora de Territorios
@@ -903,7 +947,7 @@ app.get('/api/territorios/bitacora', soloGlobal, async (req, res) => {
         sql += ' ORDER BY COALESCE(b.fecha_registro, b.fecha_cierre, b.fecha) DESC, b.id DESC LIMIT 2000';
         const [rows] = await pool.query(sql, params);
         res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
@@ -940,7 +984,7 @@ app.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
             [fechaRegFinal, fecha, fechaCierreFinal, t.id, manzStr, estadoResumen, detalleJson, turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, cicloActual]
         );
         res.json({ ok: true, ciclo: cicloActual });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
@@ -968,14 +1012,14 @@ app.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
             [fechaRegFinal, fecha, fechaCierreFinal, territorio_id, manzStr, estadoResumen, detalleJson, turno_id || null, turno_nombre || '', conductor_id || null, conductor_nombre || '', estadoFinalTerr, req.params.id]
         );
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 app.delete('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
     try {
         await pool.query('DELETE FROM bitacora_territorios WHERE id = ?', [req.params.id]);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
 // Resumen de ciclos por territorio para el reporte S-13
@@ -1019,30 +1063,41 @@ app.get('/api/territorios/s13', soloGlobal, async (req, res) => {
             return { territorio: t, ciclos };
         });
         res.json(data);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) { res.status(500).json({ error: msgErr(error) }); }
 });
 
 // --- USUARIOS (solo admin) ---
-app.get('/api/usuarios', soloAdmin, async (req, res) => { try { const [rows] = await pool.query('SELECT id, nombre, grupo, correo FROM usuarios ORDER BY grupo ASC'); res.json(rows); } catch (error) { res.status(500).json({ error: error.message }); } });
+app.get('/api/usuarios', soloAdmin, async (req, res) => { try { const [rows] = await pool.query('SELECT id, nombre, grupo, correo FROM usuarios ORDER BY grupo ASC'); res.json(rows); } catch (error) { res.status(500).json({ error: msgErr(error) }); } });
+function validarUsuario(b, { passwordObligatoria }) {
+    const nombre = String(b.nombre || '').trim();
+    const correo = String(b.correo || '').trim().toLowerCase();
+    const grupo = parseInt(b.grupo);
+    if (!nombre) return { error: 'El nombre es obligatorio.' };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return { error: 'Correo electrónico inválido.' };
+    if (isNaN(grupo) || grupo < 0 || grupo > 9) return { error: 'Grupo inválido (0 a 9).' };
+    const password = b.password ? String(b.password) : '';
+    if ((passwordObligatoria || password) && password.length < 6) return { error: 'La contraseña debe tener al menos 6 caracteres.' };
+    return { nombre, correo, grupo, password };
+}
+const errorUsuario = (res, error) => error.code === 'ER_DUP_ENTRY'
+    ? res.status(400).json({ ok: false, msg: 'Ya existe un usuario con ese correo.' })
+    : res.status(500).json({ ok: false, msg: msgErr(error) });
 app.post('/api/usuarios', soloAdmin, async (req, res) => {
-    const { nombre, grupo, correo, password } = req.body;
-    if (!password || String(password).length < 6) return res.status(400).json({ ok: false, msg: 'La contraseña debe tener al menos 6 caracteres.' });
-    try { await pool.query('INSERT INTO usuarios (nombre, grupo, correo, password) VALUES (?, ?, ?, ?)', [nombre, grupo, correo, await bcrypt.hash(String(password), 10)]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    const v = validarUsuario(req.body, { passwordObligatoria: true }); if (v.error) return res.status(400).json({ ok: false, msg: v.error });
+    try { await pool.query('INSERT INTO usuarios (nombre, grupo, correo, password) VALUES (?, ?, ?, ?)', [v.nombre, v.grupo, v.correo, await bcrypt.hash(v.password, 10)]); res.json({ ok: true }); } catch (error) { errorUsuario(res, error); }
 });
 app.delete('/api/usuarios/:id', soloAdmin, async (req, res) => {
     if (req.params.id == req.user.id) return res.status(400).json({ ok: false, msg: 'No puedes eliminar tu propio usuario.' });
-    try { await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    try { await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]); invalidarAuth(req.params.id); res.json({ ok: true }); } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 app.put('/api/usuarios/:id', soloAdmin, async (req, res) => {
-    const { nombre, grupo, correo, password } = req.body;
+    const v = validarUsuario(req.body, { passwordObligatoria: false }); if (v.error) return res.status(400).json({ ok: false, msg: v.error });
+    if (req.params.id == req.user.id && v.grupo != 0) return res.status(400).json({ ok: false, msg: 'No puedes quitarte a ti mismo el rol de administrador.' });
     try {
-        if (password) {
-            if (String(password).length < 6) return res.status(400).json({ ok: false, msg: 'La contraseña debe tener al menos 6 caracteres.' });
-            await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=?, password=? WHERE id=?', [nombre, grupo, correo, await bcrypt.hash(String(password), 10), req.params.id]);
-        } else {
-            await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=? WHERE id=?', [nombre, grupo, correo, req.params.id]);
-        }
+        if (v.password) await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=?, password=? WHERE id=?', [v.nombre, v.grupo, v.correo, await bcrypt.hash(v.password, 10), req.params.id]);
+        else await pool.query('UPDATE usuarios SET nombre=?, grupo=?, correo=? WHERE id=?', [v.nombre, v.grupo, v.correo, req.params.id]);
+        invalidarAuth(req.params.id);
         res.json({ ok: true });
-    } catch (error) { res.status(500).json({ ok: false, msg: error.message }); }
+    } catch (error) { errorUsuario(res, error); }
 });
 app.listen(PORT, () => { console.log(`🚀 Sistema corriendo en http://localhost:${PORT}`); });

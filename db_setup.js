@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const dbConfig = {
     host: process.env.DB_HOST,
@@ -81,7 +82,8 @@ const tables = [
         sem4 INT DEFAULT 0,
         sem5 INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        anio_servicio INT DEFAULT 2026
+        anio_servicio INT DEFAULT 2026,
+        UNIQUE KEY uq_reunion (mes, tipo, modalidad, anio_servicio)
     )`,
     `CREATE TABLE IF NOT EXISTS territorios (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -151,7 +153,9 @@ async function setup() {
         await connection.query(seedGroups);
 
         console.log("🌱 Insertando usuarios iniciales (contraseñas cifradas con bcrypt)...");
-        const defaultPass = process.env.SEED_DEFAULT_PASSWORD || '123456';
+        // Sin contraseña fija: usa SEED_DEFAULT_PASSWORD o genera una aleatoria que se muestra UNA vez al final
+        const generada = !process.env.SEED_DEFAULT_PASSWORD;
+        const defaultPass = process.env.SEED_DEFAULT_PASSWORD || crypto.randomBytes(6).toString('hex');
         const hash = await bcrypt.hash(defaultPass, 10);
         const seedUsers = [
             ['Admin General', 0, 'Admin', 'admin@correo.com', hash],
@@ -172,6 +176,7 @@ async function setup() {
         }
 
         console.log("🚀 ¡Base de Datos configurada correctamente!");
+        if (generada) console.log(`🔑 Contraseña inicial de los usuarios de ejemplo (cámbiala al ingresar): ${defaultPass}`);
         await connection.end();
     } catch (e) {
         console.error("❌ Error:", e.message);

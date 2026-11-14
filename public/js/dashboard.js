@@ -1,3 +1,5 @@
+// --- Escape de HTML para todo dato de usuario que se inserte con innerHTML ---
+function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 // --- AUTH: adjunta el token a cada llamada /api y cierra sesión si expira ---
 (function () {
     const originalFetch = window.fetch.bind(window);
@@ -156,7 +158,7 @@ aplicarBloqueoMesForm(formMesSelect);
 window.onload = function () { verificarInactivos(); };
 function cambiarMesInformes(direccion) { mesIndexInformes += direccion; if (mesIndexInformes > 11) mesIndexInformes = 0; if (mesIndexInformes < 0) mesIndexInformes = 11; document.getElementById('infMesLabel').textContent = MESES[mesIndexInformes]; cargarTablaInformes(); }
 
-async function verificarInactivos() { try { const grp = isGlobal ? 0 : session.grupo; const res = await fetch(`/api/check-inactivos?grupo=${grp}`); const data = await res.json(); if (data.candidatos && data.candidatos.length > 0) { let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`; data.candidatos.forEach(c => { listaHtml += `<li><b>G${c.grupo}</b> - ${c.nombre} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`; }); listaHtml += `</ul>`; Swal.fire({ title: '⚠️ Irregulares Detectados', html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> sin informar:<br><br>${listaHtml}`, icon: 'warning', confirmButtonText: 'Entendido' }); } } catch (e) { console.error(e); } }
+async function verificarInactivos() { try { const grp = isGlobal ? 0 : session.grupo; const res = await fetch(`/api/check-inactivos?grupo=${grp}`); const data = await res.json(); if (data.candidatos && data.candidatos.length > 0) { let listaHtml = `<ul style="text-align:left; font-size:0.9rem; max-height:200px; overflow-y:auto;">`; data.candidatos.forEach(c => { listaHtml += `<li><b>G${c.grupo}</b> - ${esc(c.nombre)} <span style="color:#ef4444; font-weight:bold;">(Hace ${c.meses_sin_informar} meses)</span></li>`; }); listaHtml += `</ul>`; Swal.fire({ title: '⚠️ Irregulares Detectados', html: `Los siguientes publicadores llevan varios <b>meses cerrados</b> sin informar:<br><br>${listaHtml}`, icon: 'warning', confirmButtonText: 'Entendido' }); } } catch (e) { console.error(e); } }
 
 function showView(viewName) {
     if (!isGlobal && ['territorios', 'reuniones', 'reportes', 'usuarios', 'cierres'].includes(viewName)) return;
@@ -200,7 +202,7 @@ function cerrarModal() {
 let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let cacheReuniones = [];
 // Año de servicio para registrar: los no-admin siempre usan el del mes activo; el admin el del selector global
 function anioFormInforme() { return (!isAdmin && mesActivo) ? mesActivo.anio_servicio : getAnio(); }
-async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') { const NM = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']; const mesForm = document.getElementById('formMesSelect').value || NM[(new Date().getMonth() + 11) % 12]; url += `&sin_informe_mes=${encodeURIComponent(mesForm)}&anio_servicio=${anioFormInforme()}`; } const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = mode === 'pending' ? (cachePublicadores.length ? `<option value="">-- Seleccione (${cachePublicadores.length} pendientes) --</option>` : '<option value="">✔ Todos ya informaron este mes</option>') : '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; return cachePublicadores; } catch (e) { console.error(e); return []; } }
+async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') { const NM = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']; const mesForm = document.getElementById('formMesSelect').value || NM[(new Date().getMonth() + 11) % 12]; url += `&sin_informe_mes=${encodeURIComponent(mesForm)}&anio_servicio=${anioFormInforme()}`; } const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = mode === 'pending' ? (cachePublicadores.length ? `<option value="">-- Seleccione (${cachePublicadores.length} pendientes) --</option>` : '<option value="">✔ Todos ya informaron este mes</option>') : '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${esc(p.nombre)}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; return cachePublicadores; } catch (e) { console.error(e); return []; } }
 function cargarDatosPub() { const id = document.getElementById('selectPubInfo').value; const pub = cachePublicadores.find(p => p.id == id); if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); } else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; } }
 function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } }
 function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; document.getElementById('infFiltroNombre').value = ''; cargarTablaInformes(); }
@@ -223,7 +225,7 @@ async function cargarTablaInformes() {
             if (isGlobal || d.grupo == session.grupo) editBtn = `<button class="btn-action btn-edit" onclick="editarInforme(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>`;
         }
         const credDisplay = d.credito_hrs > 0 ? `<span style="color:#d97706; font-size:0.8em">+${d.credito_hrs}</span>` : '';
-        tbody.innerHTML += `<tr>${grpCell}<td>${d.nombre_publicador || d.publicador_nombre}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${d.credito_hrs || '-'}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${d.comentarios || ''}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+        tbody.innerHTML += `<tr>${grpCell}<td>${esc(d.nombre_publicador || d.publicador_nombre)}</td><td><span class="badge badge-gray">${esc(d.priv3)}</span></td><td style="text-align:center"><b>${d.horas}</b> ${credDisplay}</td><td style="text-align:center">${d.cursos}</td><td style="text-align:center">${d.credito_hrs || '-'}</td><td style="text-align:center">${badge}</td><td style="font-size:0.8em; color:#666;">${esc(d.comentarios || '')}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
     }); 
     if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
 }
@@ -332,13 +334,13 @@ async function cargarTablaPublicadores() {
     let stats = { total: 0, reg: 0, esp: 0, aux: 0, pub: 0, groups: {} }; for (let i = 1; i <= 8; i++) stats.groups[i] = 0;
     if (cachePublicadores.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron resultados.</td></tr>`; return; }
     cachePublicadores.forEach(d => {
-        if (d.activo) { stats.total++; const p = (d.priv3 || '').toUpperCase(); if (p === 'REG') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++; if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++; }
+        if (d.activo) { stats.total++; const p = (d.priv3 || '').toUpperCase(); if (p === 'REG' || p === 'MISIONERO') stats.reg++; else if (p.includes('ESP')) stats.esp++; else if (p.includes('AUX')) stats.aux++; else if (p.includes('PUB') || p.includes('PNB')) stats.pub++; if (stats.groups[d.grupo] !== undefined) stats.groups[d.grupo]++; }
         const rowClass = d.activo ? '' : 'row-inactivo';
         const switchHtml = isAdmin ? `<div class="switch-container"><label class="switch"><input type="checkbox" ${d.activo ? 'checked' : ''} onchange="toggleEstado(${d.id}, this.checked, this)"><span class="slider round"></span></label></div>` : `<span class="${d.activo ? 'badge badge-si' : 'badge badge-no'}">${d.activo ? 'ACTIVO' : 'INACTIVO'}</span>`;
         const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('publicadores', ${d.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick="editarPub(${d.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : '';
         const infoBadge = d.informo_mes === 'SI' ? '<span class="badge badge-si"><i class="fa-solid fa-check"></i> SÍ</span>' : '<span class="badge badge-no"><i class="fa-solid fa-xmark"></i> NO</span>';
         let fechaTxt = '-'; if (d.fecha_ingreso) { const dateObj = new Date(d.fecha_ingreso); const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000; fechaTxt = new Date(dateObj.getTime() + userTimezoneOffset).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }); }
-        tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${d.nombre}</td><td>${d.priv1 || '-'}</td><td>${d.priv2 || '-'}</td><td><span class="badge badge-gray">${d.priv3}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.comentario || ''}</td><td class="global-view" style="font-size:0.85em;">${fechaTxt}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
+        tbody.innerHTML += `<tr class="${rowClass}"><td><b>${d.grupo}</b></td><td style="font-weight:500">${esc(d.nombre)}</td><td>${esc(d.priv1 || '-')}</td><td>${esc(d.priv2 || '-')}</td><td><span class="badge badge-gray">${esc(d.priv3)}</span></td><td>${infoBadge}</td><td style="font-size:0.85rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.comentario || '')}</td><td class="global-view" style="font-size:0.85em;">${fechaTxt}</td><td class="admin-only">${switchHtml}</td><td>${editBtn} ${deleteBtn}</td></tr>`;
     });
     document.getElementById('pub-stat-total').textContent = stats.total; document.getElementById('pub-stat-reg').textContent = stats.reg; document.getElementById('pub-stat-esp').textContent = stats.esp; document.getElementById('pub-stat-aux').textContent = stats.aux; document.getElementById('pub-stat-pub').textContent = stats.pub;
     const groupContainer = document.getElementById('pub-groups-container'); groupContainer.innerHTML = '';
@@ -466,11 +468,11 @@ async function cargarTablaReuniones() {
         const iconTipo = r.tipo === 'ENTRE SEMANA' ? '<i class="fa-solid fa-calendar-days" style="color:#64748b"></i>' : '<i class="fa-solid fa-calendar-week" style="color:#d97706"></i>'; const iconMod = r.modalidad === 'PRESENCIAL' ? '<span class="badge badge-grp">PRES</span>' : '<span class="badge badge-gray">ZOOM</span>'; const deleteBtn = isAdmin ? `<button class="btn-action btn-del" onclick="eliminar('reuniones', ${r.id})"><i class="fa-solid fa-trash-can"></i></button>` : ''; const editBtn = isAdmin ? `<button class="btn-action btn-edit" onclick='editarReunion(${JSON.stringify(r)})'><i class="fa-solid fa-pen"></i></button>` : ''; tbody.innerHTML += `<tr><td style="font-weight:bold">${r.mes}</td><td>${iconTipo} <span style="font-size:0.8em">${r.tipo}</span></td><td>${iconMod}</td><td style="text-align:center">${r.sem1 || '-'}</td><td style="text-align:center">${r.sem2 || '-'}</td><td style="text-align:center">${r.sem3 || '-'}</td><td style="text-align:center">${r.sem4 || '-'}</td><td style="text-align:center">${r.sem5 || '-'}</td><td style="text-align:center; font-weight:bold; color:var(--primary)">${promedio}</td><td>${editBtn} ${deleteBtn}</td></tr>`; 
     }); 
     const mathData = {}; cacheReuniones.forEach(r => { const key = r.mes + '|' + r.tipo; if (!mathData[key]) mathData[key] = { mes: r.mes, tipo: r.tipo, total: 0, weeks: new Set() };[r.sem1, r.sem2, r.sem3, r.sem4, r.sem5].forEach((val, idx) => { if (val > 0) { mathData[key].total += val; mathData[key].weeks.add(idx); } }); }); 
-    Object.values(mathData).forEach(d => { const semanasCount = d.weeks.size; const promedio = semanasCount > 0 ? Math.round(d.total / semanasCount) : 0; totalPromedioMensual += promedio; const cardHtml = `<div class="reu-stat-box" style="margin-bottom:10px;"><div><div class="reu-stat-title" style="color:var(--primary)">${d.mes} - ${d.tipo}</div><div class="reu-stat-sub">Asist: ${d.total} | Semanas: ${semanasCount}</div></div><div class="reu-stat-val">${promedio}</div></div>`; summaryContainer.innerHTML += cardHtml; }); const promedioFinalAnual = Math.round(totalPromedioMensual / 12); document.getElementById('reuTotalAnual').textContent = promedioFinalAnual; 
+    Object.values(mathData).forEach(d => { const semanasCount = d.weeks.size; const promedio = semanasCount > 0 ? Math.round(d.total / semanasCount) : 0; totalPromedioMensual += promedio; const cardHtml = `<div class="reu-stat-box" style="margin-bottom:10px;"><div><div class="reu-stat-title" style="color:var(--primary)">${d.mes} - ${d.tipo}</div><div class="reu-stat-sub">Asist: ${d.total} | Semanas: ${semanasCount}</div></div><div class="reu-stat-val">${promedio}</div></div>`; summaryContainer.innerHTML += cardHtml; }); const promedioFinalAnual = Math.round(totalPromedioMensual / Math.max(Object.keys(mathData).length, 1)); document.getElementById('reuTotalAnual').textContent = promedioFinalAnual; 
 }
 function editarReunion(r) { if (!isAdmin) return; const f = document.getElementById('formReunion'); document.getElementById('reunionId').value = r.id; f.mes.value = r.mes; f.tipo.value = r.tipo; f.modalidad.value = r.modalidad; f.sem1.value = r.sem1 || 0; f.sem2.value = r.sem2 || 0; f.sem3.value = r.sem3 || 0; f.sem4.value = r.sem4 || 0; f.sem5.value = r.sem5 || 0; abrirModal('reunion', r.id); }
 function resetFormReu() { document.getElementById('formReunion').reset(); document.getElementById('reunionId').value = ""; }
-document.getElementById('formReunion').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); data.requester_group = session.grupo; data.anio_servicio = getAnio(); /* AÑO AÑADIDO */ const id = document.getElementById('reunionId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/reuniones/${id}` : '/api/reuniones'; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { Toast.fire({ icon: 'success', title: 'Guardado' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); } else { Swal.fire('Error', 'No se pudo guardar', 'error'); } });
+document.getElementById('formReunion').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); data.requester_group = session.grupo; data.anio_servicio = getAnio(); /* AÑO AÑADIDO */ const id = document.getElementById('reunionId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/reuniones/${id}` : '/api/reuniones'; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const json = await res.json().catch(() => ({})); if (res.ok && json.ok !== false) { Toast.fire({ icon: 'success', title: 'Guardado' }); cerrarModal(); resetFormReu(); cargarTablaReuniones(); } else { Swal.fire('Error', json.msg || 'No se pudo guardar', 'error'); } });
 
 // --- CIERRES ---
 async function verificarCierres() {
@@ -559,7 +561,7 @@ async function generarReporte() {
     const tbody = document.getElementById('tbodyReporte'); tbody.innerHTML = ''; let sumHoras = 0; let sumCursos = 0; let sumCredito = 0; let counts = {};
     currentReportData.forEach(r => {
         sumHoras += parseFloat(r.horas || 0); sumCursos += parseInt(r.cursos || 0); sumCredito += parseFloat(r.credito_hrs || 0); const cat = r.priv3 || 'OTROS'; counts[cat] = (counts[cat] || 0) + 1; const idPublicador = r.publicador_id || r.id;
-        tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${r.nombre_publicador || r.publicador_nombre}</td><td><span class="badge badge-gray">${r.priv3}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${r.predico}</td><td>${r.comentarios || ''}</td><td style="text-align: center;"><button type="button" class="btn-action" onclick="iniciarRellenadoTarjeta(${idPublicador})" title="Rellenar S-21" style="background: none; border: none; cursor: pointer;"><i class="fa-solid fa-file-signature" style="color: #059669; font-size: 1.2rem;"></i></button></td></tr>`;
+        tbody.innerHTML += `<tr><td>${r.mes}</td><td>${r.grupo}</td><td>${esc(r.nombre_publicador || r.publicador_nombre)}</td><td><span class="badge badge-gray">${esc(r.priv3)}</span></td><td>${r.horas}</td><td>${r.cursos}</td><td>${r.credito_hrs || '-'}</td><td>${esc(r.predico)}</td><td>${esc(r.comentarios || '')}</td><td style="text-align: center;"><button type="button" class="btn-action" onclick="iniciarRellenadoTarjeta(${idPublicador})" title="Rellenar S-21" style="background: none; border: none; cursor: pointer;"><i class="fa-solid fa-file-signature" style="color: #059669; font-size: 1.2rem;"></i></button></td></tr>`;
     });
     document.getElementById('repSumHoras').textContent = sumHoras; document.getElementById('repSumCursos').textContent = sumCursos; document.getElementById('repSumCredito').textContent = sumCredito;
     let catsHtml = ''; for (const [key, value] of Object.entries(counts)) { catsHtml += `<div>${key}: <b>${value}</b></div>`; } document.getElementById('repCats').innerHTML = catsHtml;
@@ -574,7 +576,7 @@ async function descargarPDF() {
         let stats = { pub: { cant: 0, horas: 0, cursos: 0 }, aux: { cant: 0, horas: 0, cursos: 0 }, reg: { cant: 0, horas: 0, cursos: 0 } };
         currentReportData.forEach(r => {
             const p = (r.priv3 || '').toUpperCase(); const h = parseFloat(r.horas) || 0; const c = parseInt(r.cursos) || 0;
-            if (p === 'REG' || p === 'ESP') { stats.reg.cant++; stats.reg.horas += h; stats.reg.cursos += c; } else if (p.includes('AUX')) { stats.aux.cant++; stats.aux.horas += h; stats.aux.cursos += c; } else { stats.pub.cant++; stats.pub.cursos += c; }
+            if (p === 'REG' || p === 'ESP' || p === 'MISIONERO') { stats.reg.cant++; stats.reg.horas += h; stats.reg.cursos += c; } else if (p.includes('AUX')) { stats.aux.cant++; stats.aux.horas += h; stats.aux.cursos += c; } else { stats.pub.cant++; stats.pub.cursos += c; }
         });
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         const tituloReporte = mes === '' ? 'REPORTE ANUAL' : `REPORTE - ${mes}`; doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text(tituloReporte, 105, 20, null, null, "center"); doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Generado: ${new Date().toLocaleDateString()} | Año: ${getAnio()}`, 105, 26, null, null, "center");
@@ -614,7 +616,7 @@ async function cargarDatosPrecursores(tipo) {
             let mesesHtml = '';
             if (p.informes.length === 0) mesesHtml = '<span style="color:#cbd5e1; font-size:0.8em;">-</span>';
             else { mesesHtml = '<div style="display:flex; flex-wrap:wrap; gap:4px;">'; p.informes.forEach(inf => { const credTxt = parseFloat(inf.credito_hrs) > 0 ? ` <span style="color:#d97706; font-weight:bold;">(+${inf.credito_hrs})</span>` : ''; mesesHtml += `<span style="background:#eff6ff; color:#1e40af; border:1px solid #dbeafe; padding:2px 6px; border-radius:4px; font-size:0.75em; white-space:nowrap;"><b>${inf.mes}</b>: ${inf.horas}${credTxt}</span>`; }); mesesHtml += '</div>'; }
-            html += `<tr><td><span class="badge badge-gray">${p.grupo}</span></td><td style="font-weight:600; color:#334155;">${p.nombre}</td><td>${mesesHtml}</td><td style="text-align:right; font-weight:800; color:var(--primary); font-size:1.1em;">${p.total}</td></tr>`;
+            html += `<tr><td><span class="badge badge-gray">${p.grupo}</span></td><td style="font-weight:600; color:#334155;">${esc(p.nombre)}</td><td>${mesesHtml}</td><td style="text-align:right; font-weight:800; color:var(--primary); font-size:1.1em;">${p.total}</td></tr>`;
         });
         html += `</tbody></table>`; container.innerHTML = html;
     } catch (e) { console.error(e); }
@@ -640,7 +642,7 @@ async function abrirModalCursos() {
     try {
         const res = await fetch(`/api/reportes/detalle-cursos?grupo=${grupo}&anio_servicio=${getAnio()}`); // AÑO AÑADIDO
         const data = await res.json(); currentCursosData = data;
-        modalBody.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;"><div style="display:flex; gap:15px;"><span style="background:#eff6ff; color:#1d4ed8; padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.9rem;">Conducen: ${data.totales.conducen}</span><span style="background:#fff7ed; color:#c2410c; padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.9rem;">Sin Cursos: ${data.totales.no_conducen}</span></div><button class="btn-cancel" onclick="generarPDFCursos()" style="background:#475569; color:white; width:auto; padding:8px 16px; font-size:0.85rem;"><i class="fa-solid fa-file-pdf"></i> Descargar PDF</button></div><div style="max-height:60vh; overflow-y:auto; padding-right:5px;"><h4 style="color:#1d4ed8; border-bottom:2px solid #bfdbfe; padding-bottom:5px; margin-bottom:10px;">1. Publicadores que conducen cursos</h4><table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:20px;"><thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #cbd5e1; width:50px;">Grp</th><th style="padding:8px; border-bottom:1px solid #cbd5e1;">Nombre</th><th style="padding:8px; border-bottom:1px solid #cbd5e1;">Meses</th></tr></thead><tbody>${data.conducen.length === 0 ? '<tr><td colspan="3" style="padding:8px; text-align:center; color:#64748b;">No hay publicadores</td></tr>' : ''}${data.conducen.map(p => `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px;"><b>${p.grupo}</b></td><td style="padding:8px; font-weight:600; color:#334155;">${p.nombre}</td><td style="padding:8px; color:#64748b;">${p.meses}</td></tr>`).join('')}</tbody></table><h4 style="color:#c2410c; border-bottom:2px solid #fed7aa; padding-bottom:5px; margin-bottom:10px;">2. Publicadores sin cursos</h4><table style="width:100%; border-collapse:collapse; font-size:0.85rem;"><thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #cbd5e1; width:50px;">Grp</th><th style="padding:8px; border-bottom:1px solid #cbd5e1;">Nombre</th></tr></thead><tbody>${data.no_conducen.length === 0 ? '<tr><td colspan="2" style="padding:8px; text-align:center; color:#64748b;">No hay publicadores</td></tr>' : ''}${data.no_conducen.map(p => `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px;"><b>${p.grupo}</b></td><td style="padding:8px; font-weight:600; color:#334155;">${p.nombre}</td></tr>`).join('')}</tbody></table></div>`;
+        modalBody.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;"><div style="display:flex; gap:15px;"><span style="background:#eff6ff; color:#1d4ed8; padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.9rem;">Conducen: ${data.totales.conducen}</span><span style="background:#fff7ed; color:#c2410c; padding:5px 10px; border-radius:6px; font-weight:bold; font-size:0.9rem;">Sin Cursos: ${data.totales.no_conducen}</span></div><button class="btn-cancel" onclick="generarPDFCursos()" style="background:#475569; color:white; width:auto; padding:8px 16px; font-size:0.85rem;"><i class="fa-solid fa-file-pdf"></i> Descargar PDF</button></div><div style="max-height:60vh; overflow-y:auto; padding-right:5px;"><h4 style="color:#1d4ed8; border-bottom:2px solid #bfdbfe; padding-bottom:5px; margin-bottom:10px;">1. Publicadores que conducen cursos</h4><table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:20px;"><thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #cbd5e1; width:50px;">Grp</th><th style="padding:8px; border-bottom:1px solid #cbd5e1;">Nombre</th><th style="padding:8px; border-bottom:1px solid #cbd5e1;">Meses</th></tr></thead><tbody>${data.conducen.length === 0 ? '<tr><td colspan="3" style="padding:8px; text-align:center; color:#64748b;">No hay publicadores</td></tr>' : ''}${data.conducen.map(p => `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px;"><b>${p.grupo}</b></td><td style="padding:8px; font-weight:600; color:#334155;">${esc(p.nombre)}</td><td style="padding:8px; color:#64748b;">${esc(p.meses)}</td></tr>`).join('')}</tbody></table><h4 style="color:#c2410c; border-bottom:2px solid #fed7aa; padding-bottom:5px; margin-bottom:10px;">2. Publicadores sin cursos</h4><table style="width:100%; border-collapse:collapse; font-size:0.85rem;"><thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:8px; border-bottom:1px solid #cbd5e1; width:50px;">Grp</th><th style="padding:8px; border-bottom:1px solid #cbd5e1;">Nombre</th></tr></thead><tbody>${data.no_conducen.length === 0 ? '<tr><td colspan="2" style="padding:8px; text-align:center; color:#64748b;">No hay publicadores</td></tr>' : ''}${data.no_conducen.map(p => `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px;"><b>${p.grupo}</b></td><td style="padding:8px; font-weight:600; color:#334155;">${esc(p.nombre)}</td></tr>`).join('')}</tbody></table></div>`;
     } catch (e) { modalBody.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;"><b>Error:</b> No se pudieron cargar los datos.</div>`; }
 }
 
@@ -736,12 +738,13 @@ async function generarTarjetasMasivasZIP() {
 
         const resPubs = await fetch(`/api/publicadores?grupo=0`); 
         const publicadores = await resPubs.json();
-        const activos = publicadores.filter(p => p.activo === 1 || p.activo === true);
+        const activos = publicadores; // activos e inactivos: los inactivos solo se incluyen si tienen informes en el año
 
         for (let pub of activos) {
             const resHist = await fetch(`/api/publicador/${pub.id}/tarjeta?anio_servicio=${anio}`);
             if (!resHist.ok) continue;
             const dataHist = await resHist.json();
+            if (!pub.activo && (!dataHist.informes || dataHist.informes.length === 0)) continue;
 
             const pdfBytes = await rellenarPlantillaPersonalizada(plantillaBuffer, dataHist, pub);
             
@@ -823,12 +826,14 @@ async function rellenarPlantillaPersonalizada(plantillaBuffer, dataHistorial, pu
                 if (inf.cursos > 0) safeSetText(`902_${index}_Text_C_SanSerif`, inf.cursos.toString());
                 safeCheck(`903_${index}_CheckBox`, (inf.priv3 || '').toUpperCase().includes('AUX'));
                 
-                const hrs = parseFloat(inf.horas) || 0;
+                const cred = parseFloat(inf.credito_hrs) || 0;
+                const hrs = (parseFloat(inf.horas) || 0) + cred; // las horas de crédito cuentan en el total del precursor
                 if (hrs > 0) { 
                     safeSetText(`904_${index}_S21_Value`, hrs.toString()); 
                     totalHoras += hrs; 
                 }
-                if (inf.comentarios) safeSetText(`905_${index}_Text_SanSerif`, inf.comentarios);
+                const nota = [inf.comentarios, cred > 0 ? `Incluye ${cred} h de crédito` : ''].filter(Boolean).join('. ');
+                if (nota) safeSetText(`905_${index}_Text_SanSerif`, nota);
             }
         });
     }
@@ -882,7 +887,7 @@ async function descargarTotalesS21() {
         const zip = new JSZip();
 
         // 1. Tarjeta Congregación (Muestra Horas)
-        zip.file(`S21_Totales_Congregacion_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataCong, `Totales congregación Melgar (${anio})`, 'Publicadores', true));
+        zip.file(`S21_Totales_Congregacion_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataCong, `Totales congregación Umachiri (${anio})`, 'Publicadores', true));
         
         // 2. Tarjeta Precursores Regulares (Muestra Horas)
         zip.file(`S21_Totales_Regulares_${anio}.pdf`, await rellenarTarjetaTotales(plantillaBuffer, dataReg, `Totales precursores regulares (${anio})`, 'precursores regulares', true));
@@ -1193,8 +1198,8 @@ document.addEventListener("DOMContentLoaded", () => {
 // --- USUARIOS ---
 function editarUser(id) { const obj = cacheUsuarios.find(u => u.id == id); if (!obj) return; const f = document.getElementById('formUsuario'); document.getElementById('userId').value = obj.id; f.nombre.value = obj.nombre; f.correo.value = obj.correo; f.password.value = ''; f.grupo.value = obj.grupo; abrirModal('usuario', id); }
 function resetFormUser() { document.getElementById('formUsuario').reset(); document.getElementById('userId').value = ""; }
-document.getElementById('formUsuario').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios'; data.requester_group = session.grupo; await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios(); });
-async function cargarTablaUsuarios() { if (!isAdmin) return; const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json(); const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = ''; cacheUsuarios.forEach(d => { tbody.innerHTML += `<tr><td>${d.nombre}</td><td>${d.correo}</td><td>Grupo ${d.grupo}</td><td>••••••</td><td><button class="btn-action btn-edit" onclick="editarUser(${d.id})"><i class="fa-solid fa-pen-to-square"></i></button> <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }); }
+document.getElementById('formUsuario').addEventListener('submit', async (e) => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.target)); const id = document.getElementById('userId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/usuarios/${id}` : '/api/usuarios'; const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const json = await res.json().catch(() => ({})); if (!res.ok || json.ok === false) { Swal.fire('Error', json.msg || 'No se pudo guardar el usuario', 'error'); return; } Toast.fire({ icon: 'success', title: id ? 'Actualizado' : 'Creado' }); cerrarModal(); resetFormUser(); cargarTablaUsuarios(); });
+async function cargarTablaUsuarios() { if (!isAdmin) return; const res = await fetch('/api/usuarios'); cacheUsuarios = await res.json(); const tbody = document.getElementById('tablaUsuarios'); tbody.innerHTML = ''; cacheUsuarios.forEach(d => { tbody.innerHTML += `<tr><td>${esc(d.nombre)}</td><td>${esc(d.correo)}</td><td>Grupo ${d.grupo}</td><td>••••••</td><td><button class="btn-action btn-edit" onclick="editarUser(${d.id})"><i class="fa-solid fa-pen-to-square"></i></button> <button class="btn-action btn-del" onclick="eliminar('usuarios', ${d.id})"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }); }
 async function eliminar(entidad, id) { const result = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { const params = new URLSearchParams(); params.append('requester_group', session.grupo); params.append('anio_servicio', getAnio()); if (entidad === 'informes') { const inf = cacheInformes.find(i => i.id == id); if (inf) params.append('mes', inf.mes); } const res = await fetch(`/api/${entidad}/${id}?${params.toString()}`, { method: 'DELETE' }); const json = await res.json(); if (json.ok) { Toast.fire({ icon: 'success', title: 'Listo' }); if (entidad === 'informes') cargarTablaInformes(); if (entidad === 'publicadores') cargarTablaPublicadores(); if (entidad === 'usuarios') cargarTablaUsuarios(); if (entidad === 'reuniones') cargarTablaReuniones(); if (entidad === 'territorios') cargarVistaTerritorios(); if (entidad === 'conductores') cargarConductoresData(); if (entidad === 'turnos') cargarTurnosData(); if (entidad === 'territorios/bitacora') cargarVistaTerritorios(); } else { Swal.fire('Error', json.msg, 'error'); } } }
 
 // ==========================================================================
@@ -1295,7 +1300,7 @@ function renderTarjetasTerritorios() {
             <div class="terr-card" onclick="abrirModalBitacoraTerritorio('${t.id}')" title="Clic para ver bitácora y registrar avance">
                 <div class="terr-card-head">
                     <div>
-                        <div class="terr-card-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.85rem;"></i> Territorio ${t.numero}${t.nombre ? ' · ' + t.nombre : ''}</div>
+                        <div class="terr-card-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.85rem;"></i> Territorio ${esc(t.numero)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</div>
                         <div class="terr-card-sub" style="margin-top:3px; line-height:1.45;">${fechasCardHtml}</div>
                     </div>
                     ${badgeEstado}
@@ -1360,9 +1365,9 @@ function renderTablaCatalogoTerritorios() {
         tbody.innerHTML += `
             <tr>
                 <td onclick="abrirModalBitacoraTerritorio('${t.id}')" style="cursor:pointer;" title="Clic para ver bitácora y registrar avance">
-                    <strong style="color:var(--primary); display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-map-pin"></i> Territorio ${t.numero}</strong>
+                    <strong style="color:var(--primary); display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-map-pin"></i> Territorio ${esc(t.numero)}</strong>
                 </td>
-                <td>${t.nombre || '-'}</td>
+                <td>${esc(t.nombre || '-')}</td>
                 <td>Manzanas 1 a ${t.cantidad_manzanas} (${t.cantidad_manzanas} en total)</td>
                 <td><span class="badge badge-si">Completas: ${t.vueltas_completas || 0}</span> <span class="badge ${(t.vueltas_incompletas || 0) > 0 ? 'badge-no' : 'badge-gray'}">Incompletas: ${t.vueltas_incompletas || 0}</span></td>
                 <td>${t.completadas}/${t.cantidad_manzanas} (${t.porcentaje}%)</td>
@@ -1436,10 +1441,10 @@ function renderGraficaTerritorios() {
                 if (faltantes.length > 0) extraPend = ` · <strong style="color:#d97706;">Faltan manz: ${faltantes.join(', ')}</strong>`;
             }
             htmlUltimaSemana += `
-                <div class="terr-planner-item terr-clickable-btn" onclick="abrirModalBitacoraTerritorio('${terrObj ? terrObj.id : (b.territorio_id || b.territorio_numero)}')" title="Clic para ver bitácora y registrar avance">
+                <div class="terr-planner-item terr-clickable-btn" onclick="abrirModalBitacoraTerritorio('${terrObj ? terrObj.id : Number(b.territorio_id)}')" title="Clic para ver bitácora y registrar avance">
                     <div class="terr-planner-item-main">
-                        <div class="terr-planner-item-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.8rem;"></i> Territorio ${b.territorio_numero} <span style="font-weight:400; color:#71717a;">(Manz. ${b.manzanas})</span></div>
-                        <div class="terr-planner-item-sub">${fFin ? `Cerrado: ${fFin}` : `Iniciado: ${fIni}`} · ${b.conductor_nombre || '-'}${extraPend}</div>
+                        <div class="terr-planner-item-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.8rem;"></i> Territorio ${esc(b.territorio_numero)} <span style="font-weight:400; color:#71717a;">(Manz. ${esc(b.manzanas)})</span></div>
+                        <div class="terr-planner-item-sub">${fFin ? `Cerrado: ${fFin}` : `Iniciado: ${fIni}`} · ${esc(b.conductor_nombre || '-')}${extraPend}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         ${badge}
@@ -1462,7 +1467,7 @@ function renderGraficaTerritorios() {
             htmlEnCurso += `
                 <div class="terr-planner-item terr-clickable-btn" onclick="abrirModalBitacoraTerritorio('${t.id}')" title="Clic para ver bitácora y registrar avance">
                     <div class="terr-planner-item-main">
-                        <div class="terr-planner-item-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.8rem;"></i> Territorio ${t.numero} <span style="font-weight:500; color:#d97706;">(Faltan manz: ${faltantes.join(', ') || 'ninguna'})</span></div>
+                        <div class="terr-planner-item-title"><i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.8rem;"></i> Territorio ${esc(t.numero)} <span style="font-weight:500; color:#d97706;">(Faltan manz: ${faltantes.join(', ') || 'ninguna'})</span></div>
                         <div class="terr-planner-item-sub">Iniciado: ${fIni} · Avance: ${t.completadas}/${t.cantidad_manzanas} (${t.porcentaje}%)${aMedias.length ? ` · A medias: ${aMedias.join(', ')}` : ''}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -1495,7 +1500,7 @@ function renderGraficaTerritorios() {
         htmlRecomendados += `
             <div class="terr-planner-item terr-clickable-btn" onclick="abrirModalBitacoraTerritorio('${t.id}')" title="Clic para ver bitácora y registrar avance">
                 <div class="terr-planner-item-main">
-                    <div class="terr-planner-item-title">#${idx + 1} · <i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.8rem;"></i> Territorio ${t.numero} <span style="font-weight:400; color:#71717a;">(Manz. 1 a ${t.cantidad_manzanas})</span></div>
+                    <div class="terr-planner-item-title">#${idx + 1} · <i class="fa-solid fa-map-pin" style="color:var(--primary); font-size:0.8rem;"></i> Territorio ${esc(t.numero)} <span style="font-weight:400; color:#71717a;">(Manz. 1 a ${t.cantidad_manzanas})</span></div>
                     <div class="terr-planner-item-sub">Últ. cierre: <strong>${ultCierre}</strong> · Vueltas comp.: ${t.vueltas_completas || 0}</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -1512,7 +1517,7 @@ function renderGraficaTerritorios() {
             const { faltantes } = obtenerManzanasFaltantesTerritorio(t);
             return {
                 terrId: t.id,
-                etiqueta: `Territorio ${t.numero}`,
+                etiqueta: `Territorio ${esc(t.numero)}`,
                 detalle: `Terminar manz: ${faltantes.join(', ')}`,
                 tipo: 'CONTINUAR (En curso)',
                 badgeCls: 'badge-no'
@@ -1520,7 +1525,7 @@ function renderGraficaTerritorios() {
         }),
         ...disponiblesParaIniciar.slice(0, 10).map(t => ({
             terrId: t.id,
-            etiqueta: `Territorio ${t.numero}`,
+            etiqueta: `Territorio ${esc(t.numero)}`,
             detalle: `Manzanas 1 a ${t.cantidad_manzanas}`,
             tipo: t.estado_actual === 'SIN INICIAR' ? 'NUEVO (Sin iniciar)' : `INICIAR (Últ: ${t.fecha_cierre ? String(t.fecha_cierre).split('T')[0] : '-'})`,
             badgeCls: 'badge-si'
@@ -1678,7 +1683,7 @@ async function abrirModalBitacoraTerritorio(terrId) {
     }
 
     if (modalBox) modalBox.classList.add('modal-wide');
-    modalTitle.innerHTML = `<i class="fa-solid fa-map-location-dot"></i> Territorio ${t.numero}${t.nombre ? ' · ' + t.nombre : ''} — Bitácora y Estado`;
+    modalTitle.innerHTML = `<i class="fa-solid fa-map-location-dot"></i> Territorio ${esc(t.numero)}${t.nombre ? ' · ' + esc(t.nombre) : ''} — Bitácora y Estado`;
 
     // Filtrar registros de la bitácora general solo de este territorio
     const regsTerr = cacheBitacoraTerr.filter(b => String(b.territorio_id) === String(t.id) || String(b.territorio_numero) === String(t.numero));
@@ -1762,8 +1767,8 @@ async function abrirModalBitacoraTerritorio(terrId) {
                     <td><span class="badge badge-gray">Vuelta #${b.ciclo}</span></td>
                     <td>Manz. <strong>${b.manzanas}</strong></td>
                     <td>${badgeManz}</td>
-                    <td>${b.turno_nombre || '-'}</td>
-                    <td>${b.conductor_nombre || '-'}</td>
+                    <td>${esc(b.turno_nombre || '-')}</td>
+                    <td>${esc(b.conductor_nombre || '-')}</td>
                     <td>${badgeTerr}</td>
                     <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
                 </tr>
@@ -1779,7 +1784,7 @@ async function abrirModalBitacoraTerritorio(terrId) {
                     <div>
                         <div style="font-size:1.18rem; font-weight:700; color:var(--text-color, #18181b); display:flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-map-pin" style="color:var(--primary, #0284c7);"></i>
-                            Territorio ${t.numero} ${t.nombre ? '· <span style="font-weight:500; font-size:1rem; color:#71717a;">' + t.nombre + '</span>' : ''}
+                            Territorio ${esc(t.numero)} ${t.nombre ? '· <span style="font-weight:500; font-size:1rem; color:#71717a;">' + esc(t.nombre) + '</span>' : ''}
                         </div>
                         <div style="font-size:0.82rem; color:#71717a; margin-top:4px;">
                             Vuelta actual: <strong>#${t.ciclo_actual || 1}</strong> · Vueltas completadas: <strong>${t.vueltas_completas || 0}</strong> · Total manzanas: <strong>1 a ${t.cantidad_manzanas}</strong>
@@ -1831,12 +1836,12 @@ async function abrirModalBitacoraTerritorio(terrId) {
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--border-color, #e4e4e7); padding-bottom:12px;">
                 <div style="font-size:0.95rem; font-weight:700; color:var(--text-color, #18181b); display:flex; align-items:center; gap:8px;">
                     <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary, #0284c7);"></i>
-                    Historial de Bitácora del Territorio ${t.numero}
+                    Historial de Bitácora del Territorio ${esc(t.numero)}
                     <span class="badge badge-gray">${regsTerr.length} salidas</span>
                 </div>
                 ${isAdmin ? `
                     <button type="button" class="btn-primary" onclick="abrirFormularioRegistroAvanceTerritorio('${t.id}')" style="font-weight:600; padding:8px 16px; display:inline-flex; align-items:center; gap:8px;">
-                        <i class="fa-solid fa-pen-to-square"></i> Registrar Avance en Territorio ${t.numero}
+                        <i class="fa-solid fa-pen-to-square"></i> Registrar Avance en Territorio ${esc(t.numero)}
                     </button>
                 ` : ''}
             </div>
@@ -2052,7 +2057,7 @@ async function abrirModalPrograma() {
     const selTurno = document.getElementById('progTurno');
     if (selTurno) {
         selTurno.innerHTML = cacheTurnos.length
-            ? cacheTurnos.map(t => `<option value="${t.nombre}" data-horario="${t.horario || ''}">${t.nombre}${t.horario ? ' (' + t.horario + ')' : ''}</option>`).join('')
+            ? cacheTurnos.map(t => `<option value="${esc(t.nombre)}" data-horario="${esc(t.horario || '')}">${esc(t.nombre)}${t.horario ? ' (' + esc(t.horario) + ')' : ''}</option>`).join('')
             : '<option value="Mañana" data-horario="8:20 am">Mañana</option><option value="Tarde" data-horario="3:30 pm">Tarde</option>';
     }
     const inpHora = document.getElementById('progHora');
@@ -2069,7 +2074,7 @@ async function abrirModalPrograma() {
         const infoExtra = enCurso
             ? `⚡ En curso — Faltan manz: ${faltantes.join(', ')}`
             : `Manz. 1 a ${t.cantidad_manzanas} (${t.estado_actual})`;
-        return `<option value="${t.numero}" data-id="${t.id}">Territorio ${t.numero} · ${infoExtra}</option>`;
+        return `<option value="${esc(t.numero)}" data-id="${t.id}">Territorio ${esc(t.numero)} · ${infoExtra}</option>`;
     }).join('');
     if (selTerr1) selTerr1.innerHTML = '<option value="">-- Seleccionar territorio --</option>' + optsTerr;
     if (selTerr2) selTerr2.innerHTML = '<option value="">-- Ninguno --</option>' + optsTerr;
@@ -2078,7 +2083,7 @@ async function abrirModalPrograma() {
     const selCond = document.getElementById('progConductor');
     if (selCond) {
         selCond.innerHTML = '<option value="">-- En blanco / Sin asignar --</option>' +
-            cacheConductores.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+            cacheConductores.map(c => `<option value="${esc(c.nombre)}">${esc(c.nombre)}</option>`).join('');
         selCond.onchange = () => {
             const mapTel = obtenerMapaTelefonosConductores();
             const telEl = document.getElementById('progConductorTel');
@@ -2345,7 +2350,7 @@ function renderTablaProgramaPreview() {
         const tdGrupo = mostrarGrupo ? `<td>${f.grupo}</td>` : '';
         const terrHtml = `<div><strong>T: ${f.territorios}</strong></div>` + (f.manzanas ? `<div style="font-size:0.78rem; font-weight:700;">Mz: ${f.manzanas}</div>` : '');
         const condTexto = f.conductor
-            ? `<div>${f.conductor}</div>${f.telefono ? `<div>(${f.telefono})</div>` : ''}`
+            ? `<div>${esc(f.conductor)}</div>${f.telefono ? `<div>(${esc(f.telefono)})</div>` : ''}`
             : `&nbsp;`;
 
         rowsHtml += `
@@ -2354,7 +2359,7 @@ function renderTablaProgramaPreview() {
                 ${tdDia}
                 <td>${f.hora}</td>
                 ${tdGrupo}
-                <td>${f.punto}</td>
+                <td>${esc(f.punto)}</td>
                 <td>${terrHtml}</td>
                 <td>
                     <div class="prog-conductor-pill">
@@ -2931,7 +2936,7 @@ async function cargarConductoresData() {
                 : '-';
             tbody.innerHTML += `
                 <tr>
-                    <td><strong>${c.nombre}</strong></td>
+                    <td><strong>${esc(c.nombre)}</strong></td>
                     <td><span class="badge badge-si">ACTIVO</span></td>
                     <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
                 </tr>
@@ -2961,8 +2966,8 @@ async function cargarTurnosData() {
                 : '-';
             tbody.innerHTML += `
                 <tr>
-                    <td><strong>${t.nombre}</strong></td>
-                    <td>${t.horario || '-'}</td>
+                    <td><strong>${esc(t.nombre)}</strong></td>
+                    <td>${esc(t.horario || '-')}</td>
                     <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
                 </tr>
             `;
@@ -3187,12 +3192,12 @@ function renderTablaBitacoraFiltrada() {
                 <td><span style="color:#64748b; font-weight:500;">${fechaRegStr}</span></td>
                 <td>${fechaStr}</td>
                 <td>${fechaCierreHtml}</td>
-                <td><strong>Territorio ${b.territorio_numero}</strong></td>
+                <td><strong>Territorio ${esc(b.territorio_numero)}</strong></td>
                 <td><span class="badge badge-gray">Vuelta #${b.ciclo}</span></td>
                 <td>Manz. <strong>${b.manzanas}</strong></td>
                 <td>${badgeManz}</td>
-                <td>${b.turno_nombre}</td>
-                <td>${b.conductor_nombre}</td>
+                <td>${esc(b.turno_nombre)}</td>
+                <td>${esc(b.conductor_nombre)}</td>
                 <td>${badgeTerr}</td>
                 <td class="admin-only" style="display:${isAdmin ? 'table-cell' : 'none'}">${acciones}</td>
             </tr>
@@ -3231,7 +3236,7 @@ async function resetFormConductor() {
             const res = await fetch('/api/publicadores?grupo=0');
             const pubs = await res.json();
             pubs.filter(p => p.activo).forEach(p => {
-                sel.innerHTML += `<option value="${p.id}" data-nombre="${p.nombre}">${p.nombre} (G${p.grupo})</option>`;
+                sel.innerHTML += `<option value="${p.id}" data-nombre="${esc(p.nombre)}">${esc(p.nombre)} (G${p.grupo})</option>`;
             });
         } catch (e) {}
     }
@@ -3304,7 +3309,7 @@ function aplicarEstadoInputFechaInicioBitacora(fechaInicioCiclo = null) {
         if (hintEl) hintEl.textContent = `Iniciado el ${formatearFechaCortaEs(cleanYMD)}`;
     } else {
         if (fEl.dataset.locked === '1' || !fEl.value) {
-            fEl.value = new Date().toISOString().split('T')[0];
+            fEl.value = vcalTodayStr(); // fecha local (toISOString usa UTC y adelanta el día después de las 19:00 en Perú)
         }
         fEl.readOnly = false;
         fEl.dataset.locked = '';
@@ -3331,17 +3336,17 @@ async function resetFormBitacora() {
 
     const selTurno = document.getElementById('bitTurnoSelect');
     selTurno.innerHTML = cacheTurnos.length
-        ? cacheTurnos.map(t => `<option value="${t.id}" data-nombre="${t.nombre}">${t.nombre}${t.horario ? ' (' + t.horario + ')' : ''}</option>`).join('')
+        ? cacheTurnos.map(t => `<option value="${t.id}" data-nombre="${esc(t.nombre)}">${esc(t.nombre)}${t.horario ? ' (' + esc(t.horario) + ')' : ''}</option>`).join('')
         : '<option value="">-- Primero crea un turno --</option>';
 
     const selCond = document.getElementById('bitConductorSelect');
     selCond.innerHTML = cacheConductores.length
-        ? cacheConductores.map(c => `<option value="${c.id}" data-nombre="${c.nombre}">${c.nombre}</option>`).join('')
+        ? cacheConductores.map(c => `<option value="${c.id}" data-nombre="${esc(c.nombre)}">${esc(c.nombre)}</option>`).join('')
         : '<option value="">-- Primero registra un conductor --</option>';
 
     const selTerr = document.getElementById('bitTerritorioSelect');
     selTerr.innerHTML = '<option value="">-- Seleccione territorio --</option>' +
-        cacheTerritorios.map(t => `<option value="${t.id}">Territorio ${t.numero} (${t.completadas}/${t.cantidad_manzanas} manz. · ${t.porcentaje}%)</option>`).join('');
+        cacheTerritorios.map(t => `<option value="${t.id}">Territorio ${esc(t.numero)} (${t.completadas}/${t.cantidad_manzanas} manz. · ${t.porcentaje}%)</option>`).join('');
 
     document.getElementById('bitInfoTerritorio').textContent = 'Selecciona un territorio para ver sus manzanas (1 a N)...';
     document.getElementById('bitManzanasGrid').innerHTML = '';
@@ -3451,7 +3456,7 @@ async function cargarSelectorManzanasBitacora(excludeBitacoraId = null, cicloFor
         if (data.nueva_vuelta) {
             info.innerHTML = `<strong>¡Nueva vuelta (#${data.ciclo})!</strong> El recorrido anterior se completó al 100%. Haz <strong>1 clic</strong> para marcar manzana <strong>Incompleta</strong> y <strong>2 clics</strong> para <strong>Completa</strong>.`;
         } else {
-            info.innerHTML = `<strong>Territorio ${data.territorio.numero}</strong> · Vuelta #${data.ciclo} · Completadas: <strong>${compCount} de ${total}</strong>. Haz <strong>1 clic = Incompleta</strong> · <strong>2 clics = Completa</strong>.`;
+            info.innerHTML = `<strong>Territorio ${esc(data.territorio.numero)}</strong> · Vuelta #${data.ciclo} · Completadas: <strong>${compCount} de ${total}</strong>. Haz <strong>1 clic = Incompleta</strong> · <strong>2 clics = Completa</strong>.`;
         }
 
         for (let m = 1; m <= total; m++) {
