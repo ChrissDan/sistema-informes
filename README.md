@@ -92,4 +92,5 @@ Para cifrar con bcrypt las contraseñas heredadas en texto plano: `node scripts/
 - La web es una PWA instalable (`public/manifest.webmanifest`, `public/sw.js`, `public/icons/`). El service worker nunca guarda respuestas de `/api` y usa "red primero".
 - Instalar: Chrome en Android → menú ⋮ → *Instalar aplicación*.
 - APK / Google Play: en [pwabuilder.com](https://www.pwabuilder.com) ingresa la URL pública (HTTPS) y descarga el paquete de Android (Trusted Web Activity). Para Google Play se necesita cuenta de desarrollador y firmar el paquete.
-- Las plantillas PDF del S-21 se eligen con un selector de archivos estándar, compatible con el teléfono.
+- La plantilla S-21 en blanco está incluida en el proyecto (`public/plantillas/S-21.pdf`): las tarjetas, el ZIP masivo y los totales se generan sin tener que elegir ningún archivo. Para actualizar el formato, reemplaza ese PDF conservando los nombres de los campos del formulario.
+- En el teléfono, el PDF/ZIP generado se entrega con un botón *Guardar / Compartir* (menú de compartir del sistema).

@@ -114,20 +114,14 @@ function generarPDFCursos() {
 }
 
 let publicadorIdSeleccionado = null; 
-let fileHandleS21 = null;
 
-async function iniciarRellenadoTarjeta(id) { 
-    publicadorIdSeleccionado = id; 
-    try { 
-        fileHandleS21 = await elegirArchivoPDF(); // archivo PDF elegido (plantilla S-21)
-        ejecutarProcesoModificacion(); 
-    } catch (error) { 
-        if (error.name !== 'AbortError') Swal.fire('Error', 'Tu navegador no soporta esta función.', 'error'); 
-    } 
+async function iniciarRellenadoTarjeta(id) {
+    publicadorIdSeleccionado = id;
+    ejecutarProcesoModificacion(); // la plantilla S-21 en blanco se carga sola desde /plantillas/S-21.pdf
 }
 
 async function ejecutarProcesoModificacion() {
-    if (!fileHandleS21 || !publicadorIdSeleccionado) return; 
+    if (!publicadorIdSeleccionado) return;
     Swal.fire({ title: 'Generando PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
     try {
@@ -135,27 +129,18 @@ async function ejecutarProcesoModificacion() {
         const res = await fetch(`/api/publicador/${publicadorIdSeleccionado}/tarjeta?anio_servicio=${getAnio()}`); 
         const data = await res.json(); 
         
-        // 2. Leemos la plantilla seleccionada
-        const file = fileHandleS21; 
-        const plantillaBuffer = await file.arrayBuffer(); 
+        // 2. Cargamos la plantilla S-21 en blanco incluida en el proyecto
+        const plantillaBuffer = await obtenerPlantillaS21();
         
         // 3. Llenamos usando la función maestra actualizada
         const pdfBytes = await rellenarPlantillaPersonalizada(plantillaBuffer, data, data.publicador); 
         
         // 4. Descarga segura mediante Blob (Crea un archivo nuevo)
         const blob = new Blob([pdfBytes], { type: "application/pdf" });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        
         const nombreSeguro = (data.publicador.nombre || "S21").replace(/[^a-zA-Z0-9]/g, '_');
-        link.download = `S21_${nombreSeguro}_${getAnio()}.pdf`;
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        Swal.close(); 
-        Toast.fire({ icon: 'success', title: 'Tarjeta Descargada' });
+        Swal.close();
+        await entregarArchivo(blob, `S21_${nombreSeguro}_${getAnio()}.pdf`, 'Tarjeta S-21 lista');
+        if (!esMovil()) Toast.fire({ icon: 'success', title: 'Tarjeta Descargada' });
         
     } catch (error) { 
         console.error(error);

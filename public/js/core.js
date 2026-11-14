@@ -7,12 +7,41 @@ function elegirArchivoPDF() {
     return new Promise((resolve, reject) => {
         const inp = document.createElement('input');
         inp.type = 'file'; inp.accept = 'application/pdf,.pdf';
-        inp.style.display = 'none'; document.body.appendChild(inp);
+        inp.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;'; document.body.appendChild(inp); // sin display:none: Safari de iPhone no siempre abre el selector
         const limpiar = () => setTimeout(() => inp.remove(), 0);
         inp.addEventListener('change', () => { limpiar(); inp.files[0] ? resolve(inp.files[0]) : reject(new DOMException('Cancelado', 'AbortError')); });
         inp.addEventListener('cancel', () => { limpiar(); reject(new DOMException('Cancelado', 'AbortError')); });
         inp.click();
     });
+}
+
+// ¿Teléfono o tablet? (iPadOS se identifica como Mac, por eso se mira también el táctil)
+function esMovil() {
+    const ua = navigator.userAgent || '';
+    return /Android|iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.platform || ''));
+}
+function descargarBlob(blob, nombre) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+// Entrega un archivo generado en el navegador (PDF, ZIP).
+// - Computador: descarga directa.
+// - Teléfono: tras generar pasan varios segundos y Safari/Chrome ya no permiten descargar "solos"; se muestra un
+//   botón y el NUEVO toque del usuario abre el menú Compartir/Guardar (Archivos, WhatsApp, Drive...) o descarga.
+async function entregarArchivo(blob, nombre, titulo) {
+    if (!esMovil()) { descargarBlob(blob, nombre); return; }
+    const file = new File([blob], nombre, { type: blob.type || 'application/octet-stream' });
+    const puedeCompartir = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    const r = await Swal.fire({ icon: 'success', title: titulo || 'Archivo listo', text: nombre, showCancelButton: true, allowOutsideClick: false,
+        confirmButtonText: puedeCompartir ? 'Guardar / Compartir' : 'Descargar', cancelButtonText: 'Cerrar' });
+    if (!r.isConfirmed) return;
+    if (puedeCompartir) {
+        try { await navigator.share({ files: [file], title: nombre }); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    descargarBlob(blob, nombre);
 }
 
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }

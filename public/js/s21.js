@@ -1,10 +1,17 @@
 // Tarjetas S-21 (individual, ZIP masivo y totales de congregación)
 // (script clásico: comparte el ámbito global con el resto de archivos; el orden de carga está en dashboard.html)
+// --- PLANTILLA S-21 EN BLANCO (incluida en el proyecto: public/plantillas/S-21.pdf) ---
+// Ya no hay que elegir el archivo cada vez. Para actualizar el formato, reemplaza ese PDF conservando los nombres de campos.
+async function obtenerPlantillaS21() {
+    const r = await fetch('/plantillas/S-21.pdf', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('No se pudo cargar la plantilla S-21 (' + r.status + ')');
+    return await r.arrayBuffer();
+}
+
 // --- GENERACIÓN MASIVA DE TARJETAS S-21 EN ZIP ---
 async function generarTarjetasMasivasZIP() {
     try {
-        const file = await elegirArchivoPDF();
-        const plantillaBuffer = await file.arrayBuffer(); 
+        const plantillaBuffer = await obtenerPlantillaS21();
 
         Swal.fire({ 
             title: 'Generando Tarjetas...', 
@@ -37,14 +44,10 @@ async function generarTarjetasMasivasZIP() {
         }
 
         const contenidoZip = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(contenidoZip);
-        link.download = `Tarjetas_S21_${anio}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        Swal.fire('¡Éxito!', 'Las tarjetas han sido organizadas por grupos y descargadas.', 'success');
+        Swal.close();
+        const nombreZip = `Tarjetas_S21_${anio}.zip`;
+        if (esMovil()) await entregarArchivo(contenidoZip, nombreZip, 'Tarjetas S-21 listas');
+        else { descargarBlob(contenidoZip, nombreZip); Swal.fire('¡Éxito!', 'Las tarjetas han sido organizadas por grupos y descargadas.', 'success'); }
 
     } catch (error) {
         console.error(error);
@@ -128,8 +131,7 @@ async function rellenarPlantillaPersonalizada(plantillaBuffer, dataHistorial, pu
 // --- GENERACIÓN DE REPORTES TOTALES DE CONGREGACIÓN (S-21) ---
 async function descargarTotalesS21() {
     try {
-        const file = await elegirArchivoPDF();
-        const plantillaBuffer = await file.arrayBuffer(); 
+        const plantillaBuffer = await obtenerPlantillaS21();
 
         Swal.fire({ title: 'Generando Totales...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
@@ -177,14 +179,10 @@ async function descargarTotalesS21() {
 
         // Descargar el ZIP
         const contenidoZip = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(contenidoZip);
-        link.download = `Totales_S21_Congregacion_${anio}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        Swal.fire('¡Éxito!', 'Los 4 reportes consolidados han sido descargados en un archivo ZIP.', 'success');
+        Swal.close();
+        const nombreZip = `Totales_S21_Congregacion_${anio}.zip`;
+        if (esMovil()) await entregarArchivo(contenidoZip, nombreZip, 'Totales S-21 listos');
+        else { descargarBlob(contenidoZip, nombreZip); Swal.fire('¡Éxito!', 'Los 4 reportes consolidados han sido descargados en un archivo ZIP.', 'success'); }
 
     } catch (error) {
         console.error(error);
