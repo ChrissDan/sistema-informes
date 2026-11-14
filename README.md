@@ -77,3 +77,4 @@ public/
 
 ### Migración de bases de datos existentes
 Si tu base ya existía antes del índice único de reuniones, ejecuta una vez: `node scripts/migrar_indice_reuniones.js`.
+Para cifrar con bcrypt las contraseñas heredadas en texto plano: `node scripts/migrar_passwords_bcrypt.js` (solo cuenta) y luego `node scripts/migrar_passwords_bcrypt.js --aplicar`.
