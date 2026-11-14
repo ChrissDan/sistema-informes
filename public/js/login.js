@@ -95,13 +95,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleKeypad = document.getElementById('toggleKeypad');
     const togglePassword = document.getElementById('togglePassword');
 
+    // En celulares el campo tiene inputmode="none" (index.html): así NO se abre el teclado del sistema,
+    // solo este teclado numérico. En computador el teclado físico sigue funcionando.
+    let abiertoEn = 0;
+    const abrirKeypad = () => {
+        if (!keypad) return;
+        if (!keypad.classList.contains('active')) abiertoEn = Date.now();
+        keypad.classList.add('active');
+    };
+
     // 1. Abrir teclado en pantalla al presionar o hacer foco en el campo de contraseña
-    passwordInput.addEventListener('focus', () => {
-        if (keypad) keypad.classList.add('active');
-    });
+    passwordInput.addEventListener('focus', abrirKeypad);
 
     passwordInput.addEventListener('click', (e) => {
-        if (keypad) keypad.classList.add('active');
+        abrirKeypad();
         e.stopPropagation();
     });
 
@@ -112,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
             e.stopPropagation();
             keypad.classList.toggle('active');
             if (keypad.classList.contains('active')) {
+                abiertoEn = Date.now();
                 passwordInput.focus();
             }
         });
@@ -153,6 +161,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. Ocultar teclado en pantalla al hacer clic fuera de él
     document.addEventListener('click', (e) => {
         if (!keypad || !keypad.classList.contains('active')) return;
+        // Al abrirse, el teclado empuja el diseño y el "clic" del mismo toque puede caer en otro elemento:
+        // se ignora cualquier clic en los primeros 600 ms para que no se cierre solo
+        if (Date.now() - abiertoEn < 600) return;
         if (!keypad.contains(e.target) && e.target !== passwordInput && !passwordInput.contains(e.target) && e.target !== toggleKeypad && !toggleKeypad?.contains(e.target)) {
             keypad.classList.remove('active');
         }
