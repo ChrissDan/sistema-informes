@@ -28,7 +28,9 @@ router.get('/api/informes', async (req, res) => {
 
 router.post('/api/informes', async (req, res) => {
     const { mes, publicador_id, horas, cursos, predico, comentarios, credito_hrs, anio_servicio } = req.body;
-    const h = parseFloat(horas) || 0; const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
+    // Si NO predicó, las horas son 0 automáticamente (y un precursor puede informar 0 horas); si SÍ predicó rigen las reglas de horas
+    const noPredico = predico !== 'SI';
+    const h = noPredico ? 0 : (parseFloat(horas) || 0); const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
     if (h < 0 || c < 0 || cred < 0) return res.status(400).json({ ok: false, msg: 'No se permiten valores negativos.' });
     let maxCred = 55 - h; if (maxCred < 0) maxCred = 0;
     if (cred > maxCred) return res.status(400).json({ ok: false, msg: `Límite de crédito excedido.` });
@@ -51,10 +53,10 @@ router.post('/api/informes', async (req, res) => {
         if (!esGlobal(req.user.grupo) && pub.grupo != req.user.grupo) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
 
         const pUpper = (pub.priv3 || '').trim().toUpperCase();
-        if (PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `Un ${pUpper} no puede reportar 0 horas.` });
+        if (!noPredico && PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `Un ${pUpper} que predicó no puede reportar 0 horas.` });
         // Meta mínima de horas de auxiliares: solo Admin/Supervisor pueden aprobar excepciones
         const meta = metaHorasPriv(pUpper);
-        if (meta > 0 && h < meta && !esGlobal(req.user.grupo)) {
+        if (!noPredico && meta > 0 && h < meta && !esGlobal(req.user.grupo)) {
             return res.status(403).json({ ok: false, msg: `Un ${pUpper} debe reportar al menos ${meta} horas. El Secretario debe evaluarlo.` });
         }
 
@@ -72,7 +74,8 @@ router.post('/api/informes', async (req, res) => {
 
 router.put('/api/informes/:id', async (req, res) => {
     const { horas, cursos, predico, comentarios, credito_hrs } = req.body;
-    const h = parseFloat(horas) || 0; const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
+    const noPredico = predico !== 'SI';   // si NO predicó, las horas son 0
+    const h = noPredico ? 0 : (parseFloat(horas) || 0); const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
     if (h < 0 || c < 0 || cred < 0) return res.status(400).json({ ok: false, msg: 'No se permiten valores negativos.' });
     try {
         const [infOrig] = await pool.query("SELECT mes, priv3, anio_servicio, grupo, publicador_id FROM informes WHERE id = ?", [req.params.id]);
@@ -88,9 +91,9 @@ router.put('/api/informes/:id', async (req, res) => {
         }
 
         const pUpper = (priv3 || '').trim().toUpperCase();
-        if (PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `0 horas no permitido.` });
+        if (!noPredico && PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `0 horas no permitido si predicó.` });
         const meta = metaHorasPriv(pUpper);
-        if (meta > 0 && h < meta && !esGlobal(req.user.grupo)) return res.status(403).json({ ok: false, msg: `Un ${pUpper} debe reportar al menos ${meta} horas. El Secretario debe evaluarlo.` });
+        if (!noPredico && meta > 0 && h < meta && !esGlobal(req.user.grupo)) return res.status(403).json({ ok: false, msg: `Un ${pUpper} debe reportar al menos ${meta} horas. El Secretario debe evaluarlo.` });
         if (cred > Math.max(55 - h, 0)) return res.status(400).json({ ok: false, msg: 'Límite de crédito excedido.' });
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ? AND anio_servicio = ?", [mes, anio_servicio]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `Mes cerrado.` });

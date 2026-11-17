@@ -5,7 +5,16 @@ let cachePublicadores = []; let cacheInformes = []; let cacheUsuarios = []; let 
 function anioFormInforme() { return (!isAdmin && mesActivo) ? mesActivo.anio_servicio : getAnio(); }
 async function cargarPublicadoresSelect(grupoId, mode = 'pending') { try { let url = `/api/publicadores?grupo=${grupoId}`; if (mode === 'pending') { const NM = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']; const mesForm = document.getElementById('formMesSelect').value || NM[(new Date().getMonth() + 11) % 12]; url += `&sin_informe_mes=${encodeURIComponent(mesForm)}&anio_servicio=${anioFormInforme()}`; } const res = await fetch(url); cachePublicadores = await res.json(); const sel = document.getElementById('selectPubInfo'); const currentVal = sel.value; sel.innerHTML = mode === 'pending' ? (cachePublicadores.length ? `<option value="">-- Seleccione (${cachePublicadores.length} pendientes) --</option>` : '<option value="">✔ Todos ya informaron este mes</option>') : '<option value="">-- Seleccione --</option>'; cachePublicadores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${esc(p.nombre)}</option>`; }); if (mode === 'all' && currentVal && cachePublicadores.find(p => p.id == currentVal)) sel.value = currentVal; return cachePublicadores; } catch (e) { console.error(e); return []; } }
 function cargarDatosPub() { const id = document.getElementById('selectPubInfo').value; const pub = cachePublicadores.find(p => p.id == id); if (pub) { document.getElementById('readPriv3').value = pub.priv3; actualizarEstadoHoras(pub.priv3); } else { document.getElementById('readPriv3').value = ""; document.getElementById('inputHoras').disabled = true; } }
-function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } }
+function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElementById('inputHoras'); const inputCredito = document.getElementById('inputCredito'); const p = (privilegio || "").trim().toUpperCase(); const reportan = ['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C']; const reportanCredito = ['REG', 'ESP']; if (reportan.includes(p)) { inputHoras.disabled = false; } else { inputHoras.disabled = true; inputHoras.value = ""; } if (reportanCredito.includes(p)) { inputCredito.disabled = false; } else { inputCredito.disabled = true; inputCredito.value = ""; } if (typeof alCambiarPredico === 'function') alCambiarPredico(); }
+// Si un precursor marca "NO predicó", las horas pasan solas a 0 y se bloquean; con "SÍ predicó" se vuelven a habilitar
+function alCambiarPredico() {
+    const inputHoras = document.getElementById('inputHoras');
+    const sel = document.querySelector('#formInforme [name="predico"]');
+    const priv = (document.getElementById('readPriv3').value || '').trim().toUpperCase();
+    if (!inputHoras || !sel || !['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C'].includes(priv)) return;
+    if (sel.value === 'NO') { inputHoras.value = 0; inputHoras.disabled = true; }
+    else { inputHoras.disabled = false; if (inputHoras.value === '0') inputHoras.value = ''; }
+}
 function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; buscadorInformes.limpiar(); cargarTablaInformes(); }
 
 // --- INFORMES ---
@@ -32,7 +41,7 @@ async function cargarTablaInformes() {
     if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
 }
 
-function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
+function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; alCambiarPredico(); f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
 // Mes automático según el servidor (mes calendario anterior, cambia automáticamente al siguiente mes)
 async function cargarMesActivo() { try { const r = await fetch('/api/mes-activo'); mesActivo = await r.json(); } catch (e) { mesActivo = null; } return mesActivo; }
 // Solo superadmin (grupo 0): puede cambiar el mes a cualquier mes abierto; los demás usuarios lo tienen bloqueado
@@ -90,10 +99,10 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     const esAux15 = privilegio === 'AUX C';
     const esPrecursor = esRegular || esAux30 || esAux15;
 
-    if (esPrecursor && h <= 0) { Swal.fire({ icon: 'error', title: 'Horas en cero', text: `Un ${privilegio} no puede reportar 0 horas.` }); if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; } return; }
+    if (esPrecursor && rawData.predico !== 'NO' && h <= 0) { Swal.fire({ icon: 'error', title: 'Horas en cero', text: `Un ${privilegio} que predicó no puede reportar 0 horas. Si no predicó, marca "NO predicó".` }); if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; } return; }
 
     let metaMinima = 0; if (esAux30) metaMinima = 30; if (esAux15) metaMinima = 15;
-    if (metaMinima > 0 && h < metaMinima) {
+    if (metaMinima > 0 && rawData.predico !== 'NO' && h < metaMinima) {
         if (!isGlobal) { 
             Swal.fire({ icon: 'error', title: 'Meta no alcanzada', html: `El publicador es <b>${privilegio}</b> (Meta: ${metaMinima} hrs) pero solo reportó <b>${h} horas</b>.<br><br>No tienes permisos. El Secretario debe evaluarlo.` });
             if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; } return;
