@@ -964,6 +964,20 @@
                 <label>Privilegio Actual</label>
                 <input id="readPriv3" readonly placeholder="-">
             </div>
+            <div class="col-span-2" id="privInformeWrap" style="display:none;">
+                <label>Privilegio en este informe <span class="label-hint">(solo Super Admin)</span></label>
+                <select id="selectPrivInforme" onchange="alCambiarPrivInforme()">
+                    <option>PUB</option>
+                    <option>PNB</option>
+                    <option>AUX C</option>
+                    <option>AUX M</option>
+                    <option>AUX I</option>
+                    <option>AUX</option>
+                    <option>REG</option>
+                    <option>ESP</option>
+                </select>
+                <div id="privInformeHint" style="margin-top:6px; min-height:1em; font-size:0.8rem; color:#dc2626;"></div>
+            </div>
 
             <div class="col-span-2 form-section-title">
                 <i class="fa-solid fa-clipboard-list"></i> Actividad del Mes

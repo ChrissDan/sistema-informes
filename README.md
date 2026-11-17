@@ -114,3 +114,7 @@ Una misma persona puede ser publicador, usuario del sistema y conductor. El **te
 ### Teléfonos y tarjetas de territorio
 - Los teléfonos son de **9 dígitos** (Perú): los campos solo aceptan números, recortan a 9, quitan un prefijo +51 y el servidor rechaza cualquier otro largo.
 - En *Avance y Bitácora* cada territorio es una tarjeta **plegada** (título, avance y estado); al desplegarla muestra fechas, vueltas, manzanas y el botón de bitácora. Siempre se dibujan plegadas, y la paginación aparece arriba y abajo.
+
+### Informes: privilegio y horas
+- Si un precursor marca **NO predicó**, sus horas pasan a 0 automáticamente.
+- El **super administrador** puede cambiar el privilegio de un informe al editarlo (por ejemplo, AUX → PUB). Solo se permite si el publicador **ya tiene ese privilegio en Publicadores**; si no, hay que cambiarlo primero allí. Ningún otro usuario (encargado o supervisor) puede cambiarlo. Al pasar a un privilegio sin horas (PUB/PNB), las horas y el crédito pasan a 0.

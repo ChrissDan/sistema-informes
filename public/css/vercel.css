@@ -1667,3 +1667,6 @@ html[data-theme="dark"] .menu-toggle:hover { background: transparent; border-col
 .terr-card-cuerpo { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
 #paginacionTarjetasTerritoriosTop { margin: 0 0 12px 0; }
 html[data-theme="dark"] .terr-card-plegable > summary:hover { background: #161616; }
+
+/* Celdas "global-view" de los formularios (el script las fuerza a display:block): mismo espacio bajo la etiqueta que el resto */
+.form-layout > .global-view > label { display: block; margin-bottom: 6px; }

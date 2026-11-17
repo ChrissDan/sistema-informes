@@ -73,14 +73,15 @@ router.post('/api/informes', async (req, res) => {
 });
 
 router.put('/api/informes/:id', async (req, res) => {
-    const { horas, cursos, predico, comentarios, credito_hrs } = req.body;
+    const { horas, cursos, predico, comentarios, credito_hrs, priv3: privSolicitado } = req.body;
     const noPredico = predico !== 'SI';   // si NO predicó, las horas son 0
-    const h = noPredico ? 0 : (parseFloat(horas) || 0); const c = parseInt(cursos) || 0; const cred = parseFloat(credito_hrs) || 0;
+    let h = noPredico ? 0 : (parseFloat(horas) || 0); const c = parseInt(cursos) || 0; let cred = parseFloat(credito_hrs) || 0;
     if (h < 0 || c < 0 || cred < 0) return res.status(400).json({ ok: false, msg: 'No se permiten valores negativos.' });
     try {
-        const [infOrig] = await pool.query("SELECT mes, priv3, anio_servicio, grupo, publicador_id FROM informes WHERE id = ?", [req.params.id]);
+        const [infOrig] = await pool.query("SELECT mes, priv1, priv2, priv3, anio_servicio, grupo, publicador_id FROM informes WHERE id = ?", [req.params.id]);
         if (infOrig.length === 0) return res.status(404).json({ ok: false, msg: "No encontrado." });
-        const { mes, priv3, anio_servicio } = infOrig[0];
+        const { mes, anio_servicio } = infOrig[0];
+        let { priv1, priv2, priv3 } = infOrig[0];
         if (!esGlobal(req.user.grupo) && infOrig[0].grupo != req.user.grupo) return res.status(403).json({ ok: false, msg: 'Acceso denegado.' });
         // Un encargado solo puede editar informes del mes activo (y siempre que no esté cerrado, ver más abajo)
         if (!esGlobal(req.user.grupo)) {
@@ -90,7 +91,24 @@ router.put('/api/informes/:id', async (req, res) => {
             }
         }
 
+        // Cambio de privilegio del informe: SOLO el super administrador, y solo si coincide con el privilegio que el
+        // publicador tiene ahora en "Publicadores" (primero se corrige allí; así el informe y la ficha no se contradicen)
+        let cambioPriv = false;
+        const pedido = (privSolicitado === undefined || privSolicitado === null) ? null : String(privSolicitado).trim().toUpperCase();
+        if (pedido !== null && pedido !== (priv3 || '').trim().toUpperCase()) {
+            if (req.user.grupo != 0) return res.status(403).json({ ok: false, msg: 'Solo el super administrador puede cambiar el privilegio de un informe.' });
+            const [pg] = await pool.query('SELECT priv1, priv2, priv3 FROM publicadores WHERE id = ?', [infOrig[0].publicador_id]);
+            if (pg.length === 0) return res.status(400).json({ ok: false, msg: 'El publicador de este informe ya no existe.' });
+            const actual = (pg[0].priv3 || '').trim().toUpperCase();
+            if (pedido !== actual) {
+                return res.status(400).json({ ok: false, msg: `En Publicadores este publicador figura como ${actual || 'sin privilegio'}. Primero cambia su privilegio en Publicadores y luego cámbialo en el informe.` });
+            }
+            priv1 = pg[0].priv1; priv2 = pg[0].priv2; priv3 = pg[0].priv3; cambioPriv = true;
+        }
         const pUpper = (priv3 || '').trim().toUpperCase();
+        // Con un privilegio nuevo, solo los precursores llevan horas y solo REG/ESP crédito
+        if (cambioPriv) { if (!PRIV_CON_HORAS.includes(pUpper)) h = 0; if (!['REG', 'ESP'].includes(pUpper)) cred = 0; }
+
         if (!noPredico && PRIV_CON_HORAS.includes(pUpper) && h <= 0) return res.status(400).json({ ok: false, msg: `0 horas no permitido si predicó.` });
         const meta = metaHorasPriv(pUpper);
         if (!noPredico && meta > 0 && h < meta && !esGlobal(req.user.grupo)) return res.status(403).json({ ok: false, msg: `Un ${pUpper} debe reportar al menos ${meta} horas. El Secretario debe evaluarlo.` });
@@ -98,8 +116,10 @@ router.put('/api/informes/:id', async (req, res) => {
         const [cierre] = await pool.query("SELECT * FROM cierres WHERE mes = ? AND anio_servicio = ?", [mes, anio_servicio]);
         if (cierre.length > 0) return res.status(400).json({ ok: false, msg: `Mes cerrado.` });
 
-        await pool.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=? WHERE id=?', [h, c, predico === 'SI' ? 'SI' : 'NO', comentarios, cred, req.params.id]);
-        res.json({ ok: true });
+        const pred = predico === 'SI' ? 'SI' : 'NO';
+        if (cambioPriv) await pool.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=?, priv1=?, priv2=?, priv3=? WHERE id=?', [h, c, pred, comentarios, cred, priv1, priv2, priv3, req.params.id]);
+        else await pool.query('UPDATE informes SET horas=?, cursos=?, predico=?, comentarios=?, credito_hrs=? WHERE id=?', [h, c, pred, comentarios, cred, req.params.id]);
+        res.json({ ok: true, privilegio: pUpper });
     } catch (err) { res.status(500).json({ ok: false, msg: msgErr(err) }); }
 });
 

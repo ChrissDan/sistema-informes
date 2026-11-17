@@ -10,10 +10,48 @@ function actualizarEstadoHoras(privilegio) { const inputHoras = document.getElem
 function alCambiarPredico() {
     const inputHoras = document.getElementById('inputHoras');
     const sel = document.querySelector('#formInforme [name="predico"]');
-    const priv = (document.getElementById('readPriv3').value || '').trim().toUpperCase();
+    const priv = privilegioActivo();
     if (!inputHoras || !sel || !['ESP', 'REG', 'AUX I', 'AUX M', 'AUX', 'AUX C'].includes(priv)) return;
     if (sel.value === 'NO') { inputHoras.value = 0; inputHoras.disabled = true; }
     else { inputHoras.disabled = false; if (inputHoras.value === '0') inputHoras.value = ''; }
+}
+// --- Privilegio del informe (solo Super Admin al editar) ---
+let informePrivOriginal = '';
+function privInformeVisible() { const w = document.getElementById('privInformeWrap'); return !!w && w.style.display !== 'none'; }
+// Privilegio con el que se aplican las reglas de horas: el elegido en el informe (Super Admin editando) o el del publicador
+function privilegioActivo() {
+    if (privInformeVisible()) return (document.getElementById('selectPrivInforme').value || '').trim().toUpperCase();
+    return (document.getElementById('readPriv3').value || '').trim().toUpperCase();
+}
+function ocultarPrivInforme() {
+    const w = document.getElementById('privInformeWrap'); if (w) w.style.display = 'none';
+    const h = document.getElementById('privInformeHint'); if (h) h.textContent = '';
+    informePrivOriginal = '';
+}
+// Al elegir otro privilegio: actualiza las horas y avisa si no coincide con lo que figura en Publicadores
+function alCambiarPrivInforme() {
+    const nuevo = privilegioActivo();
+    const enPublicadores = (document.getElementById('readPriv3').value || '').trim().toUpperCase();
+    actualizarEstadoHoras(nuevo);
+    const hint = document.getElementById('privInformeHint');
+    if (hint) hint.textContent = (nuevo !== informePrivOriginal && nuevo !== enPublicadores)
+        ? `En Publicadores figura como ${enPublicadores || 'sin privilegio'}. Para usar ${nuevo}, primero cámbialo en Publicadores.` : '';
+}
+// Al abrir un informe para editarlo: el Super Admin puede cambiar el privilegio; los demás ven el privilegio del informe
+function configurarPrivilegioEdicion(obj) {
+    // Si un informe antiguo no trae privilegio guardado, se usa el que el publicador tiene ahora en Publicadores
+    const priv = (obj.priv3 || document.getElementById('readPriv3').value || '').trim();
+    informePrivOriginal = priv.toUpperCase();
+    if (isAdmin) {
+        const sel = document.getElementById('selectPrivInforme');
+        if (priv && !Array.from(sel.options).some(o => o.value === priv)) sel.add(new Option(priv, priv));
+        sel.value = priv || 'PUB';
+        document.getElementById('privInformeWrap').style.display = '';
+        alCambiarPrivInforme();
+    } else {
+        document.getElementById('readPriv3').value = priv;
+        actualizarEstadoHoras(priv);
+    }
 }
 function limpiarFiltrosInformes() { if (isGlobal) document.getElementById('infFiltroGrupo').value = ''; document.getElementById('infFiltroPriv3').value = ''; buscadorInformes.limpiar(); cargarTablaInformes(); }
 
@@ -41,7 +79,7 @@ async function cargarTablaInformes() {
     if (isGlobal) { document.querySelectorAll('.global-view').forEach(el => { if (el.tagName === 'TH') el.style.display = 'table-cell'; }); }
 }
 
-function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); f.predico.value = obj.predico; f.horas.value = obj.horas; alCambiarPredico(); f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
+function editarInforme(id) { const obj = cacheInformes.find(i => i.id == id); if (!obj) return; const f = document.getElementById('formInforme'); document.getElementById('informeId').value = obj.id; f.mes.value = obj.mes; f.mes.disabled = true; const processEdit = () => { f.publicador_id.value = obj.publicador_id; cargarDatosPub(); configurarPrivilegioEdicion(obj); f.predico.value = obj.predico; f.horas.value = obj.horas; alCambiarPredico(); f.cursos.value = obj.cursos; f.comentarios.value = obj.comentarios; f.credito_hrs.value = obj.credito_hrs; }; const grupoTarget = isGlobal ? obj.grupo : session.grupo; if (isGlobal) document.getElementById('infGrupoSelect').value = grupoTarget; cargarPublicadoresSelect(grupoTarget, 'all').then(processEdit); abrirModal('informe', id); }
 // Mes automático según el servidor (mes calendario anterior, cambia automáticamente al siguiente mes)
 async function cargarMesActivo() { try { const r = await fetch('/api/mes-activo'); mesActivo = await r.json(); } catch (e) { mesActivo = null; } return mesActivo; }
 // Solo superadmin (grupo 0): puede cambiar el mes a cualquier mes abierto; los demás usuarios lo tienen bloqueado
@@ -57,7 +95,7 @@ async function habilitarMesesPasadosAdmin(f) {
     aplicarBloqueoMesForm(f.mes);
 }
 async function resetFormInforme(manualClean = false, keepGroup = false) { 
-    const f = document.getElementById('formInforme'); const gPrev = isGlobal ? document.getElementById('infGrupoSelect').value : null; const mesPrev = f.mes.value; f.reset(); if (keepGroup && gPrev) document.getElementById('infGrupoSelect').value = gPrev; document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true;
+    const f = document.getElementById('formInforme'); const gPrev = isGlobal ? document.getElementById('infGrupoSelect').value : null; const mesPrev = f.mes.value; f.reset(); ocultarPrivInforme(); if (keepGroup && gPrev) document.getElementById('infGrupoSelect').value = gPrev; document.getElementById('informeId').value = ""; document.getElementById('inputHoras').disabled = true; document.getElementById('inputCredito').disabled = true;
     const mesAuto = getMesAutomatico();
     if (f.mes) {
         await cargarMesActivo();
@@ -92,7 +130,7 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     rawData.anio_servicio = document.getElementById('informeId').value ? getAnio() : anioFormInforme(); // AÑO AÑADIDO
 
     const h = parseFloat(rawData.horas) || 0; const c = parseFloat(rawData.credito_hrs) || 0;
-    const privilegio = (document.getElementById('readPriv3').value || "").trim().toUpperCase();
+    const privilegio = privilegioActivo();
     
     const esRegular = privilegio === 'REG' || privilegio === 'ESP';
     const esAux30 = privilegio === 'AUX I' || privilegio === 'AUX M' || privilegio === 'AUX';
@@ -115,6 +153,15 @@ document.getElementById('formInforme').addEventListener('submit', async (e) => {
     if (c > maxCredito) { Swal.fire({ icon: 'warning', title: 'Límite Excedido', text: `Con ${h}h, el crédito máximo es ${maxCredito}.` }); if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; } return; }
 
     const id = document.getElementById('informeId').value; const method = id ? 'PUT' : 'POST'; const url = id ? `/api/informes/${id}` : '/api/informes';
+    // Solo el Super Admin al editar: se envía el privilegio elegido; debe coincidir con el de Publicadores (el servidor también lo exige)
+    if (id && isAdmin && privInformeVisible()) {
+        const enPublicadores = (document.getElementById('readPriv3').value || '').trim().toUpperCase();
+        if (privilegio !== informePrivOriginal && privilegio !== enPublicadores) {
+            Swal.fire({ icon: 'error', title: 'No coincide con Publicadores', text: `En Publicadores este publicador figura como ${enPublicadores || 'sin privilegio'}. Primero cambia su privilegio en Publicadores y luego cámbialo aquí.` });
+            if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginal; } return;
+        }
+        rawData.priv3 = privilegio;
+    }
     rawData.grupo = isGlobal ? document.getElementById('infGrupoSelect').value : session.grupo; rawData.requester_group = session.grupo;
     if (!id) { const pub = cachePublicadores.find(p => p.id == rawData.publicador_id); if (pub) { rawData.publicador_nombre = pub.nombre; rawData.priv1 = pub.priv1; rawData.priv2 = pub.priv2; rawData.priv3 = pub.priv3; } }
 
