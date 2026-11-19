@@ -102,7 +102,7 @@ Los campos de nombre de Informes, Publicadores y Reportes usan el mismo buscador
 ### Programa del servicio del campo (Territorios → pestaña "Programa")
 - Hay **un programa guardado por tipo de reunión**: *Vie – Dom* y *Dom – Jue*. Se guardan solos en la base de datos (tabla `programas_predicacion`); crear uno nuevo del mismo tipo reemplaza al anterior (botón *Nuevo programa*).
 - Las filas se **editan en su sitio**: clic en la fila (o en el lápiz), se cambian los datos y *Guardar cambios* actualiza esa misma fila.
-- Impresión A4: **Vie – Dom = 2 programas por hoja** y **Dom – Jue = 3 por hoja**; la letra se agranda automáticamente al máximo que cabe.
+- Impresión A4: **se calcula solo cuántos programas caben por hoja** según su tamaño: **3** si es corto (por ejemplo, hasta unas 10 filas), **2** si es mediano y **1** si es muy grande. La letra se agranda al máximo que cabe y el botón muestra la cantidad elegida.
 - El teléfono del conductor se completa solo desde el directorio.
 
 ### Personas: publicadores, usuarios y conductores
@@ -114,6 +114,14 @@ Una misma persona puede ser publicador, usuario del sistema y conductor. El **te
 ### Teléfonos y tarjetas de territorio
 - Los teléfonos son de **9 dígitos** (Perú): los campos solo aceptan números, recortan a 9, quitan un prefijo +51 y el servidor rechaza cualquier otro largo.
 - En *Avance y Bitácora* cada territorio es una tarjeta **plegada** (título, avance y estado); al desplegarla muestra fechas, vueltas, manzanas y el botón de bitácora. Siempre se dibujan plegadas, y la paginación aparece arriba y abajo.
+
+### Importar avances desde WhatsApp (solo super admin)
+En *Territorios → Avance y Bitácora* el botón **Importar de WhatsApp** lee el chat exportado del grupo (*Exportar chat → Sin multimedia*, `.txt` o `.zip`) y propone los avances de territorio:
+- El chat se analiza **en el navegador** (`public/js/whatsapp-parser.js`); al servidor solo llegan los avances que revisas y guardas, nunca el texto de los mensajes.
+- Hay que indicar **"Importar desde"** (si el mapa de territorios cambió, los avisos viejos no corresponden a los números actuales).
+- Reconoce "se avanzó / terminamos / empezó el territorio N", manzanas hechas ("las manzanas 1, 2 y 5", "del 1 al 4"), manzanas que **faltan** (se registra el resto) y días como "el domingo". Todo se puede corregir en la tabla; un aviso sin manzanas ni cierre no se guarda.
+- *Simular* prueba todo sin guardar; *Guardar* aplica las mismas reglas de vuelta/cierre del formulario manual, en orden de fecha (`POST /api/territorios/bitacora/lote`).
+- Cada registro lleva un código de origen (`bitacora_territorios.origen`), así que volver a importar el mismo chat no duplica nada. El conductor de cada hermano se elige una vez y se recuerda.
 
 ### Informes: privilegio y horas
 - Si un precursor marca **NO predicó**, sus horas pasan a 0 automáticamente.

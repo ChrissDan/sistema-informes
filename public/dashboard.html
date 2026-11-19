@@ -571,9 +571,14 @@
                     <div class="card">
                         <div class="card-header-flex">
                             <h3><i class="fa-solid fa-list-check"></i> Bitácora de Predicación</h3>
-                            <button type="button" class="btn-cancel" style="padding:5px 10px; font-size:0.78rem;" onclick="limpiarFiltrosBitacora()">
-                                <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros
-                            </button>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="btn-cancel admin-only" style="padding:5px 10px; font-size:0.78rem;" onclick="abrirImportarWA()">
+                                    <i class="fa-brands fa-whatsapp"></i> Importar de WhatsApp
+                                </button>
+                                <button type="button" class="btn-cancel" style="padding:5px 10px; font-size:0.78rem;" onclick="limpiarFiltrosBitacora()">
+                                    <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros
+                                </button>
+                            </div>
                         </div>
                         <div class="table-container">
                             <table>
@@ -1370,6 +1375,35 @@
                 </button>
             </div>
         </form>
+
+        <!-- FORMULARIO: IMPORTAR AVANCES DESDE EL CHAT DE WHATSAPP -->
+        <form id="formImportarWA" class="form-layout" onsubmit="return false;">
+            <div class="col-span-2 form-section-title">
+                <i class="fa-brands fa-whatsapp"></i> Importar avances desde WhatsApp
+            </div>
+            <div class="col-span-2" style="font-size:0.82rem; color:var(--text-muted, #8f8f8f); line-height:1.5;">
+                En WhatsApp: abre el grupo → ⋮ → <b>Más</b> → <b>Exportar chat</b> → <b>Sin multimedia</b>. Sube aquí el archivo
+                (<b>.txt</b>, <b>.zip</b> o un <b>.json</b> de avances) o pega el texto. La lectura se hace en tu navegador; solo se guardan los avances que confirmes.
+            </div>
+            <div class="global-view">
+                <label>Importar desde (fecha)</label>
+                <input type="date" id="waDesde">
+            </div>
+            <div class="global-view">
+                <label>Archivo del chat</label>
+                <input type="file" id="waArchivo" accept=".txt,.zip,.json,text/plain,application/zip,application/json">
+            </div>
+            <div class="col-span-2 global-view">
+                <label>…o pega el texto del chat</label>
+                <textarea id="waTexto" rows="3" placeholder="[4/02/25, 7:02:10 AM] Hno. Fulano: hoy se avanzó el territorio 16…"></textarea>
+            </div>
+            <div class="col-span-2 form-submit-row">
+                <button type="button" class="btn-primary" id="btnWaAnalizar" onclick="waAnalizarEntrada()">
+                    <i class="fa-solid fa-magnifying-glass"></i> Analizar chat
+                </button>
+            </div>
+            <div class="col-span-2" id="waResultado" style="display:none;"></div>
+        </form>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1391,6 +1425,8 @@
     <script src="js/territorios-detalle.js" defer></script>
     <script src="js/programa-predicacion.js" defer></script>
     <script src="js/territorios-bitacora.js" defer></script>
+    <script src="js/whatsapp-parser.js" defer></script>
+    <script src="js/whatsapp-import.js" defer></script>
     <script src="js/vcal.js" defer></script>
     <script src="js/pwa.js" defer></script>
 </body>

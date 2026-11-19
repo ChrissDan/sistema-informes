@@ -368,6 +368,81 @@ router.post('/api/territorios/bitacora', soloAdmin, async (req, res) => {
     } catch (error) { res.status(500).json({ ok: false, msg: msgErr(error) }); }
 });
 
+// Importación por lote (p. ej. desde el chat de WhatsApp). Cada registro se aplica en orden cronológico con las
+// mismas reglas de ciclo que el formulario manual. Con dry_run todo se simula y se revierte.
+function listaNumeros(v) {
+    return Array.isArray(v) ? [...new Set(v.map(n => parseInt(n, 10)).filter(n => !isNaN(n) && n >= 1))].sort((a, b) => a - b) : [];
+}
+
+async function aplicarRegistroLote(db, rec) {
+    const origen = rec.origen ? String(rec.origen).slice(0, 80) : null;
+    const fechaReg = formatearFechaYMD(rec.fecha_registro);
+    if (!fechaReg || !/^\d{4}-\d{2}-\d{2}$/.test(fechaReg)) return { ok: false, msg: 'Fecha inválida.' };
+    if (origen) {
+        const [dup] = await db.query('SELECT id FROM bitacora_territorios WHERE origen = ? LIMIT 1', [origen]);
+        if (dup.length > 0) return { ok: false, duplicado: true, msg: 'Ya estaba importado.' };
+    }
+    const [terr] = await db.query('SELECT * FROM territorios WHERE numero = ? LIMIT 1', [String(rec.territorio ?? '').trim()]);
+    if (terr.length === 0) return { ok: false, msg: `No existe el territorio ${rec.territorio}.` };
+    const t = terr[0];
+    const total = Number(t.cantidad_manzanas) || 0;
+
+    const [maxRow] = await db.query('SELECT COALESCE(MAX(ciclo), 1) as ciclo FROM bitacora_territorios WHERE territorio_id = ?', [t.id]);
+    let ciclo = maxRow[0].ciclo || 1;
+    let estado = await calcularEstadoManzanasCiclo(db, t.id, ciclo);
+    let nuevo = estado.registrosCount === 0;
+    if (estado.registrosCount > 0 && estado.cerradoExplicito) { ciclo++; estado = { estadoPorManzana: {}, fechaInicioCiclo: null }; nuevo = true; }
+    const completas = new Set(Object.keys(estado.estadoPorManzana).map(Number).filter(m => estado.estadoPorManzana[m] === 'COMPLETO'));
+
+    const dadas = listaNumeros(rec.manzanas);
+    const faltan = listaNumeros(rec.faltan);
+    if (dadas.length === 0 && faltan.length === 0 && !rec.cierre) return { ok: false, msg: 'Indica qué manzanas se hicieron.' };
+    let manzanas;
+    if (dadas.length > 0) manzanas = dadas;
+    else manzanas = Array.from({ length: total }, (_, i) => i + 1).filter(m => !faltan.includes(m));
+    const fuera = manzanas.filter(m => m > total);
+    if (fuera.length > 0) return { ok: false, msg: `El territorio ${t.numero} tiene ${total} manzanas (se mencionó la ${fuera.join(', ')}).` };
+    const ignoradas = manzanas.filter(m => completas.has(m));
+    manzanas = manzanas.filter(m => !completas.has(m));
+    if (manzanas.length === 0) return { ok: false, msg: 'No hay manzanas nuevas por registrar (ya estaban completas en esta vuelta).' };
+
+    const cierre = Boolean(rec.cierre);
+    const fechaIni = nuevo ? fechaReg : (formatearFechaYMD(estado.fechaInicioCiclo) || fechaReg);
+    const estadoTerr = cierre ? (fechaIni === fechaReg ? 'INICIO - CIERRE' : 'CIERRE') : (nuevo ? 'INICIO' : 'AVANCE');
+    const detalle = {};
+    manzanas.forEach(m => { detalle[m] = 'COMPLETO'; });
+    await db.query(
+        'INSERT INTO bitacora_territorios (fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, manzanas_detalle, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio, ciclo, origen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [fechaReg, fechaIni, cierre ? fechaReg : null, t.id, manzanas.join(', '), 'COMPLETO', JSON.stringify(detalle), rec.turno_id || null, String(rec.turno_nombre || '').slice(0, 100),
+            rec.conductor_id || null, String(rec.conductor_nombre || '').slice(0, 150), estadoTerr, ciclo, origen]
+    );
+    return { ok: true, territorio_id: t.id, manzanas, ignoradas, estado: estadoTerr, ciclo };
+}
+
+router.post('/api/territorios/bitacora/lote', soloAdmin, async (req, res) => {
+    const lista = Array.isArray(req.body.registros) ? req.body.registros : [];
+    const dryRun = Boolean(req.body.dry_run);
+    if (lista.length === 0) return res.status(400).json({ ok: false, msg: 'No hay registros para importar.' });
+    if (lista.length > 500) return res.status(400).json({ ok: false, msg: 'Máximo 500 registros por vez.' });
+    // cronológico: la fecha manda y, a igual fecha, el orden en que llegaron
+    const ordenados = lista.map((rec, i) => ({ rec, i })).sort((a, b) => String(a.rec.fecha_registro).localeCompare(String(b.rec.fecha_registro)) || a.i - b.i);
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+        const resultados = new Array(lista.length);
+        for (const { rec, i } of ordenados) {
+            try { resultados[i] = await aplicarRegistroLote(conn, rec || {}); }
+            catch (e) { resultados[i] = { ok: false, msg: msgErr(e) }; }
+        }
+        if (dryRun) await conn.rollback(); else await conn.commit();
+        res.json({ ok: true, dry_run: dryRun, guardados: resultados.filter(r => r.ok).length, resultados });
+    } catch (error) {
+        if (conn) { try { await conn.rollback(); } catch (e) { /* ya cerrada */ } }
+        res.status(500).json({ ok: false, msg: msgErr(error) });
+    } finally { if (conn) conn.release(); }
+});
+
 router.put('/api/territorios/bitacora/:id', soloAdmin, async (req, res) => {
     const { fecha_registro, fecha, fecha_cierre, territorio_id, manzanas, estado_manzanas, manzanas_detalle, turno_id, turno_nombre, conductor_id, conductor_nombre, estado_territorio } = req.body;
     const { listaManz, manzStr, estadoResumen, detalleJson } = normalizarPayloadManzanas(manzanas, estado_manzanas, manzanas_detalle);

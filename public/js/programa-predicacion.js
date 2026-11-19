@@ -5,7 +5,7 @@
    - Se guarda UN programa por tipo de reunión (Vie–Dom y Dom–Jue) en la base de datos; crear uno nuevo del mismo
      tipo reemplaza al anterior.
    - Las filas se pueden editar en su sitio (clic en la fila o en el lápiz) y se guardan solas.
-   - Impresión A4: Vie–Dom = 2 programas por hoja, Dom–Jue = 3 por hoja, con la letra lo más grande posible.
+   - Impresión A4: se calcula solo cuántos programas caben por hoja (3, 2 o 1) según su tamaño, con la letra lo más grande posible.
    ========================================================================== */
 const PUNTOS_REUNION_BASE = [
     'Salón del Reino',
@@ -235,8 +235,7 @@ function seleccionarTipoPrograma(tipo) {
     document.getElementById('btnProgVieDom')?.classList.toggle('active', tipo === 'VIE_DOM');
     document.getElementById('btnProgDomJue')?.classList.toggle('active', tipo === 'DOM_JUE');
     const sub = document.getElementById('progTipoSub');
-    if (sub) sub.textContent = `${cfg.descripcion} · se imprimen ${cfg.porHoja} programas por hoja`;
-    document.querySelectorAll('.progNHoja').forEach(el => { el.textContent = cfg.porHoja; });
+    if (sub) sub.textContent = cfg.descripcion;
     const tv = document.getElementById('progTituloVista');
     if (tv) tv.textContent = `3. Vista Previa del Programa (${cfg.nombre})`;
 
@@ -530,6 +529,7 @@ function calcularSpansDiaPrograma(filas) {
 
 /* ---------- Vista previa en pantalla ---------- */
 function renderTablaProgramaPreview() {
+    setTimeout(actualizarNHojaPrograma, 0);
     const wrap = document.getElementById('progTablaPreviewWrap');
     const chipsCont = document.getElementById('progFilasAdminList');
     if (!wrap) return;
@@ -804,11 +804,34 @@ async function generarBlobImagenPrograma() {
 
 /* ==========================================================================
    IMPRESIÓN A4 — diseño adaptativo: la letra más grande que quepa en el hueco
-   Vie–Dom: 2 programas por hoja · Dom–Jue: 3 programas por hoja
+   La cantidad por hoja (3, 2 o 1) se calcula según el tamaño del programa
    ========================================================================== */
 const A4_PDF = { pageW: 210, pageH: 297, margenArriba: 6, margenAbajo: 6, margenLado: 8, separacion: 5 };
 
-function porHojaPrograma() { return (PROG_TIPOS[programaTipo] || PROG_TIPOS.DOM_JUE).porHoja; }
+// Cuántos programas caben por hoja: se prueba con 3, luego 2 y por último 1, y se elige la mayor cantidad en que la
+// letra siga siendo legible (LETRA_MIN_PROGRAMA, la misma que ya se usa hoy en un programa de 10 filas, 3 por hoja).
+const LETRA_MIN_PROGRAMA = 12;
+let _porHojaCache = { firma: '', n: 2 };
+function porHojaPrograma() {
+    if (programaFilas.length === 0) return (PROG_TIPOS[programaTipo] || PROG_TIPOS.DOM_JUE).porHoja;
+    const firma = JSON.stringify([programaFilas, document.getElementById('progMostrarColGrupo')?.checked, obtenerInfoCabeceraPrograma().rangoTexto]);
+    if (_porHojaCache.firma === firma) return _porHojaCache.n;
+    let n = 1;
+    for (const k of [3, 2]) {
+        const c = generarCanvasProgramaImpresion(k, 1);
+        if (c && generarCanvasProgramaImpresion.ultimo && generarCanvasProgramaImpresion.ultimo.f >= LETRA_MIN_PROGRAMA) { n = k; break; }
+    }
+    _porHojaCache = { firma, n };
+    return n;
+}
+
+function actualizarNHojaPrograma() {
+    const n = porHojaPrograma();
+    document.querySelectorAll('.progNHoja').forEach(el => { el.textContent = n; });
+    const sub = document.getElementById('progTipoSub');
+    const cfg = PROG_TIPOS[programaTipo] || PROG_TIPOS.DOM_JUE;
+    if (sub) sub.textContent = `${cfg.descripcion} · se imprimen ${n} programa${n > 1 ? 's' : ''} por hoja (según su tamaño)`;
+}
 
 // Tamaño (mm) del hueco de cada programa en la hoja
 function dimensionesHuecoPrograma(n) {
