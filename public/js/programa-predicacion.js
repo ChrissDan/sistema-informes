@@ -593,7 +593,7 @@ function renderTablaProgramaPreview() {
         const condTexto = f.conductor
             ? `<div>${esc(f.conductor)}</div>${f.telefono ? `<div>(${esc(f.telefono)})</div>` : ''}`
             : `&nbsp;`;
-        const clases = (isAdmin ? 'prog-fila-click ' : '') + (idx === progEditIdx ? 'prog-fila-editando' : '');
+        const clases = (isAdmin ? 'prog-fila-click ' : '') + (idx === progEditIdx ? 'prog-fila-editando ' : '') + (idx > 0 && spansDia[idx] > 0 ? 'prog-dia-inicio' : '');
         const click = isAdmin ? ` onclick="editarFilaPrograma(${idx})" title="Clic para editar esta fila"` : '';
 
         rowsHtml += `
@@ -824,7 +824,12 @@ function generarCanvasPrograma(scale = 2) {
         });
     });
 
+    // línea gruesa entre un día y el siguiente (no entre turnos del mismo día)
     ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    for (let i = 1; i < programaFilas.length; i++) {
+        if (spansDia[i] > 0) { ctx.beginPath(); ctx.moveTo(0, bodyTop + i * rowH); ctx.lineTo(totalW, bodyTop + i * rowH); ctx.stroke(); }
+    }
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, totalW, totalH);
 
@@ -1125,7 +1130,12 @@ function generarCanvasProgramaImpresion(nPorHoja, scale = 3) {
         });
     });
 
+    // línea gruesa entre un día y el siguiente (no entre turnos del mismo día)
     ctx.strokeStyle = '#000000';
+    ctx.lineWidth = Math.max(3, f * 0.18);
+    for (let i = 1; i < programaFilas.length; i++) {
+        if (spans[i] > 0) { ctx.beginPath(); ctx.moveTo(0, yFila[i]); ctx.lineTo(Wf, yFila[i]); ctx.stroke(); }
+    }
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, Wf, Hf);
     return canvas;

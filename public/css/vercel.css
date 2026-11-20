@@ -1427,7 +1427,7 @@ html[data-theme="dark"] .terr-schedule-day-sug {
 .prog-sheet-table tr:hover td {
     background: #ffffff;
 }
-.prog-cell-mes {
+.prog-sheet-table td.prog-cell-mes {
     background: #000000 !important;
     color: #ffffff !important;
     font-weight: 700 !important;
@@ -1437,7 +1437,7 @@ html[data-theme="dark"] .terr-schedule-day-sug {
     font-size: 0.88rem !important;
     letter-spacing: 0.05em;
 }
-.prog-cell-dia {
+.prog-sheet-table td.prog-cell-dia {
     font-weight: 700 !important;
     color: #000000 !important;
     width: 96px;
@@ -1670,3 +1670,6 @@ html[data-theme="dark"] .terr-card-plegable > summary:hover { background: #16161
 
 /* Celdas "global-view" de los formularios (el script las fuerza a display:block): mismo espacio bajo la etiqueta que el resto */
 .form-layout > .global-view > label { display: block; margin-bottom: 6px; }
+
+/* Línea gruesa entre un día y el siguiente (no entre turnos del mismo día) */
+.prog-sheet-table tr.prog-dia-inicio td { border-top: 3px solid #000000 !important; }
