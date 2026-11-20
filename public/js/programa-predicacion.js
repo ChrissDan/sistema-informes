@@ -826,10 +826,13 @@ function generarCanvasPrograma(scale = 2) {
 
     // línea gruesa entre un día y el siguiente (no entre turnos del mismo día)
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 2.5;
     for (let i = 1; i < programaFilas.length; i++) {
         if (spansDia[i] > 0) { ctx.beginPath(); ctx.moveTo(0, bodyTop + i * rowH); ctx.lineTo(totalW, bodyTop + i * rowH); ctx.stroke(); }
     }
+    // líneas verticales más gruesas entre columnas
+    ctx.lineWidth = 2.5;
+    cols.slice(1).forEach(c => { ctx.beginPath(); ctx.moveTo(c.x, bannerH); ctx.lineTo(c.x, totalH); ctx.stroke(); });
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, totalW, totalH);
 
@@ -1132,10 +1135,13 @@ function generarCanvasProgramaImpresion(nPorHoja, scale = 3) {
 
     // línea gruesa entre un día y el siguiente (no entre turnos del mismo día)
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = Math.max(3, f * 0.18);
+    ctx.lineWidth = Math.max(2.2, f * 0.1);
     for (let i = 1; i < programaFilas.length; i++) {
         if (spans[i] > 0) { ctx.beginPath(); ctx.moveTo(0, yFila[i]); ctx.lineTo(Wf, yFila[i]); ctx.stroke(); }
     }
+    // líneas verticales más gruesas entre columnas
+    ctx.lineWidth = Math.max(2.2, f * 0.1);
+    d.claves.slice(1).forEach(k => { ctx.beginPath(); ctx.moveTo(x[k], h.banner); ctx.lineTo(x[k], Hf); ctx.stroke(); });
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, Wf, Hf);
     return canvas;
