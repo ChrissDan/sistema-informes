@@ -367,18 +367,53 @@ function leerFormularioFilaPrograma() {
     };
 }
 
+// Orden cronológico dentro del programa: primero el día (según el tipo: Vie–Dom o Dom–Jue) y luego la hora
+const PROG_DIAS_SEMANA = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+function claveOrdenFilaPrograma(fila) {
+    const cfg = PROG_TIPOS[programaTipo] || PROG_TIPOS.DOM_JUE;
+    const dia = String(fila.dia || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const num = PROG_DIAS_SEMANA[dia];
+    const rangoDia = num === undefined ? 99 : (num - cfg.diaSemanaInicio + 7) % 7;
+    const m = /(\d{1,2})\s*[:.]\s*(\d{2})\s*([ap])?/i.exec(String(fila.hora || ''));
+    const esTarde = /tarde|noche/i.test(fila.turno || '');
+    let minutos = esTarde ? 900 : 480;
+    if (m) {
+        let h = parseInt(m[1], 10) % 12;
+        if (m[3] ? /p/i.test(m[3]) : (esTarde && parseInt(m[1], 10) < 12)) h += 12;
+        minutos = h * 60 + parseInt(m[2], 10);
+    }
+    return rangoDia * 2000 + minutos;
+}
+
+// Inserta la fila en su lugar (después de las que ya tengan el mismo día y hora); devuelve su posición
+function insertarFilaProgramaOrdenada(fila) {
+    const k = claveOrdenFilaPrograma(fila);
+    let pos = programaFilas.length;
+    for (let i = 0; i < programaFilas.length; i++) {
+        if (claveOrdenFilaPrograma(programaFilas[i]) > k) { pos = i; break; }
+    }
+    programaFilas.splice(pos, 0, fila);
+    return pos;
+}
+
 function agregarFilaPrograma() {
     const datos = leerFormularioFilaPrograma();
     if (!datos) return;
     if (progEditIdx >= 0 && programaFilas[progEditIdx]) {
         // Edición: la fila se actualiza EN LA MISMA POSICIÓN (no se crea una nueva)
-        const n = progEditIdx + 1;
-        programaFilas[progEditIdx] = { ...programaFilas[progEditIdx], ...datos };
+        const antes = programaFilas[progEditIdx];
+        const nueva = { ...antes, ...datos };
+        let n = progEditIdx + 1;
+        if (claveOrdenFilaPrograma(nueva) !== claveOrdenFilaPrograma(antes)) {
+            // cambió el día o la hora: la fila se reubica en su lugar cronológico
+            programaFilas.splice(progEditIdx, 1);
+            n = insertarFilaProgramaOrdenada(nueva) + 1;
+        } else programaFilas[progEditIdx] = nueva;
         salirModoEdicionPrograma();
         Toast.fire({ icon: 'success', title: `Fila #${n} actualizada` });
     } else {
-        programaFilas.push({ id: String(Date.now()) + Math.floor(Math.random() * 1000), ...datos });
-        Toast.fire({ icon: 'success', title: `Agregado: ${datos.dia} (${datos.hora}) · T: ${datos.territorios}` });
+        const pos = insertarFilaProgramaOrdenada({ id: String(Date.now()) + Math.floor(Math.random() * 1000), ...datos });
+        Toast.fire({ icon: 'success', title: `Agregado en el lugar ${pos + 1}: ${datos.dia} (${datos.hora}) · T: ${datos.territorios}` });
     }
     renderTablaProgramaPreview();
     programarGuardadoPrograma();
