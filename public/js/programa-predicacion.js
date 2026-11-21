@@ -863,6 +863,7 @@ const A4_PDF = { pageW: 210, pageH: 297, margenArriba: 6, margenAbajo: 6, margen
 const LETRA_MIN_PROGRAMA = 12;
 let _porHojaCache = { firma: '', n: 2 };
 function porHojaPrograma() {
+    if (programaTipo === 'LUN_DOM') return 1;          // el programa de toda la semana va siempre en una hoja completa
     if (programaFilas.length === 0) return (PROG_TIPOS[programaTipo] || PROG_TIPOS.DOM_JUE).porHoja;
     const firma = JSON.stringify([programaFilas, document.getElementById('progMostrarColGrupo')?.checked, obtenerInfoCabeceraPrograma().rangoTexto]);
     if (_porHojaCache.firma === firma) return _porHojaCache.n;
@@ -880,7 +881,7 @@ function actualizarNHojaPrograma() {
     document.querySelectorAll('.progNHoja').forEach(el => { el.textContent = n; });
     const sub = document.getElementById('progTipoSub');
     const cfg = PROG_TIPOS[programaTipo] || PROG_TIPOS.DOM_JUE;
-    if (sub) sub.textContent = `${cfg.descripcion} · se imprimen ${n} programa${n > 1 ? 's' : ''} por hoja (según su tamaño)`;
+    if (sub) sub.textContent = `${cfg.descripcion} · ${programaTipo === 'LUN_DOM' ? 'se imprime en una hoja completa' : `se imprimen ${n} programa${n > 1 ? 's' : ''} por hoja (según su tamaño)`}`;
 }
 
 // Tamaño (mm) del hueco de cada programa en la hoja
