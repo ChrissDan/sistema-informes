@@ -6,9 +6,9 @@ const { soloAdmin, soloGlobal } = require('../lib/auth');
 const router = express.Router();
 
 // --- PROGRAMA DEL SERVICIO DEL CAMPO ---
-// Se guarda UN programa por tipo de reunión: VIE_DOM (Viernes–Domingo) y DOM_JUE (Domingo–Jueves).
+// Se guarda UN programa por tipo de reunión: VIE_DOM (Viernes–Domingo), DOM_JUE (Domingo–Jueves) y LUN_DOM (Lunes–Domingo).
 // Al guardar uno nuevo del mismo tipo, reemplaza al anterior.
-const TIPOS = ['VIE_DOM', 'DOM_JUE'];
+const TIPOS = ['VIE_DOM', 'DOM_JUE', 'LUN_DOM'];
 const DIAS = ['Viernes', 'Sábado', 'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves'];
 const txt = (v, max) => String(v ?? '').trim().slice(0, max);
 const fechaOVacio = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
@@ -34,7 +34,7 @@ function sanearPrograma(b) {
 router.get('/api/programas', soloGlobal, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT tipo, datos, actualizado_en FROM programas_predicacion');
-        const salida = { VIE_DOM: null, DOM_JUE: null };
+        const salida = { VIE_DOM: null, DOM_JUE: null, LUN_DOM: null };
         for (const r of rows) {
             if (!TIPOS.includes(r.tipo)) continue;
             try { salida[r.tipo] = { ...JSON.parse(r.datos), actualizado_en: r.actualizado_en }; } catch (e) { /* dato dañado: se ignora */ }

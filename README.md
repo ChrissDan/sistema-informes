@@ -100,7 +100,7 @@ Para cifrar con bcrypt las contraseñas heredadas en texto plano: `node scripts/
 Los campos de nombre de Informes, Publicadores y Reportes usan el mismo buscador (`public/js/buscador.js`): no distingue mayúsculas ni tildes, acepta las palabras en cualquier orden, muestra debajo los publicadores que coinciden y busca al elegir uno (con clic, o con flechas + Enter). Los endpoints aceptan `publicador_ids` (lista de IDs).
 
 ### Programa del servicio del campo (Territorios → pestaña "Programa")
-- Hay **un programa guardado por tipo de reunión**: *Vie – Dom* y *Dom – Jue*. Se guardan solos en la base de datos (tabla `programas_predicacion`); crear uno nuevo del mismo tipo reemplaza al anterior (botón *Nuevo programa*).
+- Hay **un programa guardado por tipo de reunión**: *Vie – Dom*, *Dom – Jue* y *Lun – Dom* (toda la semana). Se guardan solos en la base de datos (tabla `programas_predicacion`); crear uno nuevo del mismo tipo reemplaza al anterior (botón *Nuevo programa*).
 - Las filas nuevas **se colocan solas en orden** (por día según el tipo de programa y luego por hora), así que puedes agregar el sábado después del viernes y el domingo y quedará en medio. Si al editar cambias el día o la hora, la fila se reubica.
 - Las filas se **editan en su sitio**: clic en la fila (o en el lápiz), se cambian los datos y *Guardar cambios* actualiza esa misma fila.
 - Impresión A4: **se calcula solo cuántos programas caben por hoja** según su tamaño: **3** si es corto (por ejemplo, hasta unas 10 filas), **2** si es mediano y **1** si es muy grande. La letra se agranda al máximo que cabe y el botón muestra la cantidad elegida.

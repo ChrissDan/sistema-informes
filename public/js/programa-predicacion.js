@@ -21,13 +21,14 @@ const PUNTOS_REUNION_BASE = [
 
 const PROG_TIPOS = {
     VIE_DOM: { nombre: 'Vie – Dom', porHoja: 2, dia: 'Viernes', diaSemanaInicio: 5, duracion: 2, descripcion: 'Programa del fin de semana (Viernes a Domingo)' },
-    DOM_JUE: { nombre: 'Dom – Jue', porHoja: 3, dia: 'Domingo', diaSemanaInicio: 0, duracion: 4, descripcion: 'Programa de entre semana (Domingo a Jueves)' }
+    DOM_JUE: { nombre: 'Dom – Jue', porHoja: 3, dia: 'Domingo', diaSemanaInicio: 0, duracion: 4, descripcion: 'Programa de entre semana (Domingo a Jueves)' },
+    LUN_DOM: { nombre: 'Lun – Dom', porHoja: 1, dia: 'Lunes', diaSemanaInicio: 1, duracion: 6, descripcion: 'Programa de toda la semana (Lunes a Domingo)' }
 };
 
-let programaTipo = null;          // 'VIE_DOM' | 'DOM_JUE' (el que se está viendo/editando)
+let programaTipo = null;          // 'VIE_DOM' | 'DOM_JUE' | 'LUN_DOM' (el que se está viendo/editando)
 let programaFilas = [];
 let progEditIdx = -1;             // fila que se está editando (-1 = ninguna)
-let progGuardadoRemoto = null;    // { VIE_DOM: {...}|null, DOM_JUE: {...}|null } tal como está en la base de datos
+let progGuardadoRemoto = null;    // { VIE_DOM: {...}|null, DOM_JUE: {...}|null, LUN_DOM: {...}|null } tal como está en la base de datos
 let progTimerGuardado = null;
 const progManzanasSet = new Set();
 
@@ -144,13 +145,13 @@ async function cargarProgramasGuardados() {
         const res = await fetch('/api/programas');
         if (res.ok) progGuardadoRemoto = await res.json();
     } catch (e) { console.error(e); }
-    if (!progGuardadoRemoto) progGuardadoRemoto = { VIE_DOM: null, DOM_JUE: null };
+    if (!progGuardadoRemoto) progGuardadoRemoto = { VIE_DOM: null, DOM_JUE: null, LUN_DOM: null };
     await migrarProgramaLocalAntiguo();
 }
 
 // El programa que antes se guardaba solo en este navegador se pasa a la base de datos (una sola vez)
 async function migrarProgramaLocalAntiguo() {
-    if (!isAdmin || (progGuardadoRemoto.VIE_DOM || progGuardadoRemoto.DOM_JUE)) return;
+    if (!isAdmin || (progGuardadoRemoto.VIE_DOM || progGuardadoRemoto.DOM_JUE || progGuardadoRemoto.LUN_DOM)) return;
     try {
         const raw = localStorage.getItem('programa_predicacion_state');
         if (!raw) return;
@@ -193,7 +194,7 @@ async function guardarProgramaRemoto() {
     if (!isAdmin || !programaTipo) return;
     const tipo = programaTipo;
     const payload = construirPayloadPrograma();            // se arma YA, antes de cualquier espera
-    if (!progGuardadoRemoto) progGuardadoRemoto = { VIE_DOM: null, DOM_JUE: null };
+    if (!progGuardadoRemoto) progGuardadoRemoto = { VIE_DOM: null, DOM_JUE: null, LUN_DOM: null };
     progGuardadoRemoto[tipo] = payload;
     try {
         const res = await fetch(`/api/programas/${tipo}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -206,7 +207,7 @@ async function guardarProgramaRemoto() {
     }
 }
 
-/* ---------- Tipo de programa (Vie–Dom / Dom–Jue) ---------- */
+/* ---------- Tipo de programa (Vie–Dom / Dom–Jue / Lun–Dom) ---------- */
 function seleccionarTipoPrograma(tipo) {
     if (!PROG_TIPOS[tipo]) return;
     // Si hay un guardado pendiente del programa que se deja, se envía ahora
@@ -234,6 +235,7 @@ function seleccionarTipoPrograma(tipo) {
     const selDia = document.getElementById('progDia'); if (selDia) selDia.value = cfg.dia;
     document.getElementById('btnProgVieDom')?.classList.toggle('active', tipo === 'VIE_DOM');
     document.getElementById('btnProgDomJue')?.classList.toggle('active', tipo === 'DOM_JUE');
+    document.getElementById('btnProgLunDom')?.classList.toggle('active', tipo === 'LUN_DOM');
     const sub = document.getElementById('progTipoSub');
     if (sub) sub.textContent = cfg.descripcion;
     const tv = document.getElementById('progTituloVista');
