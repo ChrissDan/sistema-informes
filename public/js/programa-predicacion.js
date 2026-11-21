@@ -113,7 +113,9 @@ function poblarSelectoresPrograma() {
     const sel1 = document.getElementById('progTerritorio');
     const sel2 = document.getElementById('progTerritorio2');
     if (sel1) sel1.innerHTML = '<option value="">-- Seleccionar territorio --</option>' + optsTerr;
+    const sel3 = document.getElementById('progTerritorio3');
     if (sel2) sel2.innerHTML = '<option value="">-- Ninguno --</option>' + optsTerr;
+    if (sel3) sel3.innerHTML = '<option value="">-- Ninguno --</option>' + optsTerr;
 
     const selCond = document.getElementById('progConductor');
     if (selCond) {
@@ -350,6 +352,7 @@ function limpiarManzanasPrograma() {
 function leerFormularioFilaPrograma() {
     const t1 = document.getElementById('progTerritorio')?.value || '';
     const t2 = document.getElementById('progTerritorio2')?.value || '';
+    const t3 = document.getElementById('progTerritorio3')?.value || '';
     if (!t1) {
         Swal.fire('Falta Territorio', 'Selecciona al menos el Territorio Principal para esta salida.', 'warning');
         return null;
@@ -362,7 +365,7 @@ function leerFormularioFilaPrograma() {
         hora: (document.getElementById('progHora')?.value || '8:20 am').trim(),
         grupo: document.getElementById('progGrupo')?.value || 'T',
         punto: punto || '-',
-        territorios: t2 && t2 !== t1 ? `${t1}, ${t2}` : `${t1}`,
+        territorios: [...new Set([t1, t2, t3].filter(Boolean))].join(', '),
         manzanas: progManzanasSet.size > 0 ? Array.from(progManzanasSet).sort((a, b) => a - b).join(', ') : '',
         conductor: document.getElementById('progConductor')?.value || '',
         telefono: soloDigitosTel(document.getElementById('progConductorTel')?.value)
@@ -435,11 +438,13 @@ function editarFilaPrograma(idx) {
     set('progGrupo', f.grupo);
     set('progPunto', f.punto === '-' ? '' : f.punto);
 
-    const [t1, t2 = ''] = String(f.territorios || '').split(',').map(x => x.trim());
+    const [t1, t2 = '', t3 = ''] = String(f.territorios || '').split(',').map(x => x.trim());
     asegurarOpcionSelect(document.getElementById('progTerritorio'), t1, `Territorio ${t1}`);
     set('progTerritorio', t1);
     asegurarOpcionSelect(document.getElementById('progTerritorio2'), t2, `Territorio ${t2}`);
     set('progTerritorio2', t2);
+    asegurarOpcionSelect(document.getElementById('progTerritorio3'), t3, `Territorio ${t3}`);
+    set('progTerritorio3', t3);
     cargarManzanasProgramaSelect();                              // reconstruye las manzanas del territorio
     String(f.manzanas || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => n >= 1).forEach(m => {
         progManzanasSet.add(m);
